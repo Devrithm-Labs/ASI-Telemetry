@@ -1,0 +1,20 @@
+[project]
+name = "testing"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "ujjwalkat07", email = "ukcode07@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi>=0.142.2",
+    "opentelemetry-sdk>=1.45.1",
+    "psutil>=7.2.2",
+    "uagents>=0.26.0",
+    "uvicorn>=0.54.0",
+]
+
+[tool.uv]
+package = false
+
