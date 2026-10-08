@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Activity,
   Bot,
@@ -30,10 +32,10 @@ import { cn } from "@/lib/utils";
 interface NavItem {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
+  href: string;
   badge?: string;
   isPlus?: boolean;
   hasSub?: boolean;
-  active?: boolean;
 }
 
 interface NavGroup {
@@ -49,27 +51,28 @@ interface DashboardSidebarProps {
 }
 
 export function DashboardSidebar({
-  activeNav = "Monitoring",
+  activeNav,
   onNavChange,
   collapsed = false,
   onToggleCollapse,
 }: DashboardSidebarProps) {
+  const pathname = usePathname();
   const [searchQuery, setSearchQuery] = React.useState("");
 
   const navigationGroups: NavGroup[] = [
     {
       group: "Application",
       items: [
-        { label: "All applications", icon: Boxes, hasSub: true },
-        { label: "Home", icon: Home },
+        { label: "All applications", href: "/all-applications", icon: Boxes },
+        { label: "Home", href: "/", icon: Home },
       ],
     },
     {
       group: "Observability",
       items: [
-        { label: "Tool Monitoring", icon: Gauge, active: true },
-        { label: "LLM Monitoring", icon: Bot, active: true },
-        { label: "Tracing", icon: Activity, badge: "1" },
+        { label: "Tool Monitoring", href: "/tool-monitoring", icon: Gauge },
+        { label: "LLM Monitoring", href: "/llm-monitoring", icon: Bot },
+        { label: "Tracing", href: "/tracing", icon: Activity, badge: "1" },
       ],
     }
   ];
@@ -156,11 +159,15 @@ export function DashboardSidebar({
             )}
             {group.items.map((item, itemIdx) => {
               const Icon = item.icon;
-              const isActive = activeNav === item.label;
+              const isActive =
+                activeNav === item.label ||
+                (item.href === "/" && (pathname === "/" || pathname === "/home")) ||
+                (item.href !== "/" && (pathname === item.href || pathname?.startsWith(item.href + "/")));
 
               return (
-                <button
+                <Link
                   key={itemIdx}
+                  href={item.href}
                   onClick={() => onNavChange?.(item.label)}
                   title={collapsed ? item.label : undefined}
                   className={cn(
@@ -201,7 +208,7 @@ export function DashboardSidebar({
                       )}
                     </>
                   )}
-                </button>
+                </Link>
               );
             })}
           </div>
