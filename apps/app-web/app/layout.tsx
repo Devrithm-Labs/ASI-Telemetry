@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/shared/theme-provider";
 import { QueryProvider } from "@/components/shared/query-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { DashboardLayoutShell } from "@/components/dashboard/dashboard-layout-shell";
 
 export const metadata: Metadata = {
   title: "ASI-Telemetry | AI Observability & Monitoring",
@@ -28,7 +29,9 @@ export default function RootLayout({
         >
           <QueryProvider>
             <TooltipProvider>
-              <NuqsAdapter>{children}</NuqsAdapter>
+              <NuqsAdapter>
+                <DashboardLayoutShell>{children}</DashboardLayoutShell>
+              </NuqsAdapter>
             </TooltipProvider>
           </QueryProvider>
         </ThemeProvider>
