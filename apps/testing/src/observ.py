@@ -40,7 +40,6 @@ class AgentMonitor:
             "TELEMETRY_BACKEND_URL", "http://127.0.0.1:8080/api/metrics"
         )
 
-
         # In-memory stats
         self.requests = 0
         self.success = 0
@@ -304,6 +303,3 @@ class AgentMonitor:
         )
 
         print("=================================\n")
-
-
-monitor = AgentMonitor()

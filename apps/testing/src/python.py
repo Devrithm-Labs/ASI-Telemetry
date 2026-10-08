@@ -1,7 +1,9 @@
 import asyncio
 from uagents import Agent, Context, Model
 from uagents.resolver import RulesBasedResolver
-from observ import monitor
+from observ import AgentMonitor
+
+monitor = AgentMonitor()
 
 try:
     loop = asyncio.get_event_loop()
@@ -20,7 +22,7 @@ agent = Agent(
     seed="assistant_seed",
     port=8000,
     endpoint=["http://127.0.0.1:8000/submit"],
-    resolve=local_resolver,   # <-- Bypasses the cloud Almanac lookup!
+    resolve=local_resolver
 )
 
 @agent.on_event("startup")
