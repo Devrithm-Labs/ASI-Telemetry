@@ -1,9 +1,9 @@
 import uvicorn
+from config import settings
 
 if __name__ == "__main__":
-    print("\n" + "=" * 60)
-    print("  Starting ASI-Telemetry FastAPI Backend on http://127.0.0.1:8080")
-    print("  Live Web Dashboard: http://127.0.0.1:8080/dashboard")
-    print("  API Docs (Swagger): http://127.0.0.1:8080/docs")
-    print("=" * 60 + "\n")
-    uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True)
+    print(f"\n🚀 Starting ASI-Telemetry Backend on http://{settings.HOST}:{settings.PORT}")
+    print(f"📊 Swagger API Docs: http://localhost:{settings.PORT}/docs")
+    print(f"🗄️ ClickHouse Host: {settings.CLICKHOUSE_HOST}:{settings.CLICKHOUSE_PORT}\n")
+
+    uvicorn.run("main:app", host=settings.HOST, port=settings.PORT, reload=True)
