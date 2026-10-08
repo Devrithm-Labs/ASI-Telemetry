@@ -67,20 +67,16 @@ export function LatencySection({ data }: LatencySectionProps) {
                   Latency
                 </span>
               </div>
-              <span className="flex items-center gap-1 rounded border border-blue-900/60 bg-blue-950/40 px-2 py-0.5 text-[10px] font-semibold text-blue-300">
-                <ShieldCheck className="h-3 w-3 text-blue-400" />
-                SLA &lt;300ms
-              </span>
             </div>
 
             {/* Big Primary Metric Number */}
             <div className="mt-4">
               <div className="text-4xl font-bold tracking-tight text-white font-mono">
-                142 <span className="text-xl text-blue-400 font-sans font-medium">ms</span>
+                {avgP50} <span className="text-xl text-blue-400 font-sans font-medium">ms</span>
               </div>
               <div className="mt-1 flex items-center gap-1.5 text-xs text-blue-400">
                 <TrendingDown className="h-3.5 w-3.5" />
-                <span>-12 ms (-7.8%) vs last period</span>
+                <span>P50 execution time from ClickHouse</span>
               </div>
             </div>
 

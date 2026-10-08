@@ -42,7 +42,7 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export function ErrorSection({ data }: ErrorSectionProps) {
-  const latestErrorRate = data.length > 0 ? data[data.length - 1]?.errorRate : 0.73;
+  const latestErrorRate = data.length > 0 ? (data[data.length - 1]?.errorRate ?? 0) : 0;
   const totalErrors = React.useMemo(
     () =>
       data.reduce(
@@ -68,20 +68,12 @@ export function ErrorSection({ data }: ErrorSectionProps) {
                   Failure & Errors
                 </span>
               </div>
-              <span className="flex items-center gap-1 rounded border border-blue-900/60 bg-blue-950/40 px-2 py-0.5 text-[10px] font-semibold text-blue-300">
-                <ShieldAlert className="h-3 w-3 text-blue-400" />
-                &lt;1.0% SLO
-              </span>
             </div>
 
             {/* Big Primary Metric Number */}
             <div className="mt-4">
               <div className="text-4xl font-bold tracking-tight text-white font-mono">
                 {latestErrorRate} <span className="text-xl text-blue-400 font-sans font-medium">%</span>
-              </div>
-              <div className="mt-1 flex items-center gap-1.5 text-xs text-blue-400">
-                <TrendingDown className="h-3.5 w-3.5" />
-                <span>-0.15% reduction vs baseline</span>
               </div>
             </div>
 

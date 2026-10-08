@@ -34,9 +34,9 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export function CpuSection({ data }: CpuSectionProps) {
-  const latestCpu = data.length > 0 ? data[data.length - 1]?.cpuPercent : 38;
-  const latestMem = data.length > 0 ? data[data.length - 1]?.memoryPercent : 51;
-  const latestLoad = data.length > 0 ? data[data.length - 1]?.coreLoad : 6.0;
+  const latestCpu = data.length > 0 ? (data[data.length - 1]?.cpuPercent ?? 0) : 0;
+  const latestMem = data.length > 0 ? (data[data.length - 1]?.memoryPercent ?? 0) : 0;
+  const latestLoad = data.length > 0 ? (data[data.length - 1]?.coreLoad ?? 0) : 0;
 
   return (
     <Card className="overflow-hidden border border-[#1e293b] bg-black shadow-xl">
@@ -53,10 +53,6 @@ export function CpuSection({ data }: CpuSectionProps) {
                   CPU & Compute
                 </span>
               </div>
-              <span className="flex items-center gap-1 rounded border border-blue-900/60 bg-blue-950/40 px-2 py-0.5 text-[10px] font-semibold text-blue-300">
-                <HardDrive className="h-3 w-3 text-blue-400" />
-                16 Cores / 32GB
-              </span>
             </div>
 
             {/* Big Primary Metric Number */}
@@ -65,12 +61,12 @@ export function CpuSection({ data }: CpuSectionProps) {
                 {latestCpu} <span className="text-xl text-blue-400 font-sans font-medium">%</span>
               </div>
               <div className="mt-1 flex items-center gap-1.5 text-xs text-blue-400 font-mono">
-                <span>Load Avg (15m): {latestLoad}</span>
+                <span>Load Avg: {latestLoad}</span>
               </div>
             </div>
 
             <p className="mt-3 text-xs text-slate-400 leading-relaxed">
-              Host cluster compute resource allocation, goroutines, and container memory pressure.
+              Host compute resource allocation and agent process memory pressure.
             </p>
           </div>
 
@@ -79,13 +75,13 @@ export function CpuSection({ data }: CpuSectionProps) {
             <div className="rounded-md border border-[#1e293b] bg-black p-2 text-center">
               <div className="text-[10px] text-slate-400 font-medium">Memory Usage</div>
               <div className="mt-1 font-mono text-xs font-bold text-[#93c5fd]">
-                {latestMem}% (16.4GB)
+                {latestMem}%
               </div>
             </div>
             <div className="rounded-md border border-[#1e293b] bg-black p-2 text-center">
-              <div className="text-[10px] text-slate-400 font-medium">GC Pause</div>
+              <div className="text-[10px] text-slate-400 font-medium">ClickHouse Sync</div>
               <div className="mt-1 font-mono text-xs font-bold text-[#3b82f6]">
-                1.2 ms
+                Active
               </div>
             </div>
           </div>

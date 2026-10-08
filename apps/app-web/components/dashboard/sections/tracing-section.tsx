@@ -54,13 +54,6 @@ export function TracingSection({
             Real-time execution call trees, tool invocation latencies, and OpenTelemetry spans.
           </p>
         </div>
-
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-md border border-[#1e293b] bg-black px-3 py-1.5 text-xs text-slate-300">
-            <Radio className={`h-3 w-3 ${isLive ? "text-blue-400 animate-pulse" : "text-slate-500"}`} />
-            <span>Collector: <span className="font-semibold text-blue-300">OTLP/gRPC 4317</span></span>
-          </div>
-        </div>
       </div>
 
       {/* Tracing Overview Metric Strip */}

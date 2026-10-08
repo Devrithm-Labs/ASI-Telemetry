@@ -62,10 +62,7 @@ export function RequestSection({ data }: RequestSectionProps) {
                   Total Requests
                 </span>
               </div>
-              <span className="flex items-center gap-1 rounded border border-blue-900/60 bg-blue-950/40 px-2 py-0.5 text-[10px] font-semibold text-blue-300">
-                <CheckCircle2 className="h-3 w-3 text-blue-400" />
-                {successRate}% Success
-              </span>
+              
             </div>
 
             {/* Big Primary Metric Number */}
@@ -74,10 +71,6 @@ export function RequestSection({ data }: RequestSectionProps) {
                 {totalRequests >= 1000000
                   ? `${(totalRequests / 1000000).toFixed(2)}M`
                   : totalRequests.toLocaleString()}
-              </div>
-              <div className="mt-1 flex items-center gap-1.5 text-xs text-blue-400">
-                <ArrowUpRight className="h-3.5 w-3.5" />
-                <span>+14.2% (+382k) vs last period</span>
               </div>
             </div>
 
@@ -137,6 +130,7 @@ export function RequestSection({ data }: RequestSectionProps) {
                   fontSize={11}
                   tickLine={false}
                   axisLine={false}
+                  allowDecimals={false}
                   tickFormatter={(val) => {
                     if (val >= 1000000) return `${(val / 1000000).toFixed(1)}M`;
                     if (val >= 1000) return `${(val / 1000).toFixed(0)}k`;
@@ -150,11 +144,13 @@ export function RequestSection({ data }: RequestSectionProps) {
                 <Bar
                   dataKey="success"
                   fill="#3b82f6"
+                  stackId="a"
                   radius={[2, 2, 0, 0]}
                 />
                 <Bar
                   dataKey="failure"
                   fill="#93c5fd"
+                  stackId="a"
                   radius={[2, 2, 0, 0]}
                 />
               </BarChart>

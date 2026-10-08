@@ -9,13 +9,6 @@ import {
   CpuMetricPoint,
   ErrorMetricPoint,
 } from "./dashboard-types";
-import {
-  getRequestData,
-  getLatencyData,
-  getCpuData,
-  getErrorData,
-  INITIAL_TRACES,
-} from "./mock-data";
 
 interface DashboardContextType {
   selectedProject: string;
@@ -47,7 +40,7 @@ interface DashboardContextType {
 const DashboardContext = React.createContext<DashboardContextType | null>(null);
 
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
-  const [selectedProject, setSelectedProject] = React.useState("devrithm");
+  const [selectedProject, setSelectedProject] = React.useState("assistant");
   const [timeRange, setTimeRange] = React.useState<TimeRange>("7d");
   const [activeHeaderTab, setActiveHeaderTab] = React.useState<
     "Monitoring" | "Dashboards" | "Alerts"
@@ -59,127 +52,196 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [isAlertModalOpen, setIsAlertModalOpen] = React.useState(false);
   const [isDashboardModalOpen, setIsDashboardModalOpen] = React.useState(false);
 
-  // Live telemetry streaming simulation
+  // Live telemetry state (from real ClickHouse database)
   const [isLive, setIsLive] = React.useState(true);
-  const [requestData, setRequestData] = React.useState<RequestMetricPoint[]>(() =>
-    getRequestData("7d")
-  );
-  const [latencyData, setLatencyData] = React.useState<LatencyMetricPoint[]>(() =>
-    getLatencyData("7d")
-  );
-  const [cpuData, setCpuData] = React.useState<CpuMetricPoint[]>(() =>
-    getCpuData("7d")
-  );
-  const [errorData, setErrorData] = React.useState<ErrorMetricPoint[]>(() =>
-    getErrorData("7d")
-  );
-  const [traces, setTraces] = React.useState<TraceRecord[]>(INITIAL_TRACES);
+  const [requestData, setRequestData] = React.useState<RequestMetricPoint[]>([]);
+  const [latencyData, setLatencyData] = React.useState<LatencyMetricPoint[]>([]);
+  const [cpuData, setCpuData] = React.useState<CpuMetricPoint[]>([]);
+  const [errorData, setErrorData] = React.useState<ErrorMetricPoint[]>([]);
+  const [traces, setTraces] = React.useState<TraceRecord[]>([]);
 
   const addTrace = React.useCallback((newTrace: TraceRecord) => {
     setTraces((prev) => [newTrace, ...prev]);
   }, []);
 
-  // Update datasets when timeRange changes
-  React.useEffect(() => {
-    setRequestData(getRequestData(timeRange));
-    setLatencyData(getLatencyData(timeRange));
-    setCpuData(getCpuData(timeRange));
-    setErrorData(getErrorData(timeRange));
-  }, [timeRange]);
+  // Fetch real data from ClickHouse backend via FastAPI
+  const fetchDatabaseTelemetry = React.useCallback(async () => {
+    try {
+      const res = await fetch("http://localhost:8080/api/metrics?limit=50");
+      if (!res.ok) return;
+      const json = await res.json();
+      const records = json.data || [];
 
-  // Live streaming ticker
-  React.useEffect(() => {
-    if (!isLive) return;
-
-    const interval = setInterval(() => {
-      // Fluctuate latest data point slightly
-      setRequestData((prev) => {
-        if (!prev.length) return prev;
-        const copy = [...prev];
-        const lastIdx = copy.length - 1;
-        const last = copy[lastIdx]!;
-        const deltaSuccess = Math.floor((Math.random() - 0.45) * 50);
-        const newSuccess = Math.max(100, last.success + deltaSuccess);
-        copy[lastIdx] = {
-          ...last,
-          success: newSuccess,
-          total: newSuccess + last.failure,
-        };
-        return copy;
-      });
-
-      setCpuData((prev) => {
-        if (!prev.length) return prev;
-        const copy = [...prev];
-        const lastIdx = copy.length - 1;
-        const last = copy[lastIdx]!;
-        const delta = Math.floor((Math.random() - 0.48) * 4);
-        const newCpu = Math.min(95, Math.max(15, last.cpuPercent + delta));
-        copy[lastIdx] = { ...last, cpuPercent: newCpu };
-        return copy;
-      });
-
-      // Randomly spawn a fresh trace every few ticks
-      if (Math.random() > 0.4) {
-        const models = ["claude-3-5-sonnet", "gpt-4o", "gemini-1.5-pro", "text-embedding-3-large"];
-        const operations = [
-          "agent.planner.synthesize_plan",
-          "rag.vector.semantic_search",
-          "llm.stream_generation",
-          "tool.sandbox.bash_exec",
-          "db.telemetry.batch_flush",
-        ];
-        const randModel = models[Math.floor(Math.random() * models.length)]!;
-        const randOp = operations[Math.floor(Math.random() * operations.length)]!;
-        const isErr = Math.random() < 0.08;
-        const isRate = !isErr && Math.random() < 0.05;
-        const status = isErr ? "error" : isRate ? "rate_limited" : "success";
-        const code = isErr ? 500 : isRate ? 429 : 200;
-        const latency = Math.floor(Math.random() * (isErr ? 2500 : 350)) + 30;
-
-        const now = new Date();
-        const timeStr = `${(now.getMonth() + 1).toString().padStart(2, "0")}/${now
-          .getDate()
-          .toString()
-          .padStart(2, "0")} ${now
-          .getHours()
-          .toString()
-          .padStart(2, "0")}:${now
-          .getMinutes()
-          .toString()
-          .padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
-
-        const newTrace: TraceRecord = {
-          id: `trc-${Math.random().toString(16).substring(2, 10)}`,
-          name: randOp,
-          service: "agent-runtime-core",
-          status,
-          statusCode: code,
-          latencyMs: latency,
-          cpuPercent: Math.floor(Math.random() * 40) + 15,
-          tokens: Math.floor(Math.random() * 2400) + 200,
-          model: randModel,
-          timestamp: timeStr,
+      if (Array.isArray(records) && records.length > 0) {
+        // 1. Map to Real Traces
+        const mappedTraces: TraceRecord[] = records.map((m: any) => ({
+          id: m.id,
+          name: m.func_name || "handle_message",
+          service: m.agent_name || "assistant",
+          status: m.status === "success" ? "success" : "error",
+          statusCode: m.status === "success" ? 200 : 500,
+          latencyMs: m.latency_ms || 0,
+          cpuPercent: m.cpu_after || 0,
+          tokens: 0,
+          model: "uAgent",
+          timestamp: m.timestamp
+            ? m.timestamp.replace("T", " ").substring(0, 19)
+            : new Date().toISOString(),
           spans: [
-            { name: "context.retrieval", durationMs: Math.floor(latency * 0.2), status: "ok" },
-            { name: "llm.stream_generation", durationMs: Math.floor(latency * 0.7), status: isErr ? "error" : "ok" },
-            { name: "output.parse", durationMs: Math.floor(latency * 0.1), status: "ok" },
+            {
+              name: m.func_name || "handle_message",
+              durationMs: m.latency_ms || 0,
+              status: m.status === "success" ? "ok" : "error",
+            },
           ],
-        };
+        }));
+        setTraces(mappedTraces.reverse());
 
-        setTraces((prev) => [newTrace, ...prev.slice(0, 19)]);
+        // 1. Sort records chronologically (oldest to newest)
+        const sortedRecords = [...records].sort(
+          (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        );
+
+        // Determine if records span within 2 minutes (use seconds) or multiple minutes (use minutes)
+        const firstTime = new Date(sortedRecords[0]?.timestamp || 0).getTime();
+        const lastTime = new Date(sortedRecords[sortedRecords.length - 1]?.timestamp || 0).getTime();
+        const spanMinutes = (lastTime - firstTime) / (1000 * 60);
+
+        // Group into time buckets
+        const timeGroups = new Map<
+          string,
+          {
+            success: number;
+            failure: number;
+            total: number;
+            latencies: number[];
+            cpus: number[];
+            mems: number[];
+          }
+        >();
+
+        for (const m of sortedRecords) {
+          let timeKey = "now";
+          if (m.timestamp) {
+            const d = new Date(m.timestamp);
+            if (!isNaN(d.getTime())) {
+              const hh = d.getHours().toString().padStart(2, "0");
+              const mm = d.getMinutes().toString().padStart(2, "0");
+              if (spanMinutes <= 2) {
+                const ss = d.getSeconds().toString().padStart(2, "0");
+                timeKey = `${hh}:${mm}:${ss}`;
+              } else {
+                timeKey = `${hh}:${mm}`;
+              }
+            } else {
+              timeKey = m.timestamp.substring(11, 16) || "now";
+            }
+          }
+
+          const existing = timeGroups.get(timeKey) || {
+            success: 0,
+            failure: 0,
+            total: 0,
+            latencies: [],
+            cpus: [],
+            mems: [],
+          };
+
+          const isSuccess = m.status === "success";
+          existing.success += isSuccess ? 1 : 0;
+          existing.failure += isSuccess ? 0 : 1;
+          existing.total += 1;
+          existing.latencies.push(Number(m.latency_ms || 0));
+          existing.cpus.push(Number(m.cpu_after || 0));
+          existing.mems.push(Number(m.memory_after || 0));
+
+          timeGroups.set(timeKey, existing);
+        }
+
+        const mappedReqs: RequestMetricPoint[] = [];
+        const mappedLatency: LatencyMetricPoint[] = [];
+        const mappedCpu: CpuMetricPoint[] = [];
+        const mappedErrors: ErrorMetricPoint[] = [];
+
+        timeGroups.forEach((group, time) => {
+          // Request throughput volume for this time bucket
+          mappedReqs.push({
+            time,
+            success: group.success,
+            failure: group.failure,
+            total: group.total,
+          });
+
+          // Latency percentiles
+          const avgLat = Math.round(
+            group.latencies.reduce((a, b) => a + b, 0) / group.latencies.length
+          );
+          const maxLat = Math.round(Math.max(...group.latencies));
+          mappedLatency.push({
+            time,
+            p50: avgLat,
+            p90: Math.round(avgLat * 1.1),
+            p99: maxLat,
+            slaLimit: 300,
+          });
+
+          // Host CPU & RAM
+          const avgCpu = Math.round(
+            group.cpus.reduce((a, b) => a + b, 0) / group.cpus.length
+          );
+          const avgMem = Math.round(
+            group.mems.reduce((a, b) => a + b, 0) / group.mems.length
+          );
+          mappedCpu.push({
+            time,
+            cpuPercent: avgCpu,
+            memoryPercent: avgMem,
+            coreLoad: Number(((avgCpu / 100) * 4).toFixed(1)),
+          });
+
+          // Error count
+          mappedErrors.push({
+            time,
+            errorRate:
+              group.total > 0
+                ? Number(((group.failure / group.total) * 100).toFixed(1))
+                : 0,
+            timeout: 0,
+            rateLimit: 0,
+            serverError: group.failure,
+            validationError: 0,
+          });
+        });
+
+        setRequestData(mappedReqs);
+        setLatencyData(mappedLatency);
+        setCpuData(mappedCpu);
+        setErrorData(mappedErrors);
+      } else {
+        // When database is empty
+        setRequestData([]);
+        setLatencyData([]);
+        setCpuData([]);
+        setErrorData([]);
+        setTraces([]);
       }
-    }, 2500);
+    } catch {
+      // Backend offline; keep previous state
+    }
+  }, []);
 
+  // Sync with ClickHouse on mount and when live is active
+  React.useEffect(() => {
+    fetchDatabaseTelemetry();
+
+    if (!isLive) return;
+    const interval = setInterval(fetchDatabaseTelemetry, 3000);
     return () => clearInterval(interval);
-  }, [isLive]);
+  }, [isLive, fetchDatabaseTelemetry]);
 
   const handleRefresh = React.useCallback(() => {
-    setRequestData(getRequestData(timeRange));
-    setLatencyData(getLatencyData(timeRange));
-    setCpuData(getCpuData(timeRange));
-    setErrorData(getErrorData(timeRange));
-  }, [timeRange]);
+    fetchDatabaseTelemetry();
+  }, [fetchDatabaseTelemetry]);
 
   return (
     <DashboardContext.Provider

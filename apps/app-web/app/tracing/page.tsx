@@ -61,7 +61,7 @@ export default function TracingPage() {
         extraControls={
           <span className="flex items-center gap-1.5 rounded-md border border-blue-900/60 bg-blue-950/40 px-2.5 py-1 text-[11px] font-mono font-semibold text-blue-300">
             <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
-            <span>OTLP/gRPC 4317</span>
+            
           </span>
         }
       />

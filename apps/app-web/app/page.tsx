@@ -6,6 +6,7 @@ import { Home } from "lucide-react";
 import { useDashboard } from "@/components/dashboard/dashboard-context";
 import { DashboardFilters } from "@/components/dashboard/dashboard-filters";
 import { HomeSection } from "@/components/dashboard/sections/home-section";
+import { DatabaseTelemetry } from "@/components/dashboard/database-telemetry";
 
 export default function HomePage() {
   const { selectedProject, setSelectedProject } = useDashboard();
@@ -34,8 +35,12 @@ export default function HomePage() {
         }
       />
 
-      <main className="flex-1 overflow-y-auto px-6 py-6 scroll-smooth">
+      <main className="flex-1 overflow-y-auto px-6 py-6 scroll-smooth space-y-10">
         <HomeSection projectName={selectedProject} />
+
+        <div className="border-t border-[#1e293b] pt-8">
+          <DatabaseTelemetry />
+        </div>
       </main>
     </>
   );

@@ -174,26 +174,7 @@ export function DashboardFilters({
 
         {/* Extra Right Controls */}
         <div className="flex items-center gap-2">
-          {extraControls}
-
-          {showLiveToggle && onToggleLive && (
-            <button
-              onClick={onToggleLive}
-              className={`flex h-7.5 items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium transition-colors ${
-                isLive
-                  ? "border-blue-800/80 bg-blue-950/40 text-blue-300"
-                  : "border-[#1e293b] bg-black text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              <span
-                className={`h-2 w-2 rounded-full ${
-                  isLive ? "bg-blue-400 animate-pulse" : "bg-slate-500"
-                }`}
-              />
-              <span>{isLive ? "Live Stream" : "Paused"}</span>
-            </button>
-          )}
-
+         
           {onRefresh && (
             <button
               onClick={onRefresh}

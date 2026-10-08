@@ -45,8 +45,12 @@ export function OverviewMetricsStrip({
   const totalRequests = totalSuccess + totalFailure;
 
   const successRate = totalRequests > 0
-    ? ((totalSuccess / totalRequests) * 100).toFixed(2)
-    : "99.28";
+    ? ((totalSuccess / totalRequests) * 100).toFixed(1)
+    : "100.0";
+
+  const errorRate = totalRequests > 0
+    ? ((totalFailure / totalRequests) * 100).toFixed(1)
+    : "0.0";
 
   const avgLatency = React.useMemo(
     () =>
@@ -57,23 +61,11 @@ export function OverviewMetricsStrip({
     [latencyData]
   );
 
-  const latestErrorRate =
-    errorData.length > 0 ? errorData[errorData.length - 1]?.errorRate : 0.72;
-
   const latestCpu =
-    cpuData.length > 0 ? cpuData[cpuData.length - 1]?.cpuPercent : 38;
+    cpuData.length > 0 ? cpuData[cpuData.length - 1]?.cpuPercent : 0;
 
-  const formattedRequests = React.useMemo(() => {
-    if (totalRequests >= 1000000) return `${(totalRequests / 1000000).toFixed(2)}M`;
-    if (totalRequests >= 1000) return `${(totalRequests / 1000).toFixed(1)}k`;
-    return totalRequests.toLocaleString();
-  }, [totalRequests]);
-
-  const formattedSuccess = React.useMemo(() => {
-    if (totalSuccess >= 1000000) return `${(totalSuccess / 1000000).toFixed(2)}M`;
-    if (totalSuccess >= 1000) return `${(totalSuccess / 1000).toFixed(1)}k`;
-    return totalSuccess.toLocaleString();
-  }, [totalSuccess]);
+  const latestMem =
+    cpuData.length > 0 ? cpuData[cpuData.length - 1]?.memoryPercent : 0;
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -87,10 +79,10 @@ export function OverviewMetricsStrip({
           <Activity className="h-4 w-4 text-blue-400" />
         </div>
         <div className="mt-2 text-2xl font-bold text-white font-mono">
-          {formattedRequests}
+          {totalRequests}
         </div>
         <div className="mt-1 text-[11px] text-slate-400 truncate">
-          Peak: 1,420 req/s • +14.2% trend
+          Recorded in ClickHouse
         </div>
       </Card>
 
@@ -101,13 +93,13 @@ export function OverviewMetricsStrip({
       >
         <div className="flex items-center justify-between">
           <span className="text-xs font-medium text-slate-400 group-hover:text-blue-300 transition-colors">Success Rate</span>
-          <CheckCircle2 className="h-4 w-4 text-blue-400" />
+          <CheckCircle2 className="h-4 w-4 text-emerald-400" />
         </div>
-        <div className="mt-2 text-2xl font-bold text-blue-400 font-mono">
+        <div className="mt-2 text-2xl font-bold text-emerald-400 font-mono">
           {successRate}%
         </div>
         <div className="mt-1 text-[11px] text-slate-400 truncate">
-          {formattedSuccess} successful runs
+          {totalSuccess} successful runs
         </div>
       </Card>
 
@@ -121,10 +113,10 @@ export function OverviewMetricsStrip({
           <AlertTriangle className="h-4 w-4 text-blue-400" />
         </div>
         <div className="mt-2 text-2xl font-bold text-white font-mono">
-          {latestErrorRate}%
+          {errorRate}%
         </div>
         <div className="mt-1 text-[11px] text-slate-400 truncate">
-          {totalFailure.toLocaleString()} faults • &lt;1.0% SLO
+          {totalFailure} faults recorded
         </div>
       </Card>
 
@@ -141,7 +133,7 @@ export function OverviewMetricsStrip({
           {avgLatency} <span className="text-base font-sans font-normal text-blue-300">ms</span>
         </div>
         <div className="mt-1 text-[11px] text-slate-400 truncate">
-          P50: {avgLatency}ms • SLA &lt;300ms
+          P50: {avgLatency}ms from database
         </div>
       </Card>
 
@@ -151,14 +143,14 @@ export function OverviewMetricsStrip({
         className="rounded-xl border border-[#1e293b] bg-black p-4 shadow-lg hover:border-blue-500/60 transition-all cursor-pointer group"
       >
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-slate-400 group-hover:text-blue-300 transition-colors">CPU Utilization</span>
+          <span className="text-xs font-medium text-slate-400 group-hover:text-blue-300 transition-colors">CPU / RAM Usage</span>
           <Cpu className="h-4 w-4 text-blue-400" />
         </div>
-        <div className="mt-2 text-2xl font-bold text-white font-mono">
-          {latestCpu}%
+        <div className="mt-2 text-2xl font-bold text-amber-400 font-mono">
+          {latestCpu}% / {latestMem}%
         </div>
         <div className="mt-1 text-[11px] text-slate-400 truncate">
-          16 Cores • Load: 6.0 (healthy)
+          Host agent resource footprint
         </div>
       </Card>
     </div>
