@@ -17,8 +17,8 @@ import {
   AlertOctagon,
   CheckCircle2,
 } from "lucide-react";
-import { useDashboard } from "@/components/dashboard/dashboard-context";
-import { DashboardFilters } from "@/components/dashboard/dashboard-filters";
+import { useDashboard } from "@/components/dashboard/context/dashboard-context";
+import { DashboardFilters, SubTabItem } from "@/components/dashboard/layout/filters";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   ChartContainer,
@@ -67,7 +67,6 @@ const LLM_RATE_LIMITS = [
   { time: "22:00", rateLimits: 1, retries: 3 },
 ];
 
-import { SubTabItem } from "@/components/dashboard/dashboard-filters";
 
 const LLM_TABS: SubTabItem[] = [
   { id: "section-tokens", label: "Token Throughput", targetId: "section-tokens" },
@@ -86,6 +85,7 @@ export default function LLMMonitoringPage() {
     isLive,
     setIsLive,
     handleRefresh,
+    isRefreshing,
   } = useDashboard();
 
   const [activeSubTab, setActiveSubTab] = React.useState("section-tokens");
@@ -113,6 +113,7 @@ export default function LLMMonitoringPage() {
         isLive={isLive}
         onToggleLive={() => setIsLive(!isLive)}
         onRefresh={handleRefresh}
+        isRefreshing={isRefreshing}
         routeCategory="Observability"
         routeTitle="LLM Monitoring"
         routeIcon={Bot}

@@ -8,24 +8,12 @@ import {
   Bot,
   Boxes,
   ChevronDown,
-  Compass,
-  Cpu,
-  Database,
-  FileCode,
-  FolderGit2,
   Gauge,
   Home,
-  Layers,
   PanelLeftClose,
   PanelLeftOpen,
-  PlaySquare,
   Search,
-  Server,
   Settings,
-  Sparkles,
-  Terminal,
-  Workflow,
-  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -74,7 +62,7 @@ export function DashboardSidebar({
         { label: "LLM Monitoring", href: "/llm-monitoring", icon: Bot },
         { label: "Tracing", href: "/tracing", icon: Activity, badge: "1" },
       ],
-    }
+    },
   ];
 
   return (
@@ -161,7 +149,7 @@ export function DashboardSidebar({
               const Icon = item.icon;
               const isActive =
                 activeNav === item.label ||
-                (item.href === "/" && (pathname === "/" || pathname === "/home")) ||
+                (item.href === "/" && pathname === "/") ||
                 (item.href !== "/" && (pathname === item.href || pathname?.startsWith(item.href + "/")));
 
               return (
@@ -231,7 +219,7 @@ export function DashboardSidebar({
         </button>
 
         {!collapsed && (
-          <div className="flex items-center gap-2.5 px-2 py-1.5 border-t border-[#1e293b]/70 pt-2">
+          <div className="flex items-center gap-2.5 px-2.5 py-1.5 border-t border-[#1e293b]/70 pt-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-950 border border-blue-700/60 text-blue-300 font-bold text-xs">
               DL
             </div>

@@ -8,7 +8,8 @@ import psutil
 
 
 class AgentMonitor:
-    def __init__(self, backend_url: str = None):
+    def __init__(self, agent_name: str = "assistant", backend_url: str = None):
+        self.agent_name = agent_name
         # Backend endpoint to receive metrics
         self.backend_url = backend_url or os.getenv(
             "TELEMETRY_BACKEND_URL", "http://127.0.0.1:8080/api/metrics"
@@ -17,10 +18,22 @@ class AgentMonitor:
         self.success = 0
         self.errors = 0
 
+        # Measure THIS process only (not the whole machine)
+        self._proc = psutil.Process()
+        # Keep references to background tasks so they aren't garbage-collected
+        self._tasks = set()
+
+    def _cpu_seconds(self) -> float:
+        t = self._proc.cpu_times()
+        return t.user + t.system
+
+    def _mem_mb(self) -> float:
+        return self._proc.memory_info().rss / 1e6
+
     def track(self):
         """
         Decorator to track agent execution:
-        Measures execution time, CPU, and memory, then sends data to the backend.
+        Measures response time, CPU time, and memory, then sends data to the backend.
         """
         def decorator(func):
             @wraps(func)
@@ -28,10 +41,10 @@ class AgentMonitor:
                 # 1. Increment total requests
                 self.requests += 1
 
-                # 2. Record start time & initial system resources
+                # 2. Record start time & initial process resources
                 start_time = time.perf_counter()
-                cpu_before = psutil.cpu_percent()
-                mem_before = psutil.virtual_memory().percent
+                cpu_before = self._cpu_seconds()
+                mem_before = self._mem_mb()
 
                 status = "success"
                 try:
@@ -39,40 +52,45 @@ class AgentMonitor:
                     result = await func(*args, **kwargs)
                     self.success += 1
                     return result
+                except asyncio.CancelledError:
+                    # CancelledError is not an Exception subclass, so handle it
+                    # separately or it would be reported as "success"
+                    status = "cancelled"
+                    raise
                 except Exception:
                     self.errors += 1
                     status = "error"
                     raise
                 finally:
-                    # 4. Record end time & final system resources
-                    latency_ms = (time.perf_counter() - start_time) * 1000
-                    cpu_after = psutil.cpu_percent()
-                    mem_after = psutil.virtual_memory().percent
+                    # 4. Record end time & final process resources
+                    response_time_ms = (time.perf_counter() - start_time) * 1000
+                    cpu_ms = (self._cpu_seconds() - cpu_before) * 1000
+                    mem_after = self._mem_mb()
 
                     # 5. Print formatted CLI stats
-                    self.print_metrics(latency_ms, cpu_before, cpu_after, mem_before, mem_after)
+                    self.print_metrics(response_time_ms, cpu_ms, mem_before, mem_after)
 
-                    # 6. Send telemetry to backend asynchronously in the background
-                    asyncio.create_task(
+                    # 6. Send telemetry to backend in the background
+                    task = asyncio.create_task(
                         self.send_to_backend(
-                            latency_ms=latency_ms,
-                            cpu_before=cpu_before,
-                            cpu_after=cpu_after,
+                            response_time_ms=response_time_ms,
+                            cpu_ms=cpu_ms,
                             mem_before=mem_before,
                             mem_after=mem_after,
                             status=status,
                             func_name=func.__name__,
                         )
                     )
+                    self._tasks.add(task)
+                    task.add_done_callback(self._tasks.discard)
 
             return wrapper
         return decorator
 
     async def send_to_backend(
         self,
-        latency_ms: float,
-        cpu_before: float,
-        cpu_after: float,
+        response_time_ms: float,
+        cpu_ms: float,
         mem_before: float,
         mem_after: float,
         status: str,
@@ -80,14 +98,13 @@ class AgentMonitor:
     ):
         """Sends the metric record to the FastAPI backend."""
         payload = {
-            "agent_name": "assistant",
+            "agent_name": self.agent_name,
             "func_name": func_name,
             "status": status,
-            "latency_ms": round(latency_ms, 2),
-            "cpu_before": round(cpu_before, 2),
-            "cpu_after": round(cpu_after, 2),
-            "memory_before": round(mem_before, 2),
-            "memory_after": round(mem_after, 2),
+            "response_time_ms": round(response_time_ms, 2),
+            "cpu_ms": round(cpu_ms, 2),
+            "memory_before_mb": round(mem_before, 2),
+            "memory_after_mb": round(mem_after, 2),
             "request_count": self.requests,
             "success_count": self.success,
             "error_count": self.errors,
@@ -102,9 +119,8 @@ class AgentMonitor:
 
     def print_metrics(
         self,
-        latency: float,
-        cpu_before: float,
-        cpu_after: float,
+        response_time: float,
+        cpu_ms: float,
         mem_before: float,
         mem_after: float,
     ):
@@ -118,9 +134,8 @@ class AgentMonitor:
         print(f"Errors        : {self.errors}")
         print(f"Success Rate  : {success_rate:.2f}%")
         print(f"Failure Rate  : {failure_rate:.2f}%")
-        print(f"Latency       : {latency:.2f} ms")
-        print(f"CPU Before    : {cpu_before}%")
-        print(f"CPU After     : {cpu_after}%")
-        print(f"Memory Before : {mem_before}%")
-        print(f"Memory After  : {mem_after}%")
+        print(f"Response Time : {response_time:.2f} ms")
+        print(f"CPU Time      : {cpu_ms:.2f} ms")
+        print(f"Memory Before : {mem_before:.2f} MB")
+        print(f"Memory After  : {mem_after:.2f} MB")
         print("=================================\n")

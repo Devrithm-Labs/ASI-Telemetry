@@ -13,7 +13,7 @@ import {
   XCircle,
   Zap,
 } from "lucide-react";
-import { TraceRecord } from "./dashboard-types";
+import { TraceRecord } from "./context/dashboard-types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 

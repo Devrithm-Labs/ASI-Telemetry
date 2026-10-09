@@ -1,12 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { DashboardSidebar } from "./dashboard-sidebar";
-import { DashboardHeader } from "./dashboard-header";
-import { TraceModal } from "./trace-modal";
-import { AlertModal } from "./alert-modal";
-import { NewDashboardModal } from "./new-dashboard-modal";
-import { DashboardProvider, useDashboard } from "./dashboard-context";
+import { DashboardSidebar } from "./sidebar";
+import { DashboardHeader } from "./header";
+import { TraceModal } from "../modals/trace-modal";
+import { AlertModal } from "../modals/alert-modal";
+import { NewDashboardModal } from "../modals/new-dashboard-modal";
+import { DashboardProvider, useDashboard } from "../context/dashboard-context";
 
 function DashboardShellInner({ children }: { children: React.ReactNode }) {
   const {

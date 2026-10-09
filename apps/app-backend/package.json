@@ -1,0 +1,11 @@
+{
+  "name": "app-backend",
+  "version": "1.0.0",
+  "description": "A simple, easy-to-understand backend for ingesting AI Agent SDK telemetry metrics and storing them in **ClickHouse** with timestamps.",
+  "license": "MIT",
+  "author": "Ujjwal Katiyar",
+  "main": "run.py",
+  "scripts": {
+    "dev": "python run.py --local"
+  }
+}

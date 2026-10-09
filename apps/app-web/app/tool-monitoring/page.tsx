@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { Gauge, LayoutDashboard, Bell } from "lucide-react";
-import { useDashboard } from "@/components/dashboard/dashboard-context";
-import { DashboardFilters, SubTabItem } from "@/components/dashboard/dashboard-filters";
+import { useDashboard } from "@/components/dashboard/context/dashboard-context";
+import { DashboardFilters, SubTabItem } from "@/components/dashboard/layout/filters";
 import { OverviewMetricsStrip } from "@/components/dashboard/overview-metrics-strip";
 import { LatencySection } from "@/components/dashboard/sections/latency-section";
 import { RequestSection } from "@/components/dashboard/sections/request-section";
@@ -31,6 +31,7 @@ export default function ToolMonitoringPage() {
     cpuData,
     errorData,
     handleRefresh,
+    isRefreshing,
     setIsDashboardModalOpen,
     setIsAlertModalOpen,
   } = useDashboard();
@@ -85,6 +86,7 @@ export default function ToolMonitoringPage() {
         isLive={isLive}
         onToggleLive={() => setIsLive(!isLive)}
         onRefresh={handleRefresh}
+        isRefreshing={isRefreshing}
         routeCategory="Observability"
         routeTitle="Tool Monitoring"
         routeIcon={Gauge}

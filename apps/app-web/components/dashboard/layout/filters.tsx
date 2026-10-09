@@ -6,11 +6,9 @@ import {
   ChevronDown,
   Layers,
   Monitor,
-  Pause,
-  Play,
   RefreshCw,
 } from "lucide-react";
-import { TimeRange } from "./dashboard-types";
+import { TimeRange } from "../context/dashboard-types";
 
 export interface SubTabItem {
   id: string;
@@ -30,6 +28,7 @@ interface DashboardFiltersProps {
   isLive?: boolean;
   onToggleLive?: () => void;
   onRefresh?: () => void;
+  isRefreshing?: boolean;
   routeCategory?: string;
   routeTitle?: string;
   routeIcon?: React.ComponentType<{ className?: string }>;
@@ -50,6 +49,7 @@ export function DashboardFilters({
   isLive,
   onToggleLive,
   onRefresh,
+  isRefreshing,
   routeCategory = "Observability",
   routeTitle = "Monitoring",
   routeIcon: RouteIcon = Monitor,
@@ -174,14 +174,16 @@ export function DashboardFilters({
 
         {/* Extra Right Controls */}
         <div className="flex items-center gap-2">
-         
+          {extraControls}
           {onRefresh && (
             <button
               onClick={onRefresh}
-              className="flex h-7.5 w-7.5 items-center justify-center rounded-md border border-[#1e293b] bg-black text-slate-400 hover:text-white hover:border-blue-500/60 transition-colors"
-              title="Refresh Telemetry"
+              disabled={isRefreshing}
+              className="flex h-7.5 items-center gap-1.5 rounded-md border border-[#1e293b] bg-black px-2.5 text-xs font-medium text-slate-300 hover:text-white hover:border-blue-500/60 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Refresh Telemetry Data"
             >
-              <RefreshCw className="h-3.5 w-3.5" />
+              <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin text-blue-400" : "text-slate-400"}`} />
+              <span className="hidden sm:inline">{isRefreshing ? "Refreshing..." : "Refresh"}</span>
             </button>
           )}
         </div>

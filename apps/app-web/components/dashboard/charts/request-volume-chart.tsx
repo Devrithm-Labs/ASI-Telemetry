@@ -21,7 +21,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { RequestMetricPoint } from "../dashboard-types";
+import { RequestMetricPoint } from "../context/dashboard-types";
 import { Activity, ArrowUpRight } from "lucide-react";
 
 interface RequestVolumeChartProps {
