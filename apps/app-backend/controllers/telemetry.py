@@ -1,9 +1,10 @@
+from typing import Optional
 from database import db
 from schemas.telemetry import MetricPayload
 
 
 class TelemetryController:
-    """Controller handling business logic for telemetry data"""
+    """Controller handling business logic and pre-aggregations for telemetry data."""
 
     @staticmethod
     def ingest_metric(payload: MetricPayload):
@@ -15,19 +16,27 @@ class TelemetryController:
             "data": record,
         }
 
-    @staticmethod
-    def get_history(limit: int = 50):
-        """Returns recent telemetry records."""
-        records = db.get_all_metrics(limit=limit)
-        return {
-            "count": len(records),
-            "data": records,
-        }
 
     @staticmethod
-    def get_summary():
-        """Returns aggregated telemetry KPIs."""
-        return db.get_summary()
+    def get_dashboard_payload(
+        time_range: str = "7d",
+        limit: int = 500,
+        agent_name: Optional[str] = None,
+        func_name: Optional[str] = None,
+    ):
+        """
+        Unified endpoint that retrieves all dashboard data from ClickHouse in a single query
+        filtered by date range (1h, 24h, 7d, 30d) and performs calculations.
+        """
+        
+        data = db.get_dashboard_data(
+            time_range=time_range,
+            limit=limit,
+            agent_name=agent_name,
+            func_name=func_name,
+        )
+        
+        return data
 
     @staticmethod
     def get_health():

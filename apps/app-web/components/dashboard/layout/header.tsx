@@ -36,7 +36,7 @@ export function DashboardHeader({
           </span>
         )}
 
-        {/* Live toggle */}
+        {/* Live / Static indicator */}
         <button
           onClick={() => setIsLive(!isLive)}
           className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
@@ -44,10 +44,10 @@ export function DashboardHeader({
               ? "border-emerald-500/30 bg-emerald-950/20 text-emerald-400 hover:bg-emerald-950/40"
               : "border-slate-800 bg-[#0a0a0a] text-slate-400 hover:text-slate-300"
           }`}
-          title={isLive ? "Live polling active (every 3s) — click to pause" : "Polling paused — click to resume"}
+          title={isLive ? "Live mode active" : "Static mode (manual refresh only)"}
         >
           <span className={`h-2 w-2 rounded-full ${isLive ? "bg-emerald-400 animate-pulse" : "bg-slate-500"}`} />
-          <span>{isLive ? "Live" : "Paused"}</span>
+          <span>{isLive ? "Live" : "Static"}</span>
         </button>
 
         {/* Manual Refresh Button */}

@@ -12,7 +12,7 @@ import { CpuSection } from "@/components/dashboard/sections/cpu-section";
 
 const TOOL_MONITORING_TABS: SubTabItem[] = [
   { id: "Request", label: "Request", targetId: "section-request" },
-  { id: "Latency", label: "Latency", targetId: "section-latency" },
+  { id: "Latency", label: "Response Time", targetId: "section-latency" },
   { id: "Error", label: "Error", targetId: "section-error" },
   { id: "CPU", label: "CPU", targetId: "section-cpu" },
 ];
@@ -21,11 +21,15 @@ export default function ToolMonitoringPage() {
   const {
     selectedProject,
     setSelectedProject,
+    selectedFunction,
+    setSelectedFunction,
+    applications,
     timeRange,
     setTimeRange,
     activeHeaderTab,
     isLive,
     setIsLive,
+    summary,
     requestData,
     latencyData,
     cpuData,
@@ -78,6 +82,9 @@ export default function ToolMonitoringPage() {
       <DashboardFilters
         selectedProject={selectedProject}
         onProjectChange={setSelectedProject}
+        selectedFunction={selectedFunction}
+        onFunctionChange={setSelectedFunction}
+        applications={applications}
         timeRange={timeRange}
         onTimeRangeChange={setTimeRange}
         subTabs={TOOL_MONITORING_TABS}
@@ -99,18 +106,47 @@ export default function ToolMonitoringPage() {
       <main className="flex-1 overflow-y-auto px-6 py-5 space-y-6 scroll-smooth">
         {activeHeaderTab === "Monitoring" ? (
           <div className="space-y-6">
+            {/* Dashboard Title & Overview Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-[#1e293b]/70 pb-4">
+              <div>
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <h1 className="text-xl font-bold tracking-tight text-white">
+                    Agent Tool Monitoring Dashboard
+                  </h1>
+                  <span className="rounded-md border border-blue-500/30 bg-blue-950/40 px-2.5 py-0.5 text-xs font-mono font-medium text-blue-300">
+                    Agent: {selectedProject}
+                  </span>
+                  <span className="rounded-md border border-emerald-500/30 bg-emerald-950/40 px-2.5 py-0.5 text-xs font-mono font-medium text-emerald-300">
+                    fn: {selectedFunction === "all" ? "All Functions" : selectedFunction}
+                  </span>
+                </div>
+                <p className="mt-1.5 text-xs text-slate-400">
+                  Live ClickHouse telemetry observability for distributed agent executions, response times, host resource pressure, and trace spans.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-950/30 px-2.5 py-1 text-[11px] font-medium text-emerald-400">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>ClickHouse Connected</span>
+                </span>
+              </div>
+            </div>
+
             {/* Top Overview KPI Metric Cards */}
             <OverviewMetricsStrip
+              summary={summary}
               requestData={requestData}
               latencyData={latencyData}
               errorData={errorData}
               cpuData={cpuData}
               timeRange={timeRange}
               onCardClick={(tab) => {
-                setActiveSubTab(tab);
+                setActiveSubTab(tab === "Response Time" ? "Latency" : tab);
                 const map: Record<string, string> = {
                   Request: "section-request",
                   Latency: "section-latency",
+                  "Response Time": "section-latency",
                   Error: "section-error",
                   CPU: "section-cpu",
                 };

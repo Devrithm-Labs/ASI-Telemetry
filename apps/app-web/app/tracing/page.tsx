@@ -10,6 +10,9 @@ export default function TracingPage() {
   const {
     selectedProject,
     setSelectedProject,
+    selectedFunction,
+    setSelectedFunction,
+    applications,
     timeRange,
     setTimeRange,
     isLive,
@@ -45,6 +48,9 @@ export default function TracingPage() {
       <DashboardFilters
         selectedProject={selectedProject}
         onProjectChange={setSelectedProject}
+        selectedFunction={selectedFunction}
+        onFunctionChange={setSelectedFunction}
+        applications={applications}
         timeRange={timeRange}
         onTimeRangeChange={setTimeRange}
         subTabs={TRACE_TABS}
@@ -60,15 +66,29 @@ export default function TracingPage() {
         showLiveToggle={true}
         showTimeRange={true}
         showProjectSelector={true}
-        extraControls={
-          <span className="flex items-center gap-1.5 rounded-md border border-blue-900/60 bg-blue-950/40 px-2.5 py-1 text-[11px] font-mono font-semibold text-blue-300">
-            <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
-            
-          </span>
-        }
       />
 
       <main className="flex-1 overflow-y-auto px-6 py-5 space-y-6 scroll-smooth">
+        {/* Dashboard Title & Overview Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-[#1e293b]/70 pb-4">
+          <div>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h1 className="text-xl font-bold tracking-tight text-white">
+                Live Trace Spans Stream
+              </h1>
+              <span className="rounded-md border border-blue-500/30 bg-blue-950/40 px-2.5 py-0.5 text-xs font-mono font-medium text-blue-300">
+                Agent: {selectedProject}
+              </span>
+              <span className="rounded-md border border-emerald-500/30 bg-emerald-950/40 px-2.5 py-0.5 text-xs font-mono font-medium text-emerald-300">
+                fn: {selectedFunction === "all" ? "All Functions" : selectedFunction}
+              </span>
+            </div>
+            <p className="mt-1.5 text-xs text-slate-400">
+              Detailed waterfall traces, span execution latency, and error diagnostics recorded in ClickHouse.
+            </p>
+          </div>
+        </div>
+
         <TracingSection
           traces={filteredTraces}
           onSelectTrace={(trace) => setSelectedTrace(trace)}

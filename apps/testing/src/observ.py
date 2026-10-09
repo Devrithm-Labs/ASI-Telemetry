@@ -3,6 +3,7 @@ import os
 import time
 from datetime import datetime, timezone
 from functools import wraps
+from typing import Any, Optional
 import httpx
 import psutil
 
@@ -30,11 +31,23 @@ class AgentMonitor:
     def _mem_mb(self) -> float:
         return self._proc.memory_info().rss / 1e6
 
-    def track(self):
+    def track(self, agentname: Any = None, agent_name: Optional[str] = None):
         """
         Decorator to track agent execution:
         Measures response time, CPU time, and memory, then sends data to the backend.
+        Supports:
+          @monitor.track(agentname="wheater")
+          @monitor.track("wheater")
+          @monitor.track()
+          @monitor.track
         """
+        actual_func = None
+        if callable(agentname):
+            actual_func = agentname
+            target_agent = self.agent_name
+        else:
+            target_agent = agentname or agent_name or self.agent_name
+
         def decorator(func):
             @wraps(func)
             async def wrapper(*args, **kwargs):
@@ -73,6 +86,7 @@ class AgentMonitor:
                     # 6. Send telemetry to backend in the background
                     task = asyncio.create_task(
                         self.send_to_backend(
+                            agent_name=target_agent,
                             response_time_ms=response_time_ms,
                             cpu_ms=cpu_ms,
                             mem_before=mem_before,
@@ -85,6 +99,9 @@ class AgentMonitor:
                     task.add_done_callback(self._tasks.discard)
 
             return wrapper
+
+        if actual_func is not None:
+            return decorator(actual_func)
         return decorator
 
     async def send_to_backend(
@@ -95,19 +112,19 @@ class AgentMonitor:
         mem_after: float,
         status: str,
         func_name: str,
+        agent_name: Optional[str] = None,
     ):
         """Sends the metric record to the FastAPI backend."""
         payload = {
-            "agent_name": self.agent_name,
+            "agent_name": agent_name or self.agent_name,
             "func_name": func_name,
             "status": status,
             "response_time_ms": round(response_time_ms, 2),
+            "latency_ms": round(response_time_ms, 2),
             "cpu_ms": round(cpu_ms, 2),
+            "cpu_after": round(cpu_ms, 2),
             "memory_before_mb": round(mem_before, 2),
             "memory_after_mb": round(mem_after, 2),
-            "request_count": self.requests,
-            "success_count": self.success,
-            "error_count": self.errors,
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         try:

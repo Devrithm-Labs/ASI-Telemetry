@@ -8,13 +8,24 @@ import { DashboardFilters } from "@/components/dashboard/layout/filters";
 import { HomeSection } from "@/components/dashboard/sections/home-section";
 
 export default function HomePage() {
-  const { selectedProject, setSelectedProject, handleRefresh, isRefreshing } = useDashboard();
+  const {
+    selectedProject,
+    setSelectedProject,
+    selectedFunction,
+    setSelectedFunction,
+    applications,
+    handleRefresh,
+    isRefreshing,
+  } = useDashboard();
 
   return (
     <>
       <DashboardFilters
         selectedProject={selectedProject}
         onProjectChange={setSelectedProject}
+        selectedFunction={selectedFunction}
+        onFunctionChange={setSelectedFunction}
+        applications={applications}
         onRefresh={handleRefresh}
         isRefreshing={isRefreshing}
         routeCategory="Application"

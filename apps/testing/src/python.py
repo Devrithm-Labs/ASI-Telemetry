@@ -31,7 +31,7 @@ async def startup(ctx: Context):
     ctx.logger.info("waiting for message")
 
 @agent.on_message(model=Greeting)
-@monitor.track()
+@monitor.track(agentname="wheater")
 async def handle_message(ctx: Context, sender: str, msg: Greeting):
     print(f"Received: {msg.text}")
 

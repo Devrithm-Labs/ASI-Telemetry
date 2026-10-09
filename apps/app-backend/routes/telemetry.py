@@ -12,16 +12,20 @@ def ingest_metrics(payload: MetricPayload):
     return TelemetryController.ingest_metric(payload)
 
 
-@router.get("/metrics")
-def get_metrics(limit: int = 50):
-    """Returns recent telemetry events from ClickHouse."""
-    return TelemetryController.get_history(limit=limit)
-
-
-@router.get("/metrics/summary")
-def get_metrics_summary():
-    """Returns summarized KPIs (total requests, success, latency, resources)."""
-    return TelemetryController.get_summary()
+@router.get("/dashboard")
+def get_dashboard_data(
+    time_range: str = "7d",
+    limit: int = 500,
+    agent_name: str = None,
+    func_name: str = None,
+):
+    """Unified endpoint returning pre-calculated summary KPIs, time-series, traces, and application metadata."""
+    return TelemetryController.get_dashboard_payload(
+        time_range=time_range,
+        limit=limit,
+        agent_name=agent_name,
+        func_name=func_name,
+    )
 
 
 @router.get("/health")

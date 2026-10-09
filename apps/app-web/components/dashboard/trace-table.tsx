@@ -96,7 +96,7 @@ export function TraceTable({ traces, onSelectTrace }: TraceTableProps) {
                 <th className="py-3 px-4 font-semibold">Operation / Span</th>
                 <th className="py-3 px-4 font-semibold">Service</th>
                 <th className="py-3 px-4 font-semibold">Status</th>
-                <th className="py-3 px-4 font-semibold">Latency</th>
+                <th className="py-3 px-4 font-semibold">Response Time</th>
                 <th className="py-3 px-4 font-semibold">CPU %</th>
                 <th className="py-3 px-4 font-semibold">Model / Provider</th>
                 <th className="py-3 px-4 font-semibold">Timestamp</th>

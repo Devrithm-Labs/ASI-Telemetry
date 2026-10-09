@@ -22,7 +22,7 @@ export function TraceModal({ trace, open, onClose }: TraceModalProps) {
 
   if (!open || !trace) return null;
 
-  const totalDuration = trace.spans.reduce((acc, s) => acc + s.durationMs, 0) || trace.latencyMs;
+  const totalDuration = trace.spans.reduce((acc, s) => acc + s.durationMs, 0) || trace.responseTimeMs || trace.latencyMs;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4">
@@ -65,9 +65,9 @@ export function TraceModal({ trace, open, onClose }: TraceModalProps) {
         {/* Metric Badges Banner */}
         <div className="grid grid-cols-4 border-b border-[#1e293b] bg-black px-6 py-3 text-xs">
           <div>
-            <span className="text-slate-400">Duration:</span>
+            <span className="text-slate-400">Response Time:</span>
             <div className="font-mono font-semibold text-slate-200 mt-0.5">
-              {trace.latencyMs} ms
+              {trace.responseTimeMs || trace.latencyMs} ms
             </div>
           </div>
           <div>

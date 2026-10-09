@@ -33,7 +33,7 @@ const chartConfig = {
     color: "#3b82f6",
   },
   p99: {
-    label: "P99 Tail Latency",
+    label: "P99 Tail Response Time",
     color: "#93c5fd",
   },
 } satisfies ChartConfig;
@@ -64,7 +64,7 @@ export function LatencySection({ data }: LatencySectionProps) {
                   <Clock className="h-4 w-4" />
                 </div>
                 <span className="text-xs font-semibold uppercase tracking-wider text-slate-300">
-                  Latency
+                  Response Time
                 </span>
               </div>
             </div>
@@ -76,12 +76,12 @@ export function LatencySection({ data }: LatencySectionProps) {
               </div>
               <div className="mt-1 flex items-center gap-1.5 text-xs text-blue-400">
                 <TrendingDown className="h-3.5 w-3.5" />
-                <span>P50 execution time from ClickHouse</span>
+                <span>P50 response time from ClickHouse</span>
               </div>
             </div>
 
             <p className="mt-3 text-xs text-slate-400 leading-relaxed">
-              Execution latency percentiles across distributed agent tool calls and LLM inference spans.
+              Execution response time percentiles across distributed agent tool calls and LLM inference spans.
             </p>
           </div>
 

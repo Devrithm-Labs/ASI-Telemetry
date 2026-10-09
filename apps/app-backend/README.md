@@ -46,9 +46,6 @@ CREATE TABLE IF NOT EXISTS telemetry_metrics (
     cpu_after Float64,
     memory_before Float64,
     memory_after Float64,
-    request_count UInt64,
-    success_count UInt64,
-    error_count UInt64,
     metadata String
 ) ENGINE = MergeTree()
 ORDER BY (timestamp, agent_name);
@@ -107,8 +104,7 @@ uvicorn main:app --host 0.0.0.0 --port 8080 --reload
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `POST` | `/api/metrics` | Ingests telemetry data from SDK and inserts into ClickHouse |
-| `GET` | `/api/metrics` | Gets recent telemetry records |
-| `GET` | `/api/metrics/summary` | Gets aggregated KPIs (total requests, success, latency, cpu) |
+| `POST` | `/api/metrics` | Ingests telemetry metrics from SDK and inserts into ClickHouse |
+| `GET` | `/api/dashboard` | Unified endpoint returning summary KPIs, time-series, traces, & apps |
 | `GET` | `/api/health` | Health check & ClickHouse connection status |
 | `GET` | `/docs` | Interactive Swagger API documentation |

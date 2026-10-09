@@ -61,11 +61,11 @@ export function LatencyChart({ data }: LatencyChartProps) {
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-blue-400" />
             <CardTitle className="text-base font-semibold text-slate-100">
-              Trace Latency Percentiles
+              Response Time Percentiles
             </CardTitle>
           </div>
           <CardDescription className="text-xs text-slate-400 mt-0.5">
-            P50, P90 and P99 latency percentiles over time (ms)
+            P50, P90, and P99 response time percentiles over time (ms)
           </CardDescription>
         </div>
         <div className="flex items-center gap-3">

@@ -4,11 +4,12 @@ import * as React from "react";
 import {
   Calendar,
   ChevronDown,
+  Code,
   Layers,
   Monitor,
   RefreshCw,
 } from "lucide-react";
-import { TimeRange } from "../context/dashboard-types";
+import { TimeRange, ApplicationMetadata } from "../context/dashboard-types";
 
 export interface SubTabItem {
   id: string;
@@ -20,6 +21,9 @@ export interface SubTabItem {
 interface DashboardFiltersProps {
   selectedProject?: string;
   onProjectChange?: (proj: string) => void;
+  selectedFunction?: string;
+  onFunctionChange?: (fn: string) => void;
+  applications?: ApplicationMetadata[];
   timeRange?: TimeRange;
   onTimeRangeChange?: (range: TimeRange) => void;
   subTabs?: SubTabItem[];
@@ -39,8 +43,11 @@ interface DashboardFiltersProps {
 }
 
 export function DashboardFilters({
-  selectedProject = "devrithm",
+  selectedProject = "assistant",
   onProjectChange,
+  selectedFunction = "all",
+  onFunctionChange,
+  applications,
   timeRange = "7d",
   onTimeRangeChange,
   subTabs,
@@ -59,15 +66,22 @@ export function DashboardFilters({
   showLiveToggle = false,
 }: DashboardFiltersProps) {
   const [isProjectOpen, setIsProjectOpen] = React.useState(false);
+  const [isFuncOpen, setIsFuncOpen] = React.useState(false);
   const [isTimeOpen, setIsTimeOpen] = React.useState(false);
 
-  const projects = [
-    "devrithm",
-    "agent-runtime-core",
-    "asi-llm-gateway",
-    "vector-search-svc",
-    "all-applications",
+  // Available applications with respective functions
+  const defaultApps: ApplicationMetadata[] = [
+    { agent_name: "assistant", functions: ["handle_message", "test_fn"] },
+    { agent_name: "test-agent", functions: ["handle_query"] },
+    { agent_name: "cloud_test", functions: ["handle_message"] },
+    { agent_name: "agent_test", functions: ["f1"] },
   ];
+
+  const appList = applications && applications.length > 0 ? applications : defaultApps;
+
+  // Find functions belonging to current project
+  const currentApp = appList.find((a) => a.agent_name === selectedProject);
+  const availableFuncs = currentApp?.functions || [];
 
   const timeRangeLabels: Record<TimeRange, string> = {
     "1h": "Last 1 hour",
@@ -89,15 +103,17 @@ export function DashboardFilters({
             <span className="text-blue-300 font-semibold">{routeTitle}</span>
           </div>
 
-          {/* Project Selector Dropdown */}
+          {/* Project & Respective Function Selector Dropdown */}
           {showProjectSelector && onProjectChange && (
             <div className="relative">
               <button
                 onClick={() => {
                   setIsProjectOpen(!isProjectOpen);
+                  setIsFuncOpen(false);
                   setIsTimeOpen(false);
                 }}
                 className="flex h-7.5 items-center gap-1.5 rounded-md border border-[#1e293b] bg-black px-2.5 text-xs font-semibold text-slate-200 hover:border-blue-500/60 hover:text-white transition-colors"
+                title="Select Agent Application"
               >
                 <Layers className="h-3.5 w-3.5 text-blue-400" />
                 <span>{selectedProject}</span>
@@ -105,24 +121,122 @@ export function DashboardFilters({
               </button>
 
               {isProjectOpen && (
-                <div className="absolute left-0 top-9 z-50 w-48 rounded-md border border-[#1e293b] bg-[#090d16] py-1 shadow-2xl backdrop-blur-md">
-                  <div className="px-2.5 py-1 text-[10px] font-semibold uppercase text-slate-400">
-                    Select Application
+                <div className="absolute left-0 top-9 z-50 w-72 rounded-md border border-[#1e293b] bg-[#090d16] py-1 shadow-2xl backdrop-blur-md">
+                  <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400 border-b border-[#1e293b]/70 flex items-center justify-between">
+                    <span>Application</span>
+                    <span>Respective Func</span>
                   </div>
-                  {projects.map((proj) => (
+
+                  {/* All applications option */}
+                  <button
+                    onClick={() => {
+                      onProjectChange("all-applications");
+                      setIsProjectOpen(false);
+                    }}
+                    className={`flex w-full items-center justify-between px-3 py-2 text-xs transition-colors ${
+                      selectedProject === "all-applications"
+                        ? "bg-blue-600/20 text-blue-300 font-semibold"
+                        : "text-slate-300 hover:bg-[#141414] hover:text-white"
+                    }`}
+                  >
+                    <span>All Applications</span>
+                    <span className="font-mono text-[10px] text-slate-500">Fleet wide</span>
+                  </button>
+
+                  {/* Individual application rows showing their respective func_name */}
+                  {appList.map((app) => (
                     <button
-                      key={proj}
+                      key={app.agent_name}
                       onClick={() => {
-                        onProjectChange(proj);
+                        onProjectChange(app.agent_name);
                         setIsProjectOpen(false);
                       }}
-                      className={`flex w-full items-center px-2.5 py-1.5 text-xs transition-colors ${
-                        selectedProject === proj
+                      className={`flex w-full items-center justify-between px-3 py-2 text-xs transition-colors ${
+                        selectedProject === app.agent_name
                           ? "bg-blue-600/20 text-blue-300 font-semibold"
                           : "text-slate-300 hover:bg-[#141414] hover:text-white"
                       }`}
                     >
-                      {proj}
+                      <span className="truncate font-medium">{app.agent_name}</span>
+                      <div className="flex items-center gap-1 overflow-hidden ml-2 max-w-[130px]">
+                        {app.functions.slice(0, 2).map((fn) => (
+                          <span
+                            key={fn}
+                            className="rounded bg-blue-950/80 border border-blue-900/60 px-1.5 py-0.5 font-mono text-[10px] text-blue-300 truncate"
+                            title={`Function: ${fn}`}
+                          >
+                            {fn}
+                          </span>
+                        ))}
+                        {app.functions.length > 2 && (
+                          <span className="text-[10px] text-slate-500 font-mono">
+                            +{app.functions.length - 2}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Respective Function Name Selector Pill */}
+          {onFunctionChange && (
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setIsFuncOpen(!isFuncOpen);
+                  setIsProjectOpen(false);
+                  setIsTimeOpen(false);
+                }}
+                className="flex h-7.5 items-center gap-1.5 rounded-md border border-[#1e293b] bg-black px-2.5 text-xs font-mono font-medium text-slate-200 hover:border-emerald-500/60 hover:text-white transition-colors"
+                title="Filter by function name"
+              >
+                <Code className="h-3.5 w-3.5 text-emerald-400" />
+                <span className="text-slate-400">fn:</span>
+                <span className="text-emerald-300">
+                  {selectedFunction === "all" ? "All Functions" : selectedFunction}
+                </span>
+                <ChevronDown className="h-3 w-3 text-slate-400" />
+              </button>
+
+              {isFuncOpen && (
+                <div className="absolute left-0 top-9 z-50 w-56 rounded-md border border-[#1e293b] bg-[#090d16] py-1 shadow-2xl backdrop-blur-md">
+                  <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400 border-b border-[#1e293b]/70 flex items-center justify-between">
+                    <span>Respective Functions</span>
+                    <span className="font-mono text-emerald-400">{selectedProject}</span>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      onFunctionChange("all");
+                      setIsFuncOpen(false);
+                    }}
+                    className={`flex w-full items-center px-3 py-1.5 text-xs font-mono transition-colors ${
+                      selectedFunction === "all"
+                        ? "bg-emerald-600/20 text-emerald-300 font-semibold"
+                        : "text-slate-300 hover:bg-[#141414] hover:text-white"
+                    }`}
+                  >
+                    All Functions (Entire Agent)
+                  </button>
+
+                  {availableFuncs.map((fn) => (
+                    <button
+                      key={fn}
+                      onClick={() => {
+                        onFunctionChange(fn);
+                        setIsFuncOpen(false);
+                      }}
+                      className={`flex w-full items-center justify-between px-3 py-1.5 text-xs font-mono transition-colors ${
+                        selectedFunction === fn
+                          ? "bg-emerald-600/20 text-emerald-300 font-semibold"
+                          : "text-slate-300 hover:bg-[#141414] hover:text-white"
+                      }`}
+                    >
+                      <span className="truncate">{fn}</span>
+                      <span className="text-[10px] text-slate-500">tracked</span>
                     </button>
                   ))}
                 </div>
@@ -137,6 +251,7 @@ export function DashboardFilters({
                 onClick={() => {
                   setIsTimeOpen(!isTimeOpen);
                   setIsProjectOpen(false);
+                  setIsFuncOpen(false);
                 }}
                 className="flex h-7.5 items-center gap-1.5 rounded-md border border-[#1e293b] bg-black px-2.5 text-xs font-medium text-slate-200 hover:border-blue-500/60 hover:text-white transition-colors"
               >
