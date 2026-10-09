@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { Activity } from "lucide-react";
-import { useDashboard } from "@/components/dashboard/dashboard-context";
-import { DashboardFilters, SubTabItem } from "@/components/dashboard/dashboard-filters";
+import { useDashboard } from "@/components/dashboard/context/dashboard-context";
+import { DashboardFilters, SubTabItem } from "@/components/dashboard/layout/filters";
 import { TracingSection } from "@/components/dashboard/sections/tracing-section";
 
 export default function TracingPage() {
@@ -15,6 +15,7 @@ export default function TracingPage() {
     isLive,
     setIsLive,
     handleRefresh,
+    isRefreshing,
     traces,
     setSelectedTrace,
   } = useDashboard();
@@ -52,6 +53,7 @@ export default function TracingPage() {
         isLive={isLive}
         onToggleLive={() => setIsLive(!isLive)}
         onRefresh={handleRefresh}
+        isRefreshing={isRefreshing}
         routeCategory="Observability"
         routeTitle="Tracing & Spans"
         routeIcon={Activity}

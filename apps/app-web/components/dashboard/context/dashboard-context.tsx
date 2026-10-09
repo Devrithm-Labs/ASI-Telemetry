@@ -19,11 +19,13 @@ interface DashboardContextType {
   setActiveHeaderTab: (tab: "Monitoring" | "Dashboards" | "Alerts") => void;
   isLive: boolean;
   setIsLive: (live: boolean) => void;
+  isRefreshing: boolean;
+  lastUpdated: Date | null;
   requestData: RequestMetricPoint[];
   latencyData: LatencyMetricPoint[];
   cpuData: CpuMetricPoint[];
   errorData: ErrorMetricPoint[];
-  handleRefresh: () => void;
+  handleRefresh: () => Promise<void> | void;
   traces: TraceRecord[];
   setTraces: React.Dispatch<React.SetStateAction<TraceRecord[]>>;
   addTrace: (trace: TraceRecord) => void;
@@ -54,6 +56,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
   // Live telemetry state (from real ClickHouse database)
   const [isLive, setIsLive] = React.useState(true);
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
+  const [lastUpdated, setLastUpdated] = React.useState<Date | null>(null);
   const [requestData, setRequestData] = React.useState<RequestMetricPoint[]>([]);
   const [latencyData, setLatencyData] = React.useState<LatencyMetricPoint[]>([]);
   const [cpuData, setCpuData] = React.useState<CpuMetricPoint[]>([]);
@@ -66,6 +70,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
   // Fetch real data from ClickHouse backend via FastAPI
   const fetchDatabaseTelemetry = React.useCallback(async () => {
+    setIsRefreshing(true);
     try {
       const res = await fetch("http://localhost:8080/api/metrics?limit=50");
       if (!res.ok) return;
@@ -192,6 +197,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           const avgMem = Math.round(
             group.mems.reduce((a, b) => a + b, 0) / group.mems.length
           );
+
           mappedCpu.push({
             time,
             cpuPercent: avgCpu,
@@ -225,22 +231,39 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         setErrorData([]);
         setTraces([]);
       }
+      setLastUpdated(new Date());
     } catch {
       // Backend offline; keep previous state
+    } finally {
+      setIsRefreshing(false);
     }
   }, []);
 
-  // Sync with ClickHouse on mount and when live is active
+  // Sync with ClickHouse on mount using useEffect hook and periodically when live is active
   React.useEffect(() => {
+    let isMounted = true;
+
+    // Fetch initial data from API on component mount
     fetchDatabaseTelemetry();
 
     if (!isLive) return;
-    const interval = setInterval(fetchDatabaseTelemetry, 3000);
-    return () => clearInterval(interval);
+
+    // Polling interval for live telemetry
+    const interval = setInterval(() => {
+      if (isMounted) {
+        fetchDatabaseTelemetry();
+      }
+    }, 3000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, [isLive, fetchDatabaseTelemetry]);
 
-  const handleRefresh = React.useCallback(() => {
-    fetchDatabaseTelemetry();
+  // Refresh callback for manual user triggers
+  const handleRefresh = React.useCallback(async () => {
+    await fetchDatabaseTelemetry();
   }, [fetchDatabaseTelemetry]);
 
   return (
@@ -254,6 +277,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         setActiveHeaderTab,
         isLive,
         setIsLive,
+        isRefreshing,
+        lastUpdated,
         requestData,
         latencyData,
         cpuData,

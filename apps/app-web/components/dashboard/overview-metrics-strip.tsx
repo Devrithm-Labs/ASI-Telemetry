@@ -15,7 +15,7 @@ import {
   ErrorMetricPoint,
   CpuMetricPoint,
   TimeRange,
-} from "./dashboard-types";
+} from "./context/dashboard-types";
 
 interface OverviewMetricsStripProps {
   requestData: RequestMetricPoint[];

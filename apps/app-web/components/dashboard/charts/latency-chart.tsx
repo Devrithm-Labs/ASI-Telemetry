@@ -22,7 +22,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { LatencyMetricPoint } from "../dashboard-types";
+import { LatencyMetricPoint } from "../context/dashboard-types";
 import { Clock, ShieldCheck } from "lucide-react";
 
 interface LatencyChartProps {

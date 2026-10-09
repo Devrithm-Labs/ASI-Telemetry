@@ -15,8 +15,8 @@ import {
   Server,
   Zap,
 } from "lucide-react";
-import { useDashboard } from "@/components/dashboard/dashboard-context";
-import { DashboardFilters } from "@/components/dashboard/dashboard-filters";
+import { useDashboard } from "@/components/dashboard/context/dashboard-context";
+import { DashboardFilters } from "@/components/dashboard/layout/filters";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -77,6 +77,7 @@ export default function AllApplicationsPage() {
     isLive,
     setIsLive,
     handleRefresh,
+    isRefreshing,
   } = useDashboard();
 
   return (
@@ -88,6 +89,8 @@ export default function AllApplicationsPage() {
         showProjectSelector={false}
         showTimeRange={false}
         showLiveToggle={false}
+        onRefresh={handleRefresh}
+        isRefreshing={isRefreshing}
         extraControls={
           <span className="flex items-center gap-1.5 rounded-md border border-emerald-900/60 bg-emerald-950/40 px-2.5 py-1 text-xs font-semibold text-emerald-300">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />

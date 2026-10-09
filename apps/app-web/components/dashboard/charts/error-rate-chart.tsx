@@ -21,7 +21,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { ErrorMetricPoint } from "../dashboard-types";
+import { ErrorMetricPoint } from "../context/dashboard-types";
 import { AlertCircle, ShieldAlert } from "lucide-react";
 
 interface ErrorRateChartProps {

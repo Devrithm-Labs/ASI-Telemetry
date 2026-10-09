@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Bell, Check, ShieldAlert, X } from "lucide-react";
+import { Bell, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface AlertModalProps {

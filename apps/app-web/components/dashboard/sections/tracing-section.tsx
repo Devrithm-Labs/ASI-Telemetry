@@ -12,7 +12,7 @@ import {
   Server,
   Zap,
 } from "lucide-react";
-import { TraceRecord } from "../dashboard-types";
+import { TraceRecord } from "../context/dashboard-types";
 import { TraceTable } from "../trace-table";
 import { Card, CardContent } from "@/components/ui/card";
 

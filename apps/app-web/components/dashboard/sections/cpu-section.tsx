@@ -15,7 +15,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { CpuMetricPoint } from "../dashboard-types";
+import { CpuMetricPoint } from "../context/dashboard-types";
 import { Cpu, HardDrive } from "lucide-react";
 
 interface CpuSectionProps {

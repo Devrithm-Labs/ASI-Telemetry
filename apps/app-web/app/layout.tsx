@@ -4,7 +4,7 @@ import { ThemeProvider } from "@/components/shared/theme-provider";
 import { QueryProvider } from "@/components/shared/query-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
-import { DashboardLayoutShell } from "@/components/dashboard/dashboard-layout-shell";
+import { DashboardLayoutShell } from "@/components/dashboard/layout/layout-shell";
 
 export const metadata: Metadata = {
   title: "ASI-Telemetry | AI Observability & Monitoring",
