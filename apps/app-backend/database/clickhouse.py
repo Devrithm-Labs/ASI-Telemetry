@@ -1,3 +1,4 @@
+import uuid
 import json
 import logging
 import math
@@ -19,6 +20,7 @@ class ClickHouseDB:
         self.is_connected = False
         # Memory fallback if ClickHouse is not currently running
         self.memory_records: List[Dict[str, Any]] = []
+        self.llm_records: List[Dict[str, Any]] = []
 
     def connect(self):
         """Connects to ClickHouse and creates/updates table if needed."""
@@ -33,6 +35,7 @@ class ClickHouseDB:
                 connect_timeout=5,
             )
             self._create_table()
+            self._create_llm_table()
             self._migrate_table()
             self.is_connected = True
             logger.info(f"Connected to ClickHouse at {settings.CLICKHOUSE_HOST}:{settings.CLICKHOUSE_PORT}")
@@ -60,6 +63,34 @@ class ClickHouseDB:
             metadata String
         ) ENGINE = MergeTree()
         ORDER BY (timestamp, agent_name);
+        """
+        self.client.command(query)
+
+    def _create_llm_table(self):
+        """Creates the dedicated llm_traces table in ClickHouse."""
+        query = """
+        CREATE TABLE IF NOT EXISTS llm_traces (
+            id String,
+            trace_id String,
+            span_id String,
+            parent_id Nullable(String),
+            name String,
+            run_type LowCardinality(String),
+            status LowCardinality(String),
+            model LowCardinality(String),
+            input String,
+            output String,
+            error Nullable(String),
+            start_time DateTime64(3, 'UTC'),
+            end_time DateTime64(3, 'UTC'),
+            latency_ms Float64,
+            prompt_tokens UInt32,
+            completion_tokens UInt32,
+            total_tokens UInt32,
+            cost_usd Float64,
+            metadata String
+        ) ENGINE = MergeTree()
+        ORDER BY (trace_id, start_time);
         """
         self.client.command(query)
 
@@ -378,6 +409,185 @@ class ClickHouseDB:
             "applications": applications,
         }
 
+    def insert_llm_trace(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Inserts a single LLM trace/span into ClickHouse llm_traces table (or memory fallback).
+        """
+        now_dt = datetime.now(timezone.utc)
+        record_id = payload.get("id") or str(uuid.uuid4())
+        trace_id = payload.get("trace_id") or str(uuid.uuid4())
+        span_id = payload.get("span_id") or str(uuid.uuid4())
+        parent_id = payload.get("parent_id")
+        name = payload.get("name") or "run_pipeline"
+        run_type = payload.get("run_type") or "llm"
+        status = payload.get("status") or ("error" if payload.get("error") else "success")
+        model = payload.get("model") or payload.get("metadata", {}).get("model") or "gemini-3.8-flash"
+        
+        # Serialize input & output
+        raw_input = payload.get("input") or payload.get("inputs") or ""
+        input_str = json.dumps(raw_input) if isinstance(raw_input, (dict, list)) else str(raw_input)
+        
+        raw_output = payload.get("output") or payload.get("outputs") or ""
+        output_str = json.dumps(raw_output) if isinstance(raw_output, (dict, list)) else str(raw_output)
+        
+        error_str = payload.get("error")
+        latency_ms = float(payload.get("latency_ms") or payload.get("duration_ms") or 0.0)
+
+        # Tokens & Cost
+        tokens = payload.get("tokens", {})
+        prompt_tokens = int(payload.get("prompt_tokens") or tokens.get("input") or tokens.get("prompt") or 0)
+        completion_tokens = int(payload.get("completion_tokens") or tokens.get("output") or tokens.get("completion") or 0)
+        total_tokens = int(payload.get("total_tokens") or tokens.get("total") or (prompt_tokens + completion_tokens))
+        cost_usd = float(payload.get("cost_usd") or payload.get("cost") or 0.0)
+
+        metadata_str = json.dumps(payload.get("metadata") or {})
+
+        record = {
+            "id": record_id,
+            "trace_id": trace_id,
+            "span_id": span_id,
+            "parent_id": parent_id,
+            "name": name,
+            "run_type": run_type,
+            "status": status,
+            "model": model,
+            "input": input_str,
+            "output": output_str,
+            "error": error_str,
+            "start_time": now_dt.isoformat(),
+            "end_time": now_dt.isoformat(),
+            "latency_ms": latency_ms,
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": total_tokens,
+            "cost_usd": cost_usd,
+            "metadata": metadata_str,
+        }
+
+        # 1. Store in memory fallback
+        self.llm_records.insert(0, record)
+        if len(self.llm_records) > 500:
+            self.llm_records.pop()
+
+        # 2. Store in ClickHouse if connected
+        if self.is_connected and self.client:
+            try:
+                row = [
+                    record["id"],
+                    record["trace_id"],
+                    record["span_id"],
+                    record["parent_id"],
+                    record["name"],
+                    record["run_type"],
+                    record["status"],
+                    record["model"],
+                    record["input"],
+                    record["output"],
+                    record["error"],
+                    now_dt,
+                    now_dt,
+                    record["latency_ms"],
+                    record["prompt_tokens"],
+                    record["completion_tokens"],
+                    record["total_tokens"],
+                    record["cost_usd"],
+                    record["metadata"],
+                ]
+                self.client.insert(
+                    "llm_traces",
+                    [row],
+                    column_names=[
+                        "id", "trace_id", "span_id", "parent_id", "name",
+                        "run_type", "status", "model", "input", "output",
+                        "error", "start_time", "end_time", "latency_ms",
+                        "prompt_tokens", "completion_tokens", "total_tokens",
+                        "cost_usd", "metadata"
+                    ]
+                )
+            except Exception as e:
+                logger.error(f"Failed to insert into ClickHouse llm_traces: {e}")
+
+        return record
+
+    def get_llm_traces(
+        self,
+        limit: int = 100,
+        search: Optional[str] = None,
+        status: Optional[str] = None,
+        model: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Queries LLM traces from ClickHouse or memory fallback with metrics."""
+        records = self.llm_records
+
+        if self.is_connected and self.client:
+            try:
+                where_clauses = []
+                if status and status != "all":
+                    where_clauses.append(f"status = '{status}'")
+                if model:
+                    where_clauses.append(f"model = '{model}'")
+                if search:
+                    where_clauses.append(f"(name ILIKE '%{search}%' OR input ILIKE '%{search}%' OR output ILIKE '%{search}%')")
+
+                where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+                sql = f"SELECT * FROM llm_traces {where_sql} ORDER BY start_time DESC LIMIT {limit}"
+                
+                result = self.client.query(sql)
+                cols = result.column_names
+                db_records = []
+                for row in result.result_rows:
+                    item = dict(zip(cols, row))
+                    if isinstance(item.get("start_time"), datetime):
+                        item["start_time"] = item["start_time"].isoformat()
+                    if isinstance(item.get("end_time"), datetime):
+                        item["end_time"] = item["end_time"].isoformat()
+                    db_records.append(item)
+                if db_records:
+                    records = db_records
+            except Exception as e:
+                logger.warning(f"ClickHouse query error for llm_traces: {e}")
+
+        # In-memory filter if using memory records
+        filtered = records
+        if search:
+            q = search.lower()
+            filtered = [r for r in filtered if q in r.get("name", "").lower() or q in str(r.get("input", "")).lower() or q in str(r.get("output", "")).lower()]
+        if status and status != "all":
+            filtered = [r for r in filtered if r.get("status") == status]
+        if model:
+            filtered = [r for r in filtered if r.get("model") == model]
+
+        traces_slice = filtered[:limit]
+
+        # Calculate metrics
+        total_tokens = sum(r.get("total_tokens", 0) for r in filtered)
+        total_cost = sum(r.get("cost_usd", 0.0) for r in filtered)
+        avg_latency = (
+            sum(r.get("latency_ms", 0.0) for r in filtered) / (len(filtered) or 1)
+        )
+
+        return {
+            "traces": traces_slice,
+            "total": len(filtered),
+            "stats": {
+                "total_traces": len(filtered),
+                "total_tokens": total_tokens,
+                "total_cost_usd": round(total_cost, 6),
+                "avg_latency_ms": round(avg_latency, 2),
+            }
+        }
+
+    def clear_llm_traces(self) -> Dict[str, Any]:
+        """Truncates or clears llm_traces from ClickHouse and memory."""
+        self.llm_records.clear()
+        if self.is_connected and self.client:
+            try:
+                self.client.command("TRUNCATE TABLE IF EXISTS llm_traces")
+            except Exception as e:
+                logger.warning(f"Error truncating llm_traces table: {e}")
+        return {"status": "success", "message": "All LLM traces cleared"}
+
 
 # Global database instance
 db = ClickHouseDB()
+

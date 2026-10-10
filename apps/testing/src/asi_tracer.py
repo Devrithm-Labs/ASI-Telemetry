@@ -1,10 +1,32 @@
 import functools
 import inspect
 import json
+import os
+import threading
 import time
+import urllib.request
 import uuid
 from contextvars import ContextVar
 from datetime import datetime
+
+
+def _send_llm_trace_async(payload):
+    """Sends trace record to FastAPI/ClickHouse backend asynchronously."""
+    def _worker():
+        try:
+            backend_url = os.getenv("TELEMETRY_BACKEND_URL", "http://127.0.0.1:8080/api/llm/traces")
+            data = json.dumps(payload, default=str).encode("utf-8")
+            req = urllib.request.Request(
+                backend_url,
+                data=data,
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=2.0):
+                pass
+        except Exception:
+            pass
+    threading.Thread(target=_worker, daemon=True).start()
 
 # ---------------------------------------------------------------
 # Global state
@@ -23,6 +45,7 @@ LAST_TRACE = None
 PRICE_PER_MILLION = {
     "asi1-mini": {"input": 0.10, "output": 0.40},
     "asi-mini": {"input": 0.10, "output": 0.40},
+
     "asi1": {"input": 0.50, "output": 1.50},
     "gemini-3.8-flash": {"input": 0.075, "output": 0.30},
     "deepseek-chat": {"input": 0.14, "output": 0.28},
@@ -82,10 +105,12 @@ def start_span(function_name, run_type, metadata, args, kwargs):
     # Children share the parent's trace id. A top-level call starts a new trace.
     trace_id = str(uuid.uuid4()) if is_top_level else parent_span["trace_id"]
 
+    span_id = str(uuid.uuid4())
     span = {
+        "id": span_id,
+        "span_id": span_id,
         "trace_id": trace_id,
-        "span_id": str(uuid.uuid4()),
-        "parent_id": None if is_top_level else parent_span["span_id"],
+        "parent_id": None if is_top_level else (parent_span.get("span_id") or parent_span.get("id")),
         "name": function_name,
         "run_type": run_type,
         "start_time": time.time(),
@@ -134,14 +159,44 @@ def end_span(span, span_reset_token, trace_reset_token, is_top_level, result=Non
             spans_in_trace.reset(trace_reset_token)
 
             LAST_TRACE = {
-                "trace_id": span["trace_id"],
-                "name": span["name"],
-                "total_latency_ms": span["duration_ms"],
-                "total_tokens": sum(s["tokens"]["total"] for s in all_spans),
-                "total_cost_usd": round(sum(s["cost"] for s in all_spans), 6),
+                "trace_id": span.get("trace_id"),
+                "name": span.get("name"),
+                "total_latency_ms": span.get("duration_ms", 0.0),
+                "total_tokens": sum(s.get("tokens", {}).get("total", 0) for s in all_spans),
+                "total_cost_usd": round(sum(s.get("cost", 0.0) for s in all_spans), 6),
                 "spans": all_spans,
             }
             print(json.dumps(LAST_TRACE, indent=2, default=str))
+
+            # Send trace to ClickHouse backend
+            in_val = span.get("inputs")
+            input_str = json.dumps(in_val, default=str) if isinstance(in_val, (dict, list)) else str(in_val or "")
+            out_val = span.get("outputs")
+            output_str = json.dumps(out_val, default=str) if isinstance(out_val, (dict, list)) else str(out_val or "")
+
+            current_id = span.get("id") or span.get("span_id") or str(uuid.uuid4())
+            trace_payload = {
+                "id": current_id,
+                "trace_id": span.get("trace_id") or str(uuid.uuid4()),
+                "span_id": current_id,
+                "parent_id": span.get("parent_id"),
+                "name": span.get("name") or "gemini_generate",
+                "run_type": span.get("run_type", "llm"),
+                "status": "error" if span.get("error") else "success",
+                "model": span.get("metadata", {}).get("model", "gemini-3.8-flash"),
+                "input": input_str,
+                "output": output_str,
+                "error": str(span.get("error")) if span.get("error") else None,
+                "latency_ms": span.get("duration_ms", 0.0),
+                "prompt_tokens": span.get("tokens", {}).get("input", 0),
+                "completion_tokens": span.get("tokens", {}).get("output", 0),
+                "total_tokens": span.get("tokens", {}).get("total", 0),
+                "cost_usd": span.get("cost", 0.0),
+                "metadata": span.get("metadata", {}),
+            }
+            _send_llm_trace_async(trace_payload)
+
+
 
 
 # ---------------------------------------------------------------

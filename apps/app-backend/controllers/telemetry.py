@@ -1,6 +1,6 @@
-from typing import Optional
+from typing import Any, Dict, Optional
 from database import db
-from schemas.telemetry import MetricPayload
+from schemas.telemetry import MetricPayload, LLMTracePayload
 
 
 class TelemetryController:
@@ -15,6 +15,36 @@ class TelemetryController:
             "message": "Telemetry metric stored in ClickHouse",
             "data": record,
         }
+
+    @staticmethod
+    def ingest_llm_trace(payload: LLMTracePayload):
+        """Stores LLM tracing record into ClickHouse or memory fallback."""
+        record = db.insert_llm_trace(payload.model_dump())
+        return {
+            "status": "success",
+            "message": "LLM trace stored in ClickHouse",
+            "data": record,
+        }
+
+    @staticmethod
+    def get_llm_traces(
+        limit: int = 100,
+        search: Optional[str] = None,
+        status: Optional[str] = None,
+        model: Optional[str] = None,
+    ):
+        """Queries LLM traces from ClickHouse with summary aggregates."""
+        return db.get_llm_traces(
+            limit=limit,
+            search=search,
+            status=status,
+            model=model,
+        )
+
+    @staticmethod
+    def clear_llm_traces():
+        """Clears all LLM traces from ClickHouse and memory."""
+        return db.clear_llm_traces()
 
 
     @staticmethod
@@ -45,4 +75,6 @@ class TelemetryController:
             "status": "healthy",
             "clickhouse_connected": db.is_connected,
             "total_records": len(db.memory_records),
+            "total_llm_records": len(db.llm_records),
         }
+

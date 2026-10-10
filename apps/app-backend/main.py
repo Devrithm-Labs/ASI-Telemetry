@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import db
-from routes import telemetry_router
+from routes import telemetry_router, ws_router
 
 
 @asynccontextmanager
@@ -31,6 +31,7 @@ app.add_middleware(
 
 # Register API routes
 app.include_router(telemetry_router)
+app.include_router(ws_router)
 
 
 @app.get("/")
