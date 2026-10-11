@@ -17,6 +17,7 @@ import {
   AlertOctagon,
   CheckCircle2,
   ChevronDown,
+  ChevronRight,
   Activity,
   Wrench,
   GitFork,
@@ -24,7 +25,16 @@ import {
   ShieldCheck,
   Check,
   RefreshCw,
+  GitBranch,
+  GitMerge,
+  Link2,
+  Copy,
+  Terminal,
+  ArrowRight,
+  Search,
+  ExternalLink,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useDashboard } from "@/components/dashboard/context/dashboard-context";
 import { DashboardFilters, SubTabItem } from "@/components/dashboard/layout/filters";
 import { Card, CardContent } from "@/components/ui/card";
@@ -42,10 +52,11 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-interface LLMTraceRecord {
+export interface LLMTraceRecord {
   id: string;
   trace_id: string;
-  span_id: string;
+  span_id?: string;
+  parent_id?: string | null;
   name: string;
   run_type: string;
   status: "success" | "error";
@@ -59,7 +70,9 @@ interface LLMTraceRecord {
   completion_tokens: number;
   total_tokens: number;
   cost_usd: number;
+  metadata?: Record<string, any>;
 }
+
 
 const LLM_TABS: SubTabItem[] = [
   { id: "traces", label: "Traces" },

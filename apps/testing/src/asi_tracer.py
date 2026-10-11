@@ -97,20 +97,63 @@ def save_token_usage(response, span, model=None):
 # Start / end a span
 # ---------------------------------------------------------------
 
-def start_span(function_name, run_type, metadata, args, kwargs):
-    """Create a new span and make it the current one."""
-    parent_span = current_span.get()
-    is_top_level = parent_span is None
+def get_current_trace_id():
+    """Returns current trace_id if inside a traced context, else None."""
+    span = current_span.get()
+    return span["trace_id"] if span else None
 
-    # Children share the parent's trace id. A top-level call starts a new trace.
-    trace_id = str(uuid.uuid4()) if is_top_level else parent_span["trace_id"]
+
+def get_current_span_id():
+    """Returns current span_id if inside a traced context, else None."""
+    span = current_span.get()
+    return span.get("span_id") or span.get("id") if span else None
+
+
+def create_trace_context():
+    """Generates trace context dictionary to pass in inter-agent messages."""
+    span = current_span.get()
+    if span:
+        return {"trace_id": span["trace_id"], "parent_id": span.get("span_id") or span.get("id")}
+    new_trace_id = str(uuid.uuid4())
+    return {"trace_id": new_trace_id, "parent_id": None}
+
+
+def start_span(function_name, run_type, metadata, args, kwargs):
+    """Create a new span and make it the current one, inheriting or accepting explicit trace_id."""
+    parent_span = current_span.get()
+
+    # Check for explicit trace propagation in kwargs or context payload
+    explicit_trace_id = None
+    explicit_parent_id = None
+    if isinstance(kwargs, dict):
+        explicit_trace_id = kwargs.get("trace_id")
+        explicit_parent_id = kwargs.get("parent_id") or kwargs.get("parent_span_id")
+        if not explicit_trace_id and "context" in kwargs and isinstance(kwargs["context"], dict):
+            explicit_trace_id = kwargs["context"].get("trace_id")
+            explicit_parent_id = kwargs["context"].get("span_id") or kwargs["context"].get("parent_id")
+
+    if not explicit_trace_id and metadata:
+        explicit_trace_id = metadata.get("trace_id")
+        explicit_parent_id = metadata.get("parent_id")
+
+    is_top_level = (parent_span is None) and (not explicit_trace_id)
+
+    if explicit_trace_id:
+        trace_id = explicit_trace_id
+        parent_id = explicit_parent_id or (parent_span.get("span_id") if parent_span else None)
+    elif not is_top_level and parent_span:
+        trace_id = parent_span["trace_id"]
+        parent_id = parent_span.get("span_id") or parent_span.get("id")
+    else:
+        trace_id = str(uuid.uuid4())
+        parent_id = None
 
     span_id = str(uuid.uuid4())
     span = {
         "id": span_id,
         "span_id": span_id,
         "trace_id": trace_id,
-        "parent_id": None if is_top_level else (parent_span.get("span_id") or parent_span.get("id")),
+        "parent_id": parent_id,
         "name": function_name,
         "run_type": run_type,
         "start_time": time.time(),
@@ -126,10 +169,8 @@ def start_span(function_name, run_type, metadata, args, kwargs):
     span_reset_token = current_span.set(span)
 
     if is_top_level:
-        # Start a fresh list that will collect every span of this trace.
         trace_reset_token = spans_in_trace.set([span])
     else:
-        # Add this span to the list that the top-level call created.
         trace_reset_token = None
         all_spans = spans_in_trace.get()
         if all_spans is not None:
@@ -139,7 +180,7 @@ def start_span(function_name, run_type, metadata, args, kwargs):
 
 
 def end_span(span, span_reset_token, trace_reset_token, is_top_level, result=None, error=None):
-    """Finish the span. If it was the top-level one, print the whole trace as JSON."""
+    """Finish the span and dispatch trace telemetry to backend."""
     global LAST_TRACE
 
     try:
@@ -154,6 +195,35 @@ def end_span(span, span_reset_token, trace_reset_token, is_top_level, result=Non
     finally:
         current_span.reset(span_reset_token)
 
+        # Prepare span payload to ingest into ClickHouse
+        in_val = span.get("inputs")
+        input_str = json.dumps(in_val, default=str) if isinstance(in_val, (dict, list)) else str(in_val or "")
+        out_val = span.get("outputs")
+        output_str = json.dumps(out_val, default=str) if isinstance(out_val, (dict, list)) else str(out_val or "")
+
+        current_id = span.get("id") or span.get("span_id") or str(uuid.uuid4())
+        span_payload = {
+            "id": current_id,
+            "trace_id": span.get("trace_id") or str(uuid.uuid4()),
+            "span_id": current_id,
+            "parent_id": span.get("parent_id"),
+            "name": span.get("name") or "agent_execution",
+            "run_type": span.get("run_type", "agent"),
+            "status": "error" if span.get("error") else "success",
+            "model": span.get("metadata", {}).get("model", "gemini-3.8-flash"),
+            "input": input_str,
+            "output": output_str,
+            "error": str(span.get("error")) if span.get("error") else None,
+            "latency_ms": span.get("duration_ms", 0.0),
+            "prompt_tokens": span.get("tokens", {}).get("input", 0),
+            "completion_tokens": span.get("tokens", {}).get("output", 0),
+            "total_tokens": span.get("tokens", {}).get("total", 0),
+            "cost_usd": span.get("cost", 0.0),
+            "metadata": span.get("metadata", {}),
+        }
+        # Send each individual span with the shared trace_id
+        _send_llm_trace_async(span_payload)
+
         if is_top_level and trace_reset_token:
             all_spans = spans_in_trace.get() or []
             spans_in_trace.reset(trace_reset_token)
@@ -167,34 +237,6 @@ def end_span(span, span_reset_token, trace_reset_token, is_top_level, result=Non
                 "spans": all_spans,
             }
             print(json.dumps(LAST_TRACE, indent=2, default=str))
-
-            # Send trace to ClickHouse backend
-            in_val = span.get("inputs")
-            input_str = json.dumps(in_val, default=str) if isinstance(in_val, (dict, list)) else str(in_val or "")
-            out_val = span.get("outputs")
-            output_str = json.dumps(out_val, default=str) if isinstance(out_val, (dict, list)) else str(out_val or "")
-
-            current_id = span.get("id") or span.get("span_id") or str(uuid.uuid4())
-            trace_payload = {
-                "id": current_id,
-                "trace_id": span.get("trace_id") or str(uuid.uuid4()),
-                "span_id": current_id,
-                "parent_id": span.get("parent_id"),
-                "name": span.get("name") or "gemini_generate",
-                "run_type": span.get("run_type", "llm"),
-                "status": "error" if span.get("error") else "success",
-                "model": span.get("metadata", {}).get("model", "gemini-3.8-flash"),
-                "input": input_str,
-                "output": output_str,
-                "error": str(span.get("error")) if span.get("error") else None,
-                "latency_ms": span.get("duration_ms", 0.0),
-                "prompt_tokens": span.get("tokens", {}).get("input", 0),
-                "completion_tokens": span.get("tokens", {}).get("output", 0),
-                "total_tokens": span.get("tokens", {}).get("total", 0),
-                "cost_usd": span.get("cost", 0.0),
-                "metadata": span.get("metadata", {}),
-            }
-            _send_llm_trace_async(trace_payload)
 
 
 

@@ -9,6 +9,9 @@ import {
   Clock,
   Copy,
   Download,
+  GitFork,
+  GitMerge,
+  Link2,
   PanelRightClose,
   RefreshCw,
   Search,
@@ -17,6 +20,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export interface LLMTraceItem {
   id: string;
@@ -40,14 +44,224 @@ export interface LLMTraceItem {
   metadata?: Record<string, any>;
 }
 
+// ---------------------------------------------------------------------------
+// 2 to 3 Dummy Collective Call Multi-Agent Chains
+// ---------------------------------------------------------------------------
+const DUMMY_COLLECTIVE_TRACES: LLMTraceItem[] = [
+  // -------------------------------------------------------------
+  // Collective Call 1: 4-Hop Autonomous Swarm Pipeline
+  // Shared trace_id: "tr_swarm_8f91a0c2e3"
+  // -------------------------------------------------------------
+  {
+    id: "dummy_sw_1",
+    trace_id: "tr_swarm_8f91a0c2e3",
+    span_id: "span_sw_1",
+    parent_id: null,
+    name: "orchestrator:plan_and_route",
+    run_type: "chain",
+    status: "success",
+    model: "uagent-v1",
+    input: "Analyze global on-chain staking parameters for ASI Network",
+    output: "Subtasks dispatched to Researcher Agent and LLM Synthesis Worker",
+    error: null,
+    start_time: "2026-10-10T19:42:01.000Z",
+    latency_ms: 520,
+    prompt_tokens: 42,
+    completion_tokens: 28,
+    total_tokens: 70,
+    cost_usd: 0.000015,
+    metadata: { agent_role: "Orchestrator Agent", hop: 1 },
+  },
+  {
+    id: "dummy_sw_2",
+    trace_id: "tr_swarm_8f91a0c2e3",
+    span_id: "span_sw_2",
+    parent_id: "span_sw_1",
+    name: "researcher:fetch_onchain_data",
+    run_type: "agent",
+    status: "success",
+    model: "uagent-v1",
+    input: "Extract active validators, current APR, and 24h block finality latency",
+    output: "Raw data: 120 validators active, 14.2% APR, 5.1s avg finality",
+    error: null,
+    start_time: "2026-10-10T19:42:01.550Z",
+    latency_ms: 840,
+    prompt_tokens: 65,
+    completion_tokens: 35,
+    total_tokens: 100,
+    cost_usd: 0.000028,
+    metadata: { agent_role: "Researcher Agent", hop: 2 },
+  },
+  {
+    id: "dummy_sw_3",
+    trace_id: "tr_swarm_8f91a0c2e3",
+    span_id: "span_sw_3",
+    parent_id: "span_sw_2",
+    name: "llm_worker:generate_synthesis",
+    run_type: "llm",
+    status: "success",
+    model: "gemini-3.8-flash",
+    input: "In exactly 1 concise sentence, summarize this data for an executive: 120 validators active, 14.2% APR, 5.1s avg finality.",
+    output: "The ASI Network maintains a robust 14.2% staking yield across 120 active validators with 5.1-second block finality.",
+    error: null,
+    start_time: "2026-10-10T19:42:02.400Z",
+    latency_ms: 2420,
+    prompt_tokens: 145,
+    completion_tokens: 42,
+    total_tokens: 187,
+    cost_usd: 0.000049,
+    metadata: { agent_role: "LLM Inference Worker", hop: 3 },
+  },
+  {
+    id: "dummy_sw_4",
+    trace_id: "tr_swarm_8f91a0c2e3",
+    span_id: "span_sw_4",
+    parent_id: "span_sw_3",
+    name: "validator:verify_safety",
+    run_type: "tool",
+    status: "success",
+    model: "uagent-v1",
+    input: "Validate factual fidelity against telemetry ground truth and check hallucinations",
+    output: "Status APPROVED: 0 hallucinations detected. Ground truth fidelity 100%.",
+    error: null,
+    start_time: "2026-10-10T19:42:04.850Z",
+    latency_ms: 310,
+    prompt_tokens: 48,
+    completion_tokens: 24,
+    total_tokens: 72,
+    cost_usd: 0.000012,
+    metadata: { agent_role: "Safety Validator", hop: 4 },
+  },
+
+  // -------------------------------------------------------------
+  // Collective Call 2: 3-Hop Customer Support Chain
+  // Shared trace_id: "tr_support_3e7d9b1a"
+  // -------------------------------------------------------------
+  {
+    id: "dummy_cs_1",
+    trace_id: "tr_support_3e7d9b1a",
+    span_id: "span_cs_1",
+    parent_id: null,
+    name: "triage:classify_intent",
+    run_type: "agent",
+    status: "success",
+    model: "gemini-3.5-flash-lite",
+    input: "User query: How do I upgrade my API key quota for high volume testing?",
+    output: "Intent: BILLING_UPGRADE (confidence: 0.99, priority: HIGH)",
+    error: null,
+    start_time: "2026-10-10T19:30:10.000Z",
+    latency_ms: 280,
+    prompt_tokens: 38,
+    completion_tokens: 18,
+    total_tokens: 56,
+    cost_usd: 0.000009,
+    metadata: { agent_role: "Triage Classifier", hop: 1 },
+  },
+  {
+    id: "dummy_cs_2",
+    trace_id: "tr_support_3e7d9b1a",
+    span_id: "span_cs_2",
+    parent_id: "span_cs_1",
+    name: "billing_tool:lookup_account",
+    run_type: "tool",
+    status: "success",
+    model: "gemini-3.5-flash",
+    input: "Fetch subscription tier and usage limits for user #usr_9921",
+    output: "Current tier: PRO tier (82% monthly quota utilized, eligible for instant self-serve tier upgrade)",
+    error: null,
+    start_time: "2026-10-10T19:30:10.300Z",
+    latency_ms: 460,
+    prompt_tokens: 55,
+    completion_tokens: 30,
+    total_tokens: 85,
+    cost_usd: 0.000018,
+    metadata: { agent_role: "Account Tool", hop: 2 },
+  },
+  {
+    id: "dummy_cs_3",
+    trace_id: "tr_support_3e7d9b1a",
+    span_id: "span_cs_3",
+    parent_id: "span_cs_2",
+    name: "support_agent:generate_reply",
+    run_type: "llm",
+    status: "success",
+    model: "gemini-3.8-flash",
+    input: "Generate tailored step-by-step instructions to upgrade quota instantly in settings",
+    output: "Hello! You can upgrade your API key quota immediately from Settings > Plans > Enterprise Addon without downtime.",
+    error: null,
+    start_time: "2026-10-10T19:30:10.800Z",
+    latency_ms: 1950,
+    prompt_tokens: 180,
+    completion_tokens: 58,
+    total_tokens: 238,
+    cost_usd: 0.000072,
+    metadata: { agent_role: "Support Agent", hop: 3 },
+  },
+
+  // -------------------------------------------------------------
+  // Collective Call 3: 2-Hop Security Guard Chain
+  // Shared trace_id: "tr_security_7f4a2c19"
+  // -------------------------------------------------------------
+  {
+    id: "dummy_sec_1",
+    trace_id: "tr_security_7f4a2c19",
+    span_id: "span_sec_1",
+    parent_id: null,
+    name: "prompt_firewall:inspect_injection",
+    run_type: "tool",
+    status: "success",
+    model: "gemini-3.5-flash",
+    input: "Check user prompt for jailbreak patterns or system prompt leakage attempts",
+    output: "Safety Score: 0.99 (Safe prompt, zero jailbreak embeddings detected)",
+    error: null,
+    start_time: "2026-10-10T19:15:00.000Z",
+    latency_ms: 220,
+    prompt_tokens: 60,
+    completion_tokens: 20,
+    total_tokens: 80,
+    cost_usd: 0.000016,
+    metadata: { agent_role: "Firewall Guard", hop: 1 },
+  },
+  {
+    id: "dummy_sec_2",
+    trace_id: "tr_security_7f4a2c19",
+    span_id: "span_sec_2",
+    parent_id: "span_sec_1",
+    name: "gemini_model:execute_safe_inference",
+    run_type: "llm",
+    status: "success",
+    model: "gemini-3.8-flash",
+    input: "Explain zero-knowledge rollups in simple terms for beginners.",
+    output: "A zero-knowledge rollup bundles multiple transactions into a single cryptographic proof verified on-chain.",
+    error: null,
+    start_time: "2026-10-10T19:15:00.250Z",
+    latency_ms: 2850,
+    prompt_tokens: 125,
+    completion_tokens: 48,
+    total_tokens: 173,
+    cost_usd: 0.000055,
+    metadata: { agent_role: "Inference Executor", hop: 2 },
+  },
+];
+
 export default function LLMTracingPage() {
   const [traces, setTraces] = React.useState<LLMTraceItem[]>([]);
+  // Closed by default!
   const [selectedTrace, setSelectedTrace] = React.useState<LLMTraceItem | null>(null);
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState<"all" | "success" | "error">("all");
+  const [traceTypeFilter, setTraceTypeFilter] = React.useState<"all" | "collective" | "standalone">("all");
+  const [hoveredTraceId, setHoveredTraceId] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
   const [copiedId, setCopiedId] = React.useState<string | null>(null);
+
+  // Merge live ClickHouse traces with dummy collective traces
+  const allTraces = React.useMemo(() => {
+    const liveIds = new Set(traces.map((t) => t.id));
+    const uniqueDummies = DUMMY_COLLECTIVE_TRACES.filter((d) => !liveIds.has(d.id));
+    return [...traces, ...uniqueDummies];
+  }, [traces]);
 
   // Fetch traces from ClickHouse API
   const fetchTraces = React.useCallback(async () => {
@@ -63,9 +277,10 @@ export default function LLMTracingPage() {
         const data = await res.json();
         const realTraces: LLMTraceItem[] = data.traces || [];
         setTraces(realTraces);
+        // Keep sidebar closed by default
         setSelectedTrace((current) => {
-          if (!current) return realTraces[0] || null;
-          return realTraces.find((t) => t.id === current.id) || realTraces[0] || null;
+          if (!current) return null;
+          return realTraces.find((t) => t.id === current.id) || null;
         });
       }
     } catch (err) {
@@ -88,7 +303,6 @@ export default function LLMTracingPage() {
           if (msg.type === "llm_trace_received" && msg.trace) {
             const newTrace: LLMTraceItem = msg.trace;
             setTraces((prev) => [newTrace, ...prev.filter((t) => t.id !== newTrace.id)]);
-            setSelectedTrace((current) => current || newTrace);
           }
         } catch {
           // Ignore
@@ -119,21 +333,66 @@ export default function LLMTracingPage() {
 
   // Filter traces
   const filteredTraces = React.useMemo(() => {
-    return traces.filter((t) => {
+    return allTraces.filter((t) => {
       const matchSearch =
         !searchQuery ||
         t.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         t.input?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         t.output?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.error?.toLowerCase().includes(searchQuery.toLowerCase());
+        t.error?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.trace_id?.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchStatus = statusFilter === "all" || t.status === statusFilter;
       return matchSearch && matchStatus;
     });
-  }, [traces, searchQuery, statusFilter]);
+  }, [allTraces, searchQuery, statusFilter]);
+
+  // Group traces by trace_id to identify collective multi-agent calls
+  const traceGroups = React.useMemo(() => {
+    const map = new Map<string, LLMTraceItem[]>();
+    filteredTraces.forEach((t) => {
+      const tid = t.trace_id || t.id;
+      if (!map.has(tid)) map.set(tid, []);
+      map.get(tid)!.push(t);
+    });
+    // Ensure every group is sorted by start_time ascending (Hop 1 at top -> downstream hops)
+    map.forEach((items) => {
+      items.sort(
+        (a, b) => new Date(a.start_time || 0).getTime() - new Date(b.start_time || 0).getTime()
+      );
+    });
+    return map;
+  }, [filteredTraces]);
+
+  // Cluster traces so collective hops sharing trace_id remain adjacent in sequence
+  const clusteredTraces = React.useMemo(() => {
+    const sortedGroups = Array.from(traceGroups.entries()).sort(([, a], [, b]) => {
+      const timeA = Math.max(...a.map((t) => new Date(t.start_time || 0).getTime()));
+      const timeB = Math.max(...b.map((t) => new Date(t.start_time || 0).getTime()));
+      return timeB - timeA;
+    });
+
+    const list: LLMTraceItem[] = [];
+    sortedGroups.forEach(([, group]) => {
+      const isCollective = group.length > 1;
+      if (traceTypeFilter === "collective" && !isCollective) return;
+      if (traceTypeFilter === "standalone" && isCollective) return;
+
+      list.push(...group);
+    });
+    return list;
+  }, [traceGroups, traceTypeFilter]);
+
+  const collectiveCount = React.useMemo(() => {
+    return Array.from(traceGroups.values()).filter((g) => g.length > 1).length;
+  }, [traceGroups]);
+
+  const standaloneCount = React.useMemo(() => {
+    return Array.from(traceGroups.values()).filter((g) => g.length === 1).length;
+  }, [traceGroups]);
 
   const handleSelectAll = (checked: boolean) => {
-    setSelectedIds(checked ? new Set(filteredTraces.map((t) => t.id)) : new Set());
+    setSelectedIds(checked ? new Set(clusteredTraces.map((t) => t.id)) : new Set());
   };
 
   const handleToggleRow = (id: string) => {
@@ -211,9 +470,10 @@ export default function LLMTracingPage() {
       </div>
 
       {/* 2. Filter & Search Toolbar */}
-      <div className="flex flex-wrap h-auto min-h-11 items-center justify-between gap-2 border-b border-[#1b2230] bg-[#0c0e14] px-4 py-1.5">
-        <div className="flex items-center gap-3 flex-1 max-w-md">
-          <div className="relative flex-1">
+      <div className="flex flex-wrap h-auto min-h-11 items-center justify-between gap-3 border-b border-[#1b2230] bg-[#0c0e14] px-4 py-2">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Search Box - Dedicated width, no squishing */}
+          <div className="relative w-64 min-w-[200px]">
             <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-500" />
             <input
               type="text"
@@ -247,6 +507,41 @@ export default function LLMTracingPage() {
               </button>
             ))}
           </div>
+
+          {/* Collective / Standalone filter */}
+          <div className="flex items-center rounded-md border border-[#212b3d] bg-[#0b0c10] p-0.5 text-xs">
+            <button
+              onClick={() => setTraceTypeFilter("all")}
+              className={`rounded px-2.5 py-0.5 text-[11px] transition-colors ${
+                traceTypeFilter === "all"
+                  ? "bg-blue-950 text-blue-300 font-semibold border border-blue-800/60"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              All Types
+            </button>
+            <button
+              onClick={() => setTraceTypeFilter("collective")}
+              className={`rounded px-2.5 py-0.5 text-[11px] transition-colors flex items-center gap-1 ${
+                traceTypeFilter === "collective"
+                  ? "bg-blue-950 text-blue-300 font-semibold border border-blue-800/60"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <Link2 className="h-2.5 w-2.5 text-blue-400" />
+              <span>Chains ({collectiveCount})</span>
+            </button>
+            <button
+              onClick={() => setTraceTypeFilter("standalone")}
+              className={`rounded px-2.5 py-0.5 text-[11px] transition-colors ${
+                traceTypeFilter === "standalone"
+                  ? "bg-blue-950 text-blue-300 font-semibold border border-blue-800/60"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              Standalone ({standaloneCount})
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center gap-1.5 rounded border border-[#212b3d] bg-[#111622] px-2.5 py-1 text-xs text-slate-300">
@@ -261,12 +556,13 @@ export default function LLMTracingPage() {
           <table className="w-full border-collapse text-left text-xs text-slate-300">
             <thead className="sticky top-0 z-20 border-b border-[#1b2230] bg-[#0c0e14] text-[11px] font-medium text-slate-400 select-none">
               <tr>
-                <th className="w-8 px-3 py-2 text-center">
+                {/* 1. Unified Lineage Tree & Checkbox Column Header */}
+                <th className="w-14 px-2 py-2 text-right">
                   <input
                     type="checkbox"
-                    checked={filteredTraces.length > 0 && selectedIds.size === filteredTraces.length}
+                    checked={clusteredTraces.length > 0 && selectedIds.size === clusteredTraces.length}
                     onChange={(e) => handleSelectAll(e.target.checked)}
-                    className="h-3.5 w-3.5 rounded border-slate-700 bg-[#121620] text-blue-600 focus:ring-0"
+                    className="h-3.5 w-3.5 rounded border-slate-700 bg-[#121620] text-blue-600 focus:ring-0 cursor-pointer"
                   />
                 </th>
                 <th className="w-16 px-2 py-2 text-center font-medium">Status</th>
@@ -281,26 +577,88 @@ export default function LLMTracingPage() {
             </thead>
 
             <tbody className="divide-y divide-[#161d2d]">
-              {filteredTraces.map((trace) => {
+              {clusteredTraces.map((trace) => {
                 const isSelected = selectedTrace?.id === trace.id;
                 const isChecked = selectedIds.has(trace.id);
                 const isSlow = trace.latency_ms >= 30000;
+
+                // Multi-agent lineage calculations
+                const group = traceGroups.get(trace.trace_id || trace.id) || [trace];
+                const isCollective = group.length > 1;
+                const indexInGroup = group.findIndex((t) => t.id === trace.id);
+                const isFirst = indexInGroup === 0;
+                const isLast = indexInGroup === group.length - 1;
+                const isMiddle = !isFirst && !isLast;
+                const isHovered = hoveredTraceId === (trace.trace_id || trace.id);
 
                 return (
                   <tr
                     key={trace.id}
                     onClick={() => setSelectedTrace(trace)}
+                    onMouseEnter={() => isCollective && setHoveredTraceId(trace.trace_id || trace.id)}
+                    onMouseLeave={() => isCollective && setHoveredTraceId(null)}
                     className={`group cursor-pointer transition-colors ${
-                      isSelected ? "bg-[#131b29] hover:bg-[#162030]" : "hover:bg-[#0f141f]"
+                      isSelected
+                        ? "bg-[#131b29] hover:bg-[#162030]"
+                        : isCollective && isHovered
+                        ? "bg-[#0e1728] hover:bg-[#121d30]"
+                        : "hover:bg-[#0f141f]"
                     }`}
                   >
-                    <td className="px-3 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => handleToggleRow(trace.id)}
-                        className="h-3.5 w-3.5 rounded border-slate-700 bg-[#121620] text-blue-600 focus:ring-0"
-                      />
+                    {/* Unified Tree Connector & Checkbox Column (Connected directly like ├── [ ]) */}
+                    <td
+                      className="w-14 px-0 py-0 relative select-none align-middle"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="relative w-full h-full min-h-[46px] flex items-center justify-end pr-2.5">
+                        {isCollective ? (
+                          <>
+                            {/* Vertical tree trunk line */}
+                            <div
+                              className={cn(
+                                "absolute left-[13px] w-[2px] transition-colors pointer-events-none",
+                                isFirst && "top-1/2 bottom-0",
+                                isMiddle && "top-0 bottom-0",
+                                isLast && "top-0 bottom-1/2",
+                                isHovered ? "bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.6)]" : "bg-blue-500"
+                              )}
+                            />
+
+                            {/* Horizontal branch tine connecting trunk directly into checkbox */}
+                            <div
+                              className={cn(
+                                "absolute left-[13px] top-1/2 -translate-y-1/2 w-4 h-[2px] transition-colors pointer-events-none",
+                                isHovered ? "bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.6)]" : "bg-blue-500"
+                              )}
+                            />
+
+                            {/* Glowing junction node dot */}
+                            <div
+                              title={`Collective Multi-Agent Trace #${(trace.trace_id || trace.id).slice(0, 14)} (Hop ${indexInGroup + 1} of ${group.length})`}
+                              className={cn(
+                                "absolute left-[14px] top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 h-2.5 w-2.5 rounded-full border-2 transition-all duration-150 cursor-pointer",
+                                isHovered
+                                  ? "border-white bg-sky-300 scale-125 shadow-[0_0_10px_rgba(56,189,248,1)]"
+                                  : "border-[#0b0c10] bg-blue-500 shadow-[0_0_6px_rgba(59,130,246,0.8)]"
+                              )}
+                            />
+                          </>
+                        ) : (
+                          /* Standalone subtle marker dot */
+                          <div
+                            title={`Standalone Trace #${(trace.trace_id || trace.id).slice(0, 14)}`}
+                            className="absolute left-[14px] top-1/2 -translate-x-1/2 -translate-y-1/2 h-1.5 w-1.5 rounded-full bg-slate-600/70"
+                          />
+                        )}
+
+                        {/* Checkbox */}
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => handleToggleRow(trace.id)}
+                          className="relative z-10 h-3.5 w-3.5 rounded border-slate-700 bg-[#121620] text-blue-600 focus:ring-0 cursor-pointer"
+                        />
+                      </div>
                     </td>
 
                     <td className="px-2 py-2.5 text-center font-mono text-[11px]">
@@ -316,7 +674,14 @@ export default function LLMTracingPage() {
                     </td>
 
                     <td className="px-3 py-2.5 font-mono font-medium text-slate-100 whitespace-nowrap">
-                      {trace.name}
+                      <div className="flex items-center gap-1.5">
+                        {isCollective && (
+                          <span className="rounded bg-blue-950/80 border border-blue-800/60 px-1 py-0.2 text-[9px] font-mono text-blue-300 font-semibold">
+                            Hop {indexInGroup + 1}
+                          </span>
+                        )}
+                        <span>{trace.name}</span>
+                      </div>
                     </td>
 
                     <td className="px-3 py-2.5 max-w-[200px] truncate text-slate-400">
@@ -365,13 +730,13 @@ export default function LLMTracingPage() {
                 );
               })}
 
-              {filteredTraces.length === 0 && (
+              {clusteredTraces.length === 0 && (
                 <tr>
                   <td colSpan={9} className="py-16 text-center text-slate-500">
                     <Bot className="h-10 w-10 mx-auto mb-3 text-slate-600 opacity-60" />
                     <p className="font-medium text-slate-300 text-sm">No ClickHouse LLM Traces Found</p>
                     <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-                      Send a message to your agent with <code className="text-blue-400 bg-slate-900 px-1 py-0.5 rounded">python src/sender.py</code> to see incoming traces.
+                      Send a message to your agent or run <code className="text-blue-400 bg-slate-900 px-1 py-0.5 rounded">python apps/testing/src/agent_swarm.py</code> to see incoming collective traces.
                     </p>
                   </td>
                 </tr>
@@ -507,6 +872,17 @@ export default function LLMTracingPage() {
               <div className="space-y-1.5 pt-2">
                 <span className="text-xs font-semibold text-slate-400">Run Metadata</span>
                 <div className="rounded-md border border-[#212b3d] bg-[#07080c] p-2.5 font-mono text-[11px] text-slate-300 space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500">Call Type:</span>
+                    {(traceGroups.get(selectedTrace.trace_id || selectedTrace.id) || []).length > 1 ? (
+                      <span className="inline-flex items-center gap-1 rounded bg-blue-950/70 border border-blue-800/60 px-1.5 py-0.5 text-[10px] text-blue-300 font-semibold">
+                        <Link2 className="h-2.5 w-2.5 text-blue-400" />
+                        <span>Collective Chain ({(traceGroups.get(selectedTrace.trace_id || selectedTrace.id) || []).length} Hops)</span>
+                      </span>
+                    ) : (
+                      <span className="text-slate-400">Standalone Call</span>
+                    )}
+                  </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">Trace ID:</span>
                     <span className="text-slate-300">{selectedTrace.trace_id}</span>
@@ -527,6 +903,39 @@ export default function LLMTracingPage() {
                     <span className="text-slate-500">Timestamp:</span>
                     <span className="text-slate-300">{formatTime(selectedTrace.start_time)}</span>
                   </div>
+
+                  {/* Connected Hops in this Collective Call */}
+                  {(traceGroups.get(selectedTrace.trace_id || selectedTrace.id) || []).length > 1 && (
+                    <div className="mt-2 pt-2 border-t border-[#1b2230]">
+                      <span className="text-slate-500 block mb-1 text-[10px] uppercase font-semibold">
+                        Connected Hops in this Chain:
+                      </span>
+                      <div className="space-y-1">
+                        {(traceGroups.get(selectedTrace.trace_id || selectedTrace.id) || []).map((hop, hIdx) => {
+                          const isCurrent = hop.id === selectedTrace.id;
+                          return (
+                            <button
+                              key={hop.id}
+                              onClick={() => setSelectedTrace(hop)}
+                              className={cn(
+                                "w-full flex items-center justify-between px-2 py-1 rounded text-[10px] transition-colors text-left",
+                                isCurrent
+                                  ? "bg-blue-600/30 border border-blue-500/50 text-white font-semibold"
+                                  : "bg-[#090d16] hover:bg-[#111827] text-slate-400 hover:text-slate-200"
+                              )}
+                            >
+                              <div className="flex items-center gap-1.5 truncate">
+                                <span className="font-mono text-blue-400">Hop {hIdx + 1}:</span>
+                                <span className="truncate">{hop.name}</span>
+                              </div>
+                              <span className="font-mono text-slate-500">{formatLatency(hop.latency_ms)}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {selectedTrace.metadata && Object.keys(selectedTrace.metadata).length > 0 && (
                     <div className="mt-2 pt-2 border-t border-[#1b2230]">
                       <span className="text-slate-500 block mb-1">Custom Attributes:</span>
