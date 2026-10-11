@@ -1,4 +1,5 @@
 import asyncio
+<<<<<<< HEAD
 import os
 from dotenv import load_dotenv
 
@@ -18,6 +19,13 @@ monitor = AgentMonitor(agent_name="assistant")
 # 2. Initialize and Instrument Gemini Client
 gemini_client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
 instrument_gemini(gemini_client)
+=======
+from uagents import Agent, Context, Model
+from uagents.resolver import RulesBasedResolver
+from observ import AgentMonitor
+
+monitor = AgentMonitor()
+>>>>>>> 8394fde (Updated code Login SignUp)
 
 try:
     loop = asyncio.get_event_loop()
@@ -28,12 +36,18 @@ except RuntimeError:
 class Greeting(Model):
     text: str
 
+<<<<<<< HEAD
 SENDER_ADDRESS = "agent1qtj4m78hdr2dmldtssn7kw7gt0e3ycledny3cadpmdau9dmnv9a4yzjxcx0"
 
 local_resolver = RulesBasedResolver({
     SENDER_ADDRESS: "http://127.0.0.1:8001/submit"
 })
 
+=======
+local_resolver = RulesBasedResolver({
+    "agent1qtj4m78hdr2dmldtssn7kw7gt0e3ycledny3cadpmdau9dmnv9a4yzjxcx0": "http://127.0.0.1:8001/submit"
+})
+>>>>>>> 8394fde (Updated code Login SignUp)
 agent = Agent(
     name="assistant",
     seed="assistant_seed",
@@ -42,6 +56,7 @@ agent = Agent(
     resolve=local_resolver
 )
 
+<<<<<<< HEAD
 
 # 3. Tracked LLM Call (Captures tokens, cost, and LLM latency)
 @traceable(name="gemini_generate", run_type="llm")
@@ -92,3 +107,21 @@ async def handle_message(ctx: Context, sender: str, msg: Greeting):
 
 if __name__ == "__main__":
     agent.run()
+=======
+@agent.on_event("startup")
+async def startup(ctx: Context):
+    ctx.logger.info(f"Agent Address: {agent.address}")
+    ctx.logger.info("waiting for message")
+
+@agent.on_message(model=Greeting)
+@monitor.track(agentname="wheater")
+async def handle_message(ctx: Context, sender: str, msg: Greeting):
+    print(f"Received: {msg.text}")
+
+    await ctx.send(
+        sender,
+        Greeting(text="Hello back!")
+    )
+
+agent.run()
+>>>>>>> 8394fde (Updated code Login SignUp)
