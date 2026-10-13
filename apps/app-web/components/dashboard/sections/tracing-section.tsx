@@ -32,10 +32,12 @@ export function TracingSection({
     <div className="space-y-6">
       {/* Tracing Overview Metric Strip */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="rounded-xl border border-slate-200 dark:border-[#1e293b] bg-white dark:bg-black p-4 shadow-sm dark:shadow-md">
+        <Card className="rounded-xl border border-slate-200/90 dark:border-[#1e293b] bg-white dark:bg-black p-4 shadow-[0_1px_3px_0_rgba(0,0,0,0.04)] dark:shadow-md">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Total Streamed Traces</span>
-            <Activity className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Streamed Traces</span>
+            <div className="flex h-6 w-6 items-center justify-center rounded bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
+              <Activity className="h-3.5 w-3.5" />
+            </div>
           </div>
           <div className="mt-2 text-2xl font-bold text-slate-900 dark:text-white font-mono">
             {traces.length}
@@ -45,10 +47,12 @@ export function TracingSection({
           </div>
         </Card>
 
-        <Card className="rounded-xl border border-slate-200 dark:border-[#1e293b] bg-white dark:bg-black p-4 shadow-sm dark:shadow-md">
+        <Card className="rounded-xl border border-slate-200/90 dark:border-[#1e293b] bg-white dark:bg-black p-4 shadow-[0_1px_3px_0_rgba(0,0,0,0.04)] dark:shadow-md">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Successful Spans</span>
-            <CheckCircle2 className="h-4 w-4 text-emerald-500 dark:text-emerald-400" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Successful Spans</span>
+            <div className="flex h-6 w-6 items-center justify-center rounded bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+            </div>
           </div>
           <div className="mt-2 text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">
             {successCount}
@@ -58,10 +62,12 @@ export function TracingSection({
           </div>
         </Card>
 
-        <Card className="rounded-xl border border-slate-200 dark:border-[#1e293b] bg-white dark:bg-black p-4 shadow-sm dark:shadow-md">
+        <Card className="rounded-xl border border-slate-200/90 dark:border-[#1e293b] bg-white dark:bg-black p-4 shadow-[0_1px_3px_0_rgba(0,0,0,0.04)] dark:shadow-md">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Errored & Throttled</span>
-            <AlertTriangle className="h-4 w-4 text-rose-500 dark:text-rose-400" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Errored & Throttled</span>
+            <div className="flex h-6 w-6 items-center justify-center rounded bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400">
+              <AlertTriangle className="h-3.5 w-3.5" />
+            </div>
           </div>
           <div className="mt-2 text-2xl font-bold text-rose-600 dark:text-rose-400 font-mono">
             {errorCount + rateLimitCount}
@@ -71,10 +77,12 @@ export function TracingSection({
           </div>
         </Card>
 
-        <Card className="rounded-xl border border-slate-200 dark:border-[#1e293b] bg-white dark:bg-black p-4 shadow-sm dark:shadow-md">
+        <Card className="rounded-xl border border-slate-200/90 dark:border-[#1e293b] bg-white dark:bg-black p-4 shadow-[0_1px_3px_0_rgba(0,0,0,0.04)] dark:shadow-md">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Average Trace Latency</span>
-            <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Average Trace Latency</span>
+            <div className="flex h-6 w-6 items-center justify-center rounded bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
+              <Clock className="h-3.5 w-3.5" />
+            </div>
           </div>
           <div className="mt-2 text-2xl font-bold text-blue-600 dark:text-blue-400 font-mono">
             {avgLatency} <span className="text-sm font-sans font-normal text-slate-500 dark:text-slate-400">ms</span>

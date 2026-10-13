@@ -34,7 +34,7 @@ export function TraceTable({ traces, onSelectTrace }: TraceTableProps) {
   }, [traces, search, statusFilter]);
 
   return (
-    <Card className="border-slate-200 dark:border-[#1e293b] bg-white dark:bg-black shadow-sm dark:shadow-xl backdrop-blur-sm overflow-hidden">
+    <Card className="rounded-xl border border-slate-200/90 dark:border-[#1e293b] bg-white dark:bg-black shadow-[0_1px_3px_0_rgba(0,0,0,0.04)] dark:shadow-xl backdrop-blur-sm overflow-hidden">
       <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1e293b] pb-4 px-6">
         <div>
           <div className="flex items-center gap-2">
@@ -83,7 +83,7 @@ export function TraceTable({ traces, onSelectTrace }: TraceTableProps) {
       <CardContent className="p-0">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300">
-            <thead className="border-b border-slate-200 dark:border-[#1e293b] bg-slate-50/75 dark:bg-black text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <thead className="border-b border-slate-200 dark:border-[#1e293b] bg-slate-50/90 dark:bg-black text-[11px] uppercase tracking-wider text-slate-600 dark:text-slate-400 font-semibold">
               <tr>
                 <th className="py-3 px-4 font-semibold">Trace ID</th>
                 <th className="py-3 px-4 font-semibold">Operation / Span</th>
@@ -95,7 +95,7 @@ export function TraceTable({ traces, onSelectTrace }: TraceTableProps) {
                 <th className="py-3 px-4 font-semibold">Timestamp</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-[#111e38]/70">
+            <tbody className="divide-y divide-slate-200/80 dark:divide-[#111e38]/70">
               {filteredTraces.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-8 text-center text-slate-400">
@@ -107,7 +107,7 @@ export function TraceTable({ traces, onSelectTrace }: TraceTableProps) {
                   <tr
                     key={trace.id}
                     onClick={() => onSelectTrace(trace)}
-                    className="group cursor-pointer hover:bg-blue-50/60 dark:hover:bg-blue-950/20 transition-colors"
+                    className="group cursor-pointer hover:bg-slate-50/90 dark:hover:bg-blue-950/20 transition-colors"
                   >
                     <td className="py-3 px-4 font-mono text-blue-600 dark:text-blue-400 font-semibold group-hover:underline">
                       {trace.id}
