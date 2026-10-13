@@ -55,7 +55,7 @@ export function LatencyChart({ data }: LatencyChartProps) {
   );
 
   return (
-    <Card className="border-slate-200 dark:border-[#1e293b] bg-white dark:bg-black shadow-sm dark:shadow-xl backdrop-blur-sm">
+    <Card className="rounded-xl border border-slate-200/90 dark:border-[#1e293b] bg-white dark:bg-black shadow-[0_1px_3px_0_rgba(0,0,0,0.04)] dark:shadow-xl backdrop-blur-sm">
       <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1e293b] pb-4">
         <div>
           <div className="flex items-center gap-2">
@@ -82,7 +82,7 @@ export function LatencyChart({ data }: LatencyChartProps) {
       <CardContent className="pt-4">
         <ChartContainer config={chartConfig} className="aspect-auto h-[260px] w-full">
           <LineChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.3} vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.5} vertical={false} />
             <XAxis
               dataKey="time"
               stroke="#64748b"
@@ -100,12 +100,12 @@ export function LatencyChart({ data }: LatencyChartProps) {
             />
             <ReferenceLine
               y={300}
-              stroke="#1e40af"
+              stroke="#2563eb"
               strokeDasharray="4 4"
               strokeWidth={1.5}
               label={{
                 value: "SLA Limit (300ms)",
-                fill: "#60a5fa",
+                fill: "#2563eb",
                 fontSize: 10,
                 position: "insideTopRight",
               }}

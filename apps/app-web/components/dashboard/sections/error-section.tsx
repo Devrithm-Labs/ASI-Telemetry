@@ -61,14 +61,14 @@ export function ErrorSection({ data, summary }: ErrorSectionProps) {
   const faultsCount = summary?.total_errors ?? totalErrors;
 
   return (
-    <Card className="overflow-hidden border border-slate-200 dark:border-[#1e293b] bg-white dark:bg-black shadow-sm dark:shadow-xl">
+    <Card className="overflow-hidden rounded-xl border border-slate-200/90 dark:border-[#1e293b] bg-white dark:bg-black shadow-[0_1px_3px_0_rgba(0,0,0,0.04)] dark:shadow-xl">
       <div className="flex flex-col lg:flex-row">
         {/* Left Column: Metric Numbers & Stats */}
-        <div className="flex w-full flex-col justify-between border-b border-slate-200 dark:border-[#1e293b] p-6 lg:w-80 lg:border-b-0 lg:border-r bg-slate-50/50 dark:bg-black shrink-0">
+        <div className="flex w-full flex-col justify-between border-b border-slate-200 dark:border-[#1e293b] p-6 lg:w-80 lg:border-b-0 lg:border-r bg-slate-50/70 dark:bg-black shrink-0">
           <div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 dark:border-[#1e293b] bg-white dark:bg-black text-blue-600 dark:text-blue-400">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 dark:border-[#1e293b] bg-white dark:bg-black text-blue-600 dark:text-blue-400 shadow-xs">
                   <AlertCircle className="h-4 w-4" />
                 </div>
                 <span className="text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
@@ -94,22 +94,22 @@ export function ErrorSection({ data, summary }: ErrorSectionProps) {
           </div>
 
           {/* Breakdown Badges */}
-          <div className="mt-6 grid grid-cols-3 gap-1.5 border-t border-slate-200 dark:border-[#1e293b] pt-4">
-            <div className="rounded-md border border-slate-200 dark:border-[#1e293b] bg-white dark:bg-black p-2 text-center">
+          <div className="mt-6 grid grid-cols-3 gap-2 border-t border-slate-200 dark:border-[#1e293b] pt-4">
+            <div className="rounded-lg border border-slate-200/90 dark:border-[#1e293b] bg-white dark:bg-black p-2.5 text-center shadow-xs">
               <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">500 Errors</div>
-              <div className="mt-1 font-mono text-xs font-bold text-[#93c5fd]">
+              <div className="mt-1 font-mono text-xs font-bold text-blue-600 dark:text-[#93c5fd]">
                 {data.reduce((a, c) => a + c.serverError, 0).toLocaleString()}
               </div>
             </div>
-            <div className="rounded-md border border-slate-200 dark:border-[#1e293b] bg-white dark:bg-black p-2 text-center">
+            <div className="rounded-lg border border-slate-200/90 dark:border-[#1e293b] bg-white dark:bg-black p-2.5 text-center shadow-xs">
               <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">429 Limits</div>
-              <div className="mt-1 font-mono text-xs font-bold text-[#3b82f6]">
+              <div className="mt-1 font-mono text-xs font-bold text-blue-700 dark:text-[#3b82f6]">
                 {data.reduce((a, c) => a + c.rateLimit, 0).toLocaleString()}
               </div>
             </div>
-            <div className="rounded-md border border-slate-200 dark:border-[#1e293b] bg-white dark:bg-black p-2 text-center">
+            <div className="rounded-lg border border-slate-200/90 dark:border-[#1e293b] bg-white dark:bg-black p-2.5 text-center shadow-xs">
               <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">504 Timeouts</div>
-              <div className="mt-1 font-mono text-xs font-bold text-[#60a5fa]">
+              <div className="mt-1 font-mono text-xs font-bold text-sky-600 dark:text-[#60a5fa]">
                 {data.reduce((a, c) => a + c.timeout, 0).toLocaleString()}
               </div>
             </div>
@@ -145,7 +145,7 @@ export function ErrorSection({ data, summary }: ErrorSectionProps) {
           <div className="flex-1 min-h-[220px]">
             <ChartContainer config={chartConfig} className="aspect-auto h-[220px] w-full">
               <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.3} vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.5} vertical={false} />
                 <XAxis
                   dataKey="time"
                   stroke="#64748b"
@@ -164,7 +164,7 @@ export function ErrorSection({ data, summary }: ErrorSectionProps) {
                   }}
                 />
                 <ChartTooltip
-                  cursor={{ fill: "rgba(59, 130, 246, 0.08)" }}
+                  cursor={{ fill: "rgba(59, 130, 246, 0.05)" }}
                   content={<ChartTooltipContent indicator="dot" />}
                 />
                 <Bar dataKey="rateLimit" stackId="a" fill="#3b82f6" />
