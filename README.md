@@ -1,6 +1,5 @@
 # ASI-Telemetry
 
-<<<<<<< HEAD
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D24-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -275,41 +274,13 @@ Contributions are welcome.
 
 For bugs and feature requests, use the [GitHub Issues](https://github.com/ujjwalkat07/ASI-Telemetry/issues) page.
 
-## License
-
-ASI-Telemetry is distributed under the [MIT License](./LICENSE).
-
-Copyright (c) 2026 Devrithm Labs.
-=======
-ASI-Telemetry is an observability platform for AI agents. The repository contains a Next.js dashboard, a FastAPI backend, a Python SDK, and testing/telemetry examples.
-
-## Main components
-
-- `apps/app-web` — Next.js/React dashboard for viewing agent telemetry.
-- `apps/app-backend` — FastAPI API for receiving telemetry and serving dashboard data. ClickHouse is used for telemetry when available.
-- `apps/app-sdk` — Python SDK area for instrumenting applications and sending telemetry.
-- `apps/testing` — development/testing examples for telemetry instrumentation.
-
-## Python backend: run locally
-
-```bash
-cd apps/app-backend
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-python run.py
-```
-
-Open `http://localhost:8080/docs` for interactive API docs. The backend can fall back to in-memory telemetry storage if ClickHouse is unavailable; user accounts use a separate local SQLite database.
-
-## Authentication documentation
+## Authentication
 
 The backend includes signup, login, JWT access tokens, Argon2 password hashing, and a protected current-user endpoint.
 
 **Read [`apps/app-backend/AUTHENTICATION.md`](apps/app-backend/AUTHENTICATION.md)** for setup, architecture, line-by-line file responsibilities, sample API requests, expected errors, frontend integration, and security limitations.
 
-### Authentication endpoints
+### Authentication Endpoints
 
 | Method | Endpoint | Purpose |
 |---|---|---|
@@ -317,5 +288,8 @@ The backend includes signup, login, JWT access tokens, Argon2 password hashing, 
 | `POST` | `/api/auth/login` | Verify credentials and receive an access token |
 | `GET` | `/api/auth/me` | Return the signed-in user; requires a Bearer token |
 
-Before deploying, set a strong `AUTH_SECRET_KEY`. The authentication API is implemented, but the Next.js frontend is not yet wired to the login/signup flow and the existing dashboard endpoint is not yet protected. Refer to the authentication guide's production checklist.
->>>>>>> 8394fde (Updated code Login SignUp)
+## License
+
+ASI-Telemetry is distributed under the [MIT License](./LICENSE).
+
+Copyright (c) 2026 Devrithm Labs.

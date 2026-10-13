@@ -1,14 +1,8 @@
-<<<<<<< HEAD
 from typing import Optional
 from fastapi import APIRouter
 from controllers.telemetry import TelemetryController
 from schemas.telemetry import MetricPayload, LLMTracePayload
 from .websocket import manager
-=======
-from fastapi import APIRouter
-from controllers.telemetry import TelemetryController
-from schemas.telemetry import MetricPayload
->>>>>>> 8394fde (Updated code Login SignUp)
 
 router = APIRouter(prefix="/api", tags=["Telemetry"])
 
@@ -20,7 +14,6 @@ def ingest_metrics(payload: MetricPayload):
     return TelemetryController.ingest_metric(payload)
 
 
-<<<<<<< HEAD
 @router.post("/llm/traces", status_code=201)
 async def ingest_llm_trace(payload: LLMTracePayload):
     """Ingests single or root LLM execution trace into ClickHouse and broadcasts over WebSocket."""
@@ -59,10 +52,6 @@ def clear_llm_traces():
 
 
 @router.get("/dashboard")
-
-=======
-@router.get("/dashboard")
->>>>>>> 8394fde (Updated code Login SignUp)
 def get_dashboard_data(
     time_range: str = "7d",
     limit: int = 500,
@@ -82,7 +71,3 @@ def get_dashboard_data(
 def health_check():
     """Health check endpoint showing ClickHouse database status."""
     return TelemetryController.get_health()
-<<<<<<< HEAD
-
-=======
->>>>>>> 8394fde (Updated code Login SignUp)

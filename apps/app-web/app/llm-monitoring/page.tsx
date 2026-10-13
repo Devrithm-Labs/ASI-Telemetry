@@ -16,7 +16,6 @@ import {
   Clock,
   AlertOctagon,
   CheckCircle2,
-<<<<<<< HEAD
   ChevronDown,
   ChevronRight,
   Activity,
@@ -36,14 +35,10 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-=======
-} from "lucide-react";
->>>>>>> 8394fde (Updated code Login SignUp)
 import { useDashboard } from "@/components/dashboard/context/dashboard-context";
 import { DashboardFilters, SubTabItem } from "@/components/dashboard/layout/filters";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-<<<<<<< HEAD
   BarChart,
   Bar,
   LineChart,
@@ -85,60 +80,6 @@ const LLM_TABS: SubTabItem[] = [
   { id: "cost-tokens", label: "Cost & Tokens" },
   { id: "tools", label: "Tools" },
   { id: "run-types", label: "Run Types" },
-=======
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  ResponsiveContainer,
-} from "recharts";
-
-// LLM specific dataset
-const LLM_TOKEN_METRICS = [
-  { time: "12:00", promptTokens: 320, completionTokens: 140, cost: 0.82 },
-  { time: "13:00", promptTokens: 410, completionTokens: 190, cost: 1.15 },
-  { time: "14:00", promptTokens: 580, completionTokens: 260, cost: 1.62 },
-  { time: "15:00", promptTokens: 490, completionTokens: 210, cost: 1.34 },
-  { time: "16:00", promptTokens: 670, completionTokens: 320, cost: 1.94 },
-  { time: "17:00", promptTokens: 820, completionTokens: 410, cost: 2.45 },
-  { time: "18:00", promptTokens: 910, completionTokens: 480, cost: 2.82 },
-  { time: "19:00", promptTokens: 780, completionTokens: 390, cost: 2.31 },
-  { time: "20:00", promptTokens: 850, completionTokens: 440, cost: 2.58 },
-  { time: "21:00", promptTokens: 940, completionTokens: 520, cost: 3.05 },
-  { time: "22:00", promptTokens: 710, completionTokens: 340, cost: 2.08 },
-  { time: "23:00", promptTokens: 620, completionTokens: 290, cost: 1.76 },
-];
-
-const LLM_MODEL_LATENCY = [
-  { model: "gpt-4o", p50: 165, p90: 280, p99: 410 },
-  { model: "claude-3-5-sonnet", p50: 190, p90: 320, p99: 480 },
-  { model: "gemini-1.5-pro", p50: 145, p90: 240, p99: 360 },
-  { model: "deepseek-v3", p50: 210, p90: 360, p99: 520 },
-  { model: "text-embed-3-lg", p50: 38, p90: 65, p99: 98 },
-];
-
-const LLM_RATE_LIMITS = [
-  { time: "12:00", rateLimits: 0, retries: 2 },
-  { time: "14:00", rateLimits: 1, retries: 4 },
-  { time: "16:00", rateLimits: 3, retries: 8 },
-  { time: "18:00", rateLimits: 4, retries: 12 },
-  { time: "20:00", rateLimits: 2, retries: 6 },
-  { time: "22:00", rateLimits: 1, retries: 3 },
-];
-
-
-const LLM_TABS: SubTabItem[] = [
-  { id: "section-tokens", label: "Token Throughput", targetId: "section-tokens" },
-  { id: "section-latency", label: "Model Latency", targetId: "section-latency" },
-  { id: "section-cost", label: "Inference Cost ($)", targetId: "section-cost" },
-  { id: "section-ratelimits", label: "Rate Limits (429)", targetId: "section-ratelimits" },
->>>>>>> 8394fde (Updated code Login SignUp)
 ];
 
 export default function LLMMonitoringPage() {
@@ -154,7 +95,6 @@ export default function LLMMonitoringPage() {
     isRefreshing,
   } = useDashboard();
 
-<<<<<<< HEAD
   const [activeSubTab, setActiveSubTab] = React.useState<string>("traces");
   const [selectedModel, setSelectedModel] = React.useState("All Models");
   const [isModelDropdownOpen, setIsModelDropdownOpen] = React.useState(false);
@@ -261,15 +201,7 @@ export default function LLMMonitoringPage() {
 
       return keys.map((k) => buckets[k]!);
     }
-
-    return [
-      { time: "12:00", traces: 24, success: 24, error: 0 },
-      { time: "14:00", traces: 42, success: 41, error: 1 },
-      { time: "16:00", traces: 56, success: 56, error: 0 },
-      { time: "18:00", traces: 78, success: 76, error: 2 },
-      { time: "20:00", traces: 64, success: 64, error: 0 },
-      { time: "22:00", traces: 50, success: 49, error: 1 },
-    ];
+    return [];
   }, [filteredTraces]);
 
   // 2. Trace Latency over time
@@ -284,15 +216,7 @@ export default function LLMMonitoringPage() {
         return { time, p50, p90 };
       });
     }
-
-    return [
-      { time: "12:00", p50: 160, p90: 240 },
-      { time: "14:00", p50: 195, p90: 280 },
-      { time: "16:00", p50: 230, p90: 340 },
-      { time: "18:00", p50: 215, p90: 310 },
-      { time: "20:00", p50: 180, p90: 260 },
-      { time: "22:00", p50: 155, p90: 220 },
-    ];
+    return [];
   }, [filteredTraces, avgLatency]);
 
   // 3. Hourly token ingestion data
@@ -321,21 +245,13 @@ export default function LLMMonitoringPage() {
         const b = buckets[time]!;
         return {
           time,
-          promptTokens: b.promptTokens || 120,
-          completionTokens: b.completionTokens || 180,
-          cost: b.cost || 0.0001,
+          promptTokens: b.promptTokens,
+          completionTokens: b.completionTokens,
+          cost: b.cost,
         };
       });
     }
-
-    return [
-      { time: "12:00", promptTokens: 320, completionTokens: 140, cost: 0.82 },
-      { time: "14:00", promptTokens: 580, completionTokens: 260, cost: 1.62 },
-      { time: "16:00", promptTokens: 670, completionTokens: 320, cost: 1.94 },
-      { time: "18:00", promptTokens: 910, completionTokens: 480, cost: 2.82 },
-      { time: "20:00", promptTokens: 850, completionTokens: 440, cost: 2.58 },
-      { time: "22:00", promptTokens: 710, completionTokens: 340, cost: 2.08 },
-    ];
+    return [];
   }, [filteredTraces]);
 
   // 4. Model Latency Distribution
@@ -343,9 +259,9 @@ export default function LLMMonitoringPage() {
     if (traces.length > 0) {
       const grouped: Record<string, number[]> = {};
       traces.forEach((t) => {
-        const m = t.model || "gemini-3.5-flash";
+        const m = t.model || "Unknown";
         if (!grouped[m]) grouped[m] = [];
-        grouped[m].push(t.latency_ms || 200);
+        grouped[m].push(t.latency_ms || 0);
       });
       return Object.entries(grouped).map(([model, lats]) => {
         const avg = Math.round(lats.reduce((a, b) => a + b, 0) / lats.length);
@@ -356,28 +272,52 @@ export default function LLMMonitoringPage() {
         };
       });
     }
-    return [
-      { model: "gemini-3.5-flash", p50: 145, p90: 240 },
-      { model: "gemini-3.5-flash-lite", p50: 95, p90: 160 },
-      { model: "gemini-3.8-flash", p50: 210, p90: 360 },
-    ];
+    return [];
   }, [traces]);
 
   // 5. Tools & Function Executions
-  const toolsData = React.useMemo(() => [
-    { name: "uagent_message_dispatcher", calls: 42, avgLatency: "14ms", success: "100%" },
-    { name: "gemini_model_inference", calls: filteredTraces.length || 28, avgLatency: `${avgLatency}ms`, success: `${successRate}%` },
-    { name: "asi_telemetry_reporter", calls: 86, avgLatency: "6ms", success: "100%" },
-    { name: "almanac_contract_resolver", calls: 12, avgLatency: "18ms", success: "100%" },
-  ], [filteredTraces.length, avgLatency, successRate]);
+  const toolsData = React.useMemo(() => {
+    if (filteredTraces.length === 0) return [];
+    const grouped: Record<string, { count: number; totalLat: number; success: number }> = {};
+    filteredTraces.forEach((t) => {
+      const name = t.name || "default";
+      if (!grouped[name]) grouped[name] = { count: 0, totalLat: 0, success: 0 };
+      grouped[name].count += 1;
+      grouped[name].totalLat += t.latency_ms || 0;
+      if (t.status === "success") grouped[name].success += 1;
+    });
+    return Object.entries(grouped).map(([name, stat]) => ({
+      name,
+      calls: stat.count,
+      avgLatency: `${Math.round(stat.totalLat / stat.count)}ms`,
+      success: `${Math.round((stat.success / stat.count) * 100)}%`,
+    }));
+  }, [filteredTraces]);
 
   // 6. Run Types Distribution
-  const runTypesData = React.useMemo(() => [
-    { type: "llm", label: "LLM Generations", count: filteredTraces.length || 28, share: "62%", avgLatency: `${avgLatency}ms`, color: "#2563eb" },
-    { type: "agent", label: "Agent Handlers", count: 18, share: "24%", avgLatency: "88ms", color: "#38bdf8" },
-    { type: "chain", label: "Chain Flows", count: 8, share: "10%", avgLatency: "140ms", color: "#818cf8" },
-    { type: "tool", label: "Tool Executions", count: 4, share: "4%", avgLatency: "12ms", color: "#34d399" },
-  ], [filteredTraces.length, avgLatency]);
+  const runTypesData = React.useMemo(() => {
+    if (filteredTraces.length === 0) return [];
+    const grouped: Record<string, number> = {};
+    filteredTraces.forEach((t) => {
+      const rType = t.run_type || "llm";
+      grouped[rType] = (grouped[rType] || 0) + 1;
+    });
+    const total = filteredTraces.length || 1;
+    const colors: Record<string, string> = {
+      llm: "#2563eb",
+      agent: "#38bdf8",
+      chain: "#818cf8",
+      tool: "#34d399",
+    };
+    return Object.entries(grouped).map(([type, count]) => ({
+      type,
+      label: type.toUpperCase(),
+      count,
+      share: `${Math.round((count / total) * 100)}%`,
+      avgLatency: `${avgLatency}ms`,
+      color: colors[type] || "#3b82f6",
+    }));
+  }, [filteredTraces, avgLatency]);
 
   // Formatted display values
   const displayTotalTokens = hasLiveTraces
@@ -405,19 +345,6 @@ export default function LLMMonitoringPage() {
     : "$54.20";
 
   const activeTabMeta = LLM_TABS.find((t) => t.id === activeSubTab) || LLM_TABS[0] || { id: "traces", label: "Traces" };
-=======
-  const [activeSubTab, setActiveSubTab] = React.useState("section-tokens");
-  const [selectedModel, setSelectedModel] = React.useState("All Models");
-  const [isModelDropdownOpen, setIsModelDropdownOpen] = React.useState(false);
-
-  const models = [
-    "All Models",
-    "gpt-4o",
-    "claude-3-5-sonnet",
-    "gemini-1.5-pro",
-    "deepseek-v3",
-  ];
->>>>>>> 8394fde (Updated code Login SignUp)
 
   return (
     <>
@@ -431,14 +358,10 @@ export default function LLMMonitoringPage() {
         onSubTabChange={setActiveSubTab}
         isLive={isLive}
         onToggleLive={() => setIsLive(!isLive)}
-<<<<<<< HEAD
         onRefresh={() => {
           handleRefresh();
           fetchLLMTraces();
         }}
-=======
-        onRefresh={handleRefresh}
->>>>>>> 8394fde (Updated code Login SignUp)
         isRefreshing={isRefreshing}
         routeCategory="Observability"
         routeTitle="LLM Monitoring"
@@ -454,18 +377,11 @@ export default function LLMMonitoringPage() {
             >
               <Bot className="h-3.5 w-3.5 text-blue-400" />
               <span>{selectedModel}</span>
-<<<<<<< HEAD
               <ChevronDown className="h-3 w-3 text-slate-400" />
             </button>
 
             {isModelDropdownOpen && (
               <div className="absolute right-0 top-9 z-50 w-48 rounded-md border border-[#1e293b] bg-[#090d16] py-1 shadow-2xl backdrop-blur-md">
-=======
-            </button>
-
-            {isModelDropdownOpen && (
-              <div className="absolute right-0 top-9 z-50 w-44 rounded-md border border-[#1e293b] bg-[#090d16] py-1 shadow-2xl backdrop-blur-md">
->>>>>>> 8394fde (Updated code Login SignUp)
                 <div className="px-2.5 py-1 text-[10px] font-semibold uppercase text-slate-400">
                   Filter Model
                 </div>
@@ -476,22 +392,14 @@ export default function LLMMonitoringPage() {
                       setSelectedModel(m);
                       setIsModelDropdownOpen(false);
                     }}
-<<<<<<< HEAD
                     className={`flex w-full items-center justify-between px-2.5 py-1.5 text-xs transition-colors ${
-=======
-                    className={`flex w-full items-center px-2.5 py-1.5 text-xs transition-colors ${
->>>>>>> 8394fde (Updated code Login SignUp)
                       selectedModel === m
                         ? "bg-blue-600/20 text-blue-300 font-semibold"
                         : "text-slate-300 hover:bg-[#141414] hover:text-white"
                     }`}
                   >
-<<<<<<< HEAD
                     <span>{m}</span>
                     {selectedModel === m && <Check className="h-3.5 w-3.5 text-blue-400" />}
-=======
-                    {m}
->>>>>>> 8394fde (Updated code Login SignUp)
                   </button>
                 ))}
               </div>
@@ -501,36 +409,6 @@ export default function LLMMonitoringPage() {
       />
 
       <main className="flex-1 overflow-y-auto px-6 py-5 space-y-6 scroll-smooth">
-<<<<<<< HEAD
-=======
-        {/* Header Summary */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#1e293b] pb-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-md border border-[#1e293b] bg-black text-blue-400">
-                <Bot className="h-4 w-4" />
-              </div>
-              <h2 className="text-xl font-bold tracking-tight text-white">
-                LLM & Foundation Model Telemetry
-              </h2>
-              <span className="rounded-full border border-blue-900/60 bg-blue-950/40 px-2.5 py-0.5 text-xs font-mono font-semibold text-blue-300">
-                4 Providers Active
-              </span>
-            </div>
-            <p className="mt-1 text-xs text-slate-400">
-              Live token throughput, model latency breakdowns, cost allocation, and rate-limit economics.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="flex items-center gap-1.5 rounded-md border border-[#1e293b] bg-black px-3 py-1.5 text-xs text-slate-300">
-              <Sparkles className="h-3 w-3 text-blue-400" />
-              <span>Optimized Model Routing: <span className="font-semibold text-blue-300">Enabled</span></span>
-            </span>
-          </div>
-        </div>
-
->>>>>>> 8394fde (Updated code Login SignUp)
         {/* Top LLM KPI Overview Strip */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {/* 1. Total Tokens */}
@@ -539,17 +417,10 @@ export default function LLMMonitoringPage() {
               <span className="text-xs font-medium text-slate-400">Total Tokens Streamed</span>
               <BrainCircuit className="h-4 w-4 text-blue-400" />
             </div>
-<<<<<<< HEAD
             <div className="mt-2 text-2xl font-bold text-white font-mono">{displayTotalTokens}</div>
             <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
               <span>Prompt: {displayPromptTokens}</span>
               <span className="text-blue-300 font-mono">Comp: {displayCompTokens}</span>
-=======
-            <div className="mt-2 text-2xl font-bold text-white font-mono">18.42M</div>
-            <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
-              <span>Prompt: 11.2M</span>
-              <span className="text-blue-300 font-mono">Comp: 7.2M</span>
->>>>>>> 8394fde (Updated code Login SignUp)
             </div>
           </Card>
 
@@ -559,15 +430,9 @@ export default function LLMMonitoringPage() {
               <span className="text-xs font-medium text-slate-400">Time to First Token (TTFT)</span>
               <Clock className="h-4 w-4 text-blue-400" />
             </div>
-<<<<<<< HEAD
             <div className="mt-2 text-2xl font-bold text-white font-mono">{avgLatency} ms</div>
             <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
               <span>P90: {p90Latency}ms</span>
-=======
-            <div className="mt-2 text-2xl font-bold text-white font-mono">218 ms</div>
-            <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
-              <span>P90: 310ms</span>
->>>>>>> 8394fde (Updated code Login SignUp)
               <span className="text-blue-300 font-semibold">SLA: 99.8%</span>
             </div>
           </Card>
@@ -578,17 +443,10 @@ export default function LLMMonitoringPage() {
               <span className="text-xs font-medium text-slate-400">Total Incurred Spend</span>
               <Coins className="h-4 w-4 text-blue-400" />
             </div>
-<<<<<<< HEAD
             <div className="mt-2 text-2xl font-bold text-white font-mono">{displaySpend}</div>
             <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
               <span>Avg: ${filteredTraces.length > 0 ? (totalCost / filteredTraces.length).toFixed(6) : "0.0029"} / call</span>
               <span className="text-emerald-400 font-semibold">Optimized</span>
-=======
-            <div className="mt-2 text-2xl font-bold text-white font-mono">$54.20</div>
-            <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
-              <span>Avg: $0.0029 / call</span>
-              <span className="text-emerald-400 font-semibold">-4.1% cost</span>
->>>>>>> 8394fde (Updated code Login SignUp)
             </div>
           </Card>
 
@@ -598,7 +456,6 @@ export default function LLMMonitoringPage() {
               <span className="text-xs font-medium text-slate-400">Rate Limit Breaches (429)</span>
               <AlertOctagon className="h-4 w-4 text-blue-400" />
             </div>
-<<<<<<< HEAD
             <div className="mt-2 text-2xl font-bold text-white font-mono">
               {hasLiveTraces ? `${errorCount} Events` : "11 Events"}
             </div>
@@ -607,17 +464,10 @@ export default function LLMMonitoringPage() {
               <span className={`font-semibold ${errorCount === 0 ? "text-blue-300" : "text-amber-300"}`}>
                 {errorCount === 0 ? "Healthy" : "Observed"}
               </span>
-=======
-            <div className="mt-2 text-2xl font-bold text-white font-mono">11 Events</div>
-            <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
-              <span>Auto-retries: 100% ok</span>
-              <span className="text-blue-300 font-semibold">Healthy</span>
->>>>>>> 8394fde (Updated code Login SignUp)
             </div>
           </Card>
         </div>
 
-<<<<<<< HEAD
         {/* Section Title Dropdown matching media_1791662388097.png */}
         <div className="relative pt-2">
           <div className="flex items-center justify-between border-b border-[#1e293b] pb-3">
@@ -1124,276 +974,10 @@ export default function LLMMonitoringPage() {
                       <h3 className="text-base font-bold text-white tracking-tight">Run Types Breakdown</h3>
                       <p className="text-xs text-slate-400">Execution distribution by run archetype</p>
                     </div>
-=======
-        {/* Horizontal Section 1: Token Generation & Volume (Number + Bar Graph) */}
-        <Card id="section-tokens" className="scroll-mt-6 border border-[#1e293b] bg-black p-5 shadow-xl hover:border-blue-500/40 transition-colors">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-center">
-            {/* Left prominent metric display */}
-            <div className="lg:col-span-4 border-b lg:border-b-0 lg:border-r border-[#1e293b] pb-4 lg:pb-0 lg:pr-6 space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white shadow-md shadow-blue-500/20">
-                  <BrainCircuit className="h-4 w-4" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-white">Token Throughput</h3>
-                  <p className="text-[11px] text-slate-400">Prompt vs Completion Breakdown</p>
-                </div>
-              </div>
-
-              <div className="pt-2">
-                <div className="text-3xl font-extrabold text-white tracking-tight font-mono">
-                  18,420,119
-                </div>
-                <div className="flex items-center gap-2 text-xs text-blue-400 font-medium mt-1">
-                  <TrendingUp className="h-3.5 w-3.5" />
-                  <span>+18.4% token volume over 7d</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#1e293b] text-xs">
-                <div className="rounded-lg border border-[#1e293b] bg-[#080808] p-2.5">
-                  <span className="text-[11px] text-slate-400">Prompt Tokens</span>
-                  <div className="text-sm font-bold text-blue-400 font-mono mt-0.5">11.2M (61%)</div>
-                </div>
-                <div className="rounded-lg border border-[#1e293b] bg-[#080808] p-2.5">
-                  <span className="text-[11px] text-slate-400">Completion Tokens</span>
-                  <div className="text-sm font-bold text-sky-300 font-mono mt-0.5">7.2M (39%)</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Bar Graph */}
-            <div className="lg:col-span-8">
-              <div className="flex items-center justify-between mb-3 text-xs">
-                <span className="font-semibold text-slate-300">Hourly Token Ingestion (kTokens)</span>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-blue-600" />
-                    <span className="text-[11px] text-slate-400">Prompt</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-sky-400" />
-                    <span className="text-[11px] text-slate-400">Completion</span>
                   </div>
                 </div>
               </div>
 
-              <div className="h-44 w-full">
-                <ChartContainer
-                  config={{
-                    promptTokens: { label: "Prompt Tokens (k)", color: "#2563eb" },
-                    completionTokens: { label: "Completion Tokens (k)", color: "#38bdf8" },
-                  }}
-                  className="h-full w-full"
-                >
-                  <BarChart data={LLM_TOKEN_METRICS} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} opacity={0.6} />
-                    <XAxis dataKey="time" stroke="#64748b" tickLine={false} axisLine={false} fontSize={10} />
-                    <YAxis stroke="#64748b" tickLine={false} axisLine={false} fontSize={10} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="promptTokens" fill="#2563eb" radius={[4, 4, 0, 0]} stackId="tokens" />
-                    <Bar dataKey="completionTokens" fill="#38bdf8" radius={[4, 4, 0, 0]} stackId="tokens" />
-                  </BarChart>
-                </ChartContainer>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Horizontal Section 2: Model Latency Breakdown (Number + Bar Graph) */}
-        <Card id="section-latency" className="scroll-mt-6 border border-[#1e293b] bg-black p-5 shadow-xl hover:border-blue-500/40 transition-colors">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-center">
-            {/* Left metric display */}
-            <div className="lg:col-span-4 border-b lg:border-b-0 lg:border-r border-[#1e293b] pb-4 lg:pb-0 lg:pr-6 space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white shadow-md shadow-blue-500/20">
-                  <Gauge className="h-4 w-4" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-white">Model Latency Distribution</h3>
-                  <p className="text-[11px] text-slate-400">P50 vs P90 Across Foundation Models</p>
-                </div>
-              </div>
-
-              <div className="pt-2">
-                <div className="text-3xl font-extrabold text-white tracking-tight font-mono">
-                  165 ms
-                </div>
-                <div className="flex items-center gap-2 text-xs text-blue-400 font-medium mt-1">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  <span>Fastest: gemini-1.5-pro (145ms P50)</span>
-                </div>
-              </div>
-
-              <div className="space-y-1.5 pt-2 border-t border-[#1e293b] text-xs">
-                <div className="flex items-center justify-between text-slate-400">
-                  <span>Fastest TTFT</span>
-                  <span className="font-semibold text-white font-mono">112 ms</span>
-                </div>
-                <div className="flex items-center justify-between text-slate-400">
-                  <span>Inter-Token Latency</span>
-                  <span className="font-semibold text-blue-300 font-mono">14.2 ms / token</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Bar Graph */}
-            <div className="lg:col-span-8">
-              <div className="flex items-center justify-between mb-3 text-xs">
-                <span className="font-semibold text-slate-300">Latency by Model Family (ms)</span>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-blue-600" />
-                    <span className="text-[11px] text-slate-400">P50</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-sky-400" />
-                    <span className="text-[11px] text-slate-400">P90</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="h-44 w-full">
-                <ChartContainer
-                  config={{
-                    p50: { label: "P50 Latency (ms)", color: "#2563eb" },
-                    p90: { label: "P90 Latency (ms)", color: "#38bdf8" },
-                  }}
-                  className="h-full w-full"
-                >
-                  <BarChart data={LLM_MODEL_LATENCY} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} opacity={0.6} />
-                    <XAxis dataKey="model" stroke="#64748b" tickLine={false} axisLine={false} fontSize={10} />
-                    <YAxis stroke="#64748b" tickLine={false} axisLine={false} fontSize={10} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="p50" fill="#2563eb" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="p90" fill="#38bdf8" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ChartContainer>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Horizontal Section 3: Incurred Cost & Economics (Number + Bar Graph) */}
-        <Card id="section-cost" className="scroll-mt-6 border border-[#1e293b] bg-black p-5 shadow-xl hover:border-blue-500/40 transition-colors">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-center">
-            {/* Left metric display */}
-            <div className="lg:col-span-4 border-b lg:border-b-0 lg:border-r border-[#1e293b] pb-4 lg:pb-0 lg:pr-6 space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white shadow-md shadow-blue-500/20">
-                  <Coins className="h-4 w-4" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-white">Inference Cost Spend</h3>
-                  <p className="text-[11px] text-slate-400">Total API Billing Accumulation</p>
-                </div>
-              </div>
-
-              <div className="pt-2">
-                <div className="text-3xl font-extrabold text-white tracking-tight font-mono">
-                  $54.20
-                </div>
-                <div className="flex items-center gap-2 text-xs text-blue-400 font-medium mt-1">
-                  <TrendingDown className="h-3.5 w-3.5 text-emerald-400" />
-                  <span className="text-emerald-400">Under daily budget target ($80.00)</span>
-                </div>
-              </div>
-
-              <div className="space-y-1.5 pt-2 border-t border-[#1e293b] text-xs">
-                <div className="flex items-center justify-between text-slate-400">
-                  <span>GPT-4o Spend</span>
-                  <span className="font-semibold text-white font-mono">$31.40 (58%)</span>
-                </div>
-                <div className="flex items-center justify-between text-slate-400">
-                  <span>Claude 3.5 Sonnet Spend</span>
-                  <span className="font-semibold text-blue-300 font-mono">$18.10 (33%)</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Bar Graph */}
-            <div className="lg:col-span-8">
-              <div className="flex items-center justify-between mb-3 text-xs">
-                <span className="font-semibold text-slate-300">Hourly Cost Accrual ($ USD)</span>
-                <span className="text-[11px] text-blue-400 font-mono">Real-time Calculation</span>
-              </div>
-
-              <div className="h-44 w-full">
-                <ChartContainer
-                  config={{
-                    cost: { label: "Hourly Spend ($)", color: "#2563eb" },
-                  }}
-                  className="h-full w-full"
-                >
-                  <BarChart data={LLM_TOKEN_METRICS} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} opacity={0.6} />
-                    <XAxis dataKey="time" stroke="#64748b" tickLine={false} axisLine={false} fontSize={10} />
-                    <YAxis stroke="#64748b" tickLine={false} axisLine={false} fontSize={10} tickFormatter={(v) => `$${v}`} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="cost" fill="#2563eb" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ChartContainer>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Horizontal Section 4: Rate Limits & Status Codes */}
-        <Card id="section-ratelimits" className="scroll-mt-6 border border-[#1e293b] bg-black p-5 shadow-xl hover:border-blue-500/40 transition-colors">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-center">
-            {/* Left metric display */}
-            <div className="lg:col-span-4 border-b lg:border-b-0 lg:border-r border-[#1e293b] pb-4 lg:pb-0 lg:pr-6 space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white shadow-md shadow-blue-500/20">
-                  <AlertOctagon className="h-4 w-4" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-white">Rate Limit Saturation (429)</h3>
-                  <p className="text-[11px] text-slate-400">TPM / RPM Quota Tracking</p>
-                </div>
-              </div>
-
-              <div className="pt-2">
-                <div className="text-3xl font-extrabold text-white tracking-tight font-mono">
-                  11
-                </div>
-                <div className="flex items-center gap-2 text-xs text-blue-400 font-medium mt-1">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  <span>Quota Saturation: 42% (Normal)</span>
-                </div>
-              </div>
-
-              <div className="space-y-1.5 pt-2 border-t border-[#1e293b] text-xs">
-                <div className="flex items-center justify-between text-slate-400">
-                  <span>Successful Auto-Retries</span>
-                  <span className="font-semibold text-white font-mono">35 / 35 (100%)</span>
-                </div>
-                <div className="flex items-center justify-between text-slate-400">
-                  <span>Backoff Avg Delay</span>
-                  <span className="font-semibold text-blue-300 font-mono">1.2 seconds</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Bar Graph */}
-            <div className="lg:col-span-8">
-              <div className="flex items-center justify-between mb-3 text-xs">
-                <span className="font-semibold text-slate-300">Rate Limit Events & Retries</span>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-blue-600" />
-                    <span className="text-[11px] text-slate-400">429s</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-sky-400" />
-                    <span className="text-[11px] text-slate-400">Retries</span>
->>>>>>> 8394fde (Updated code Login SignUp)
-                  </div>
-                </div>
-              </div>
-
-<<<<<<< HEAD
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
                 {runTypesData.map((rt) => (
                   <div
@@ -1420,29 +1004,6 @@ export default function LLMMonitoringPage() {
             </Card>
           </div>
         )}
-=======
-              <div className="h-44 w-full">
-                <ChartContainer
-                  config={{
-                    rateLimits: { label: "429 Rate Limits", color: "#2563eb" },
-                    retries: { label: "Automatic Retries", color: "#38bdf8" },
-                  }}
-                  className="h-full w-full"
-                >
-                  <BarChart data={LLM_RATE_LIMITS} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} opacity={0.6} />
-                    <XAxis dataKey="time" stroke="#64748b" tickLine={false} axisLine={false} fontSize={10} />
-                    <YAxis stroke="#64748b" tickLine={false} axisLine={false} fontSize={10} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="rateLimits" fill="#2563eb" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="retries" fill="#38bdf8" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ChartContainer>
-              </div>
-            </div>
-          </div>
-        </Card>
->>>>>>> 8394fde (Updated code Login SignUp)
       </main>
     </>
   );

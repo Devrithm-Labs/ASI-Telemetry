@@ -15,11 +15,12 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { ErrorMetricPoint } from "../context/dashboard-types";
+import { ErrorMetricPoint, MetricSummary } from "../context/dashboard-types";
 import { AlertCircle, ShieldAlert, TrendingDown } from "lucide-react";
 
 interface ErrorSectionProps {
   data: ErrorMetricPoint[];
+  summary?: MetricSummary | null;
 }
 
 const chartConfig = {
@@ -41,7 +42,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-export function ErrorSection({ data }: ErrorSectionProps) {
+export function ErrorSection({ data, summary }: ErrorSectionProps) {
   const latestErrorRate = data.length > 0 ? (data[data.length - 1]?.errorRate ?? 0) : 0;
   const totalErrors = React.useMemo(
     () =>
@@ -52,6 +53,12 @@ export function ErrorSection({ data }: ErrorSectionProps) {
       ),
     [data]
   );
+
+  const errorRateDisplay = summary?.error_rate != null
+    ? summary.error_rate.toFixed(1)
+    : (data.length > 0 ? latestErrorRate.toFixed(1) : "0.0");
+
+  const faultsCount = summary?.total_errors ?? totalErrors;
 
   return (
     <Card className="overflow-hidden border border-[#1e293b] bg-black shadow-xl">
@@ -73,7 +80,11 @@ export function ErrorSection({ data }: ErrorSectionProps) {
             {/* Big Primary Metric Number */}
             <div className="mt-4">
               <div className="text-4xl font-bold tracking-tight text-white font-mono">
-                {latestErrorRate} <span className="text-xl text-blue-400 font-sans font-medium">%</span>
+                {errorRateDisplay} <span className="text-xl text-blue-400 font-sans font-medium">%</span>
+              </div>
+              <div className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-400 font-mono">
+                <span className="text-red-400 font-semibold">{faultsCount.toLocaleString()}</span>
+                <span>failed invocations</span>
               </div>
             </div>
 
@@ -83,9 +94,15 @@ export function ErrorSection({ data }: ErrorSectionProps) {
           </div>
 
           {/* Breakdown Badges */}
-          <div className="mt-6 grid grid-cols-2 gap-2 border-t border-[#1e293b] pt-4">
+          <div className="mt-6 grid grid-cols-3 gap-1.5 border-t border-[#1e293b] pt-4">
             <div className="rounded-md border border-[#1e293b] bg-black p-2 text-center">
-              <div className="text-[10px] text-slate-400 font-medium">429 Rate Limits</div>
+              <div className="text-[10px] text-slate-400 font-medium">500 Errors</div>
+              <div className="mt-1 font-mono text-xs font-bold text-[#93c5fd]">
+                {data.reduce((a, c) => a + c.serverError, 0).toLocaleString()}
+              </div>
+            </div>
+            <div className="rounded-md border border-[#1e293b] bg-black p-2 text-center">
+              <div className="text-[10px] text-slate-400 font-medium">429 Limits</div>
               <div className="mt-1 font-mono text-xs font-bold text-[#3b82f6]">
                 {data.reduce((a, c) => a + c.rateLimit, 0).toLocaleString()}
               </div>

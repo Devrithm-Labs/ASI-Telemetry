@@ -4,6 +4,7 @@ import * as React from "react";
 import { Gauge, LayoutDashboard, Bell } from "lucide-react";
 import { useDashboard } from "@/components/dashboard/context/dashboard-context";
 import { DashboardFilters, SubTabItem } from "@/components/dashboard/layout/filters";
+import { DashboardFilterToolbar } from "@/components/dashboard/layout/dashboard-filter-toolbar";
 import { OverviewMetricsStrip } from "@/components/dashboard/overview-metrics-strip";
 import { LatencySection } from "@/components/dashboard/sections/latency-section";
 import { RequestSection } from "@/components/dashboard/sections/request-section";
@@ -78,59 +79,44 @@ export default function ToolMonitoringPage() {
 
   return (
     <>
-      {/* Route-Specific Filter Bar for Tool Monitoring */}
+      {/* Route Navigation & Section Sub-Tabs Bar */}
       <DashboardFilters
-        selectedProject={selectedProject}
-        onProjectChange={setSelectedProject}
-        selectedFunction={selectedFunction}
-        onFunctionChange={setSelectedFunction}
-        applications={applications}
-        timeRange={timeRange}
-        onTimeRangeChange={setTimeRange}
         subTabs={TOOL_MONITORING_TABS}
         activeSubTab={activeSubTab}
         onSubTabChange={setActiveSubTab}
-        isLive={isLive}
-        onToggleLive={() => setIsLive(!isLive)}
-        onRefresh={handleRefresh}
-        isRefreshing={isRefreshing}
         routeCategory="Observability"
         routeTitle="Tool Monitoring"
         routeIcon={Gauge}
-        showLiveToggle={true}
-        showTimeRange={true}
-        showProjectSelector={true}
+        hideFilterControls={true}
       />
 
       {/* Scrollable Main Content */}
       <main className="flex-1 overflow-y-auto px-6 py-5 space-y-6 scroll-smooth">
         {activeHeaderTab === "Monitoring" ? (
           <div className="space-y-6">
-            {/* Dashboard Title & Overview Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-[#1e293b]/70 pb-4">
+            {/* Dashboard Title & Overview Header with Aligned Professional Filter Toolbar */}
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-[#1e293b]/70 pb-4">
               <div>
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <h1 className="text-xl font-bold tracking-tight text-white">
-                    Agent Tool Monitoring Dashboard
-                  </h1>
-                  <span className="rounded-md border border-blue-500/30 bg-blue-950/40 px-2.5 py-0.5 text-xs font-mono font-medium text-blue-300">
-                    Agent: {selectedProject}
-                  </span>
-                  <span className="rounded-md border border-emerald-500/30 bg-emerald-950/40 px-2.5 py-0.5 text-xs font-mono font-medium text-emerald-300">
-                    fn: {selectedFunction === "all" ? "All Functions" : selectedFunction}
-                  </span>
-                </div>
-                <p className="mt-1.5 text-xs text-slate-400">
+                <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                  Agent Tool Monitoring Dashboard
+                </h1>
+                <p className="mt-1 text-xs text-slate-400">
                   Live ClickHouse telemetry observability for distributed agent executions, response times, host resource pressure, and trace spans.
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-950/30 px-2.5 py-1 text-[11px] font-medium text-emerald-400">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>ClickHouse Connected</span>
-                </span>
-              </div>
+              {/* Professional Filter UI Component */}
+              <DashboardFilterToolbar
+                selectedProject={selectedProject}
+                onProjectChange={setSelectedProject}
+                selectedFunction={selectedFunction}
+                onFunctionChange={setSelectedFunction}
+                applications={applications}
+                timeRange={timeRange}
+                onTimeRangeChange={setTimeRange}
+                onRefresh={handleRefresh}
+                isRefreshing={isRefreshing}
+              />
             </div>
 
             {/* Top Overview KPI Metric Cards */}
@@ -159,22 +145,22 @@ export default function ToolMonitoringPage() {
 
             {/* 1. Request Volume & Throughput Horizontal Section */}
             <div id="section-request" className="scroll-mt-6 transition-all duration-300">
-              <RequestSection data={requestData} />
+              <RequestSection data={requestData} timeRange={timeRange} summary={summary} />
             </div>
 
             {/* 2. Latency Horizontal Section (Number + Bar Graph) */}
             <div id="section-latency" className="scroll-mt-6 transition-all duration-300">
-              <LatencySection data={latencyData} />
+              <LatencySection data={latencyData} summary={summary} />
             </div>
 
             {/* 3. Success, Failure & Error Horizontal Section */}
             <div id="section-error" className="scroll-mt-6 transition-all duration-300">
-              <ErrorSection data={errorData} />
+              <ErrorSection data={errorData} summary={summary} />
             </div>
 
             {/* 4. CPU & Compute Utilization Horizontal Section */}
             <div id="section-cpu" className="scroll-mt-6 transition-all duration-300">
-              <CpuSection data={cpuData} />
+              <CpuSection data={cpuData} summary={summary} />
             </div>
           </div>
         ) : null}

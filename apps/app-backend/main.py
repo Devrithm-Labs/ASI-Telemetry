@@ -3,23 +3,16 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import db
-<<<<<<< HEAD
 from routes import telemetry_router, ws_router
-=======
-from routes import telemetry_router
 from routes.auth import router as auth_router
 from auth.database import initialize_auth_database
->>>>>>> 8394fde (Updated code Login SignUp)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Connect to ClickHouse on server startup
     db.connect()
-<<<<<<< HEAD
-=======
     initialize_auth_database()
->>>>>>> 8394fde (Updated code Login SignUp)
     yield
 
 
@@ -41,11 +34,8 @@ app.add_middleware(
 
 # Register API routes
 app.include_router(telemetry_router)
-<<<<<<< HEAD
 app.include_router(ws_router)
-=======
 app.include_router(auth_router)
->>>>>>> 8394fde (Updated code Login SignUp)
 
 
 @app.get("/")

@@ -16,11 +16,12 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { LatencyMetricPoint } from "../context/dashboard-types";
+import { LatencyMetricPoint, MetricSummary } from "../context/dashboard-types";
 import { Clock, ShieldCheck, TrendingDown } from "lucide-react";
 
 interface LatencySectionProps {
   data: LatencyMetricPoint[];
+  summary?: MetricSummary | null;
 }
 
 const chartConfig = {
@@ -38,7 +39,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-export function LatencySection({ data }: LatencySectionProps) {
+export function LatencySection({ data, summary }: LatencySectionProps) {
   const avgP50 = React.useMemo(
     () => Math.round(data.reduce((acc, curr) => acc + curr.p50, 0) / (data.length || 1)),
     [data]
@@ -48,7 +49,7 @@ export function LatencySection({ data }: LatencySectionProps) {
     [data]
   );
   const maxP99 = React.useMemo(
-    () => Math.max(...data.map((d) => d.p99)),
+    () => (data.length > 0 ? Math.max(...data.map((d) => d.p99)) : 0),
     [data]
   );
 
@@ -76,7 +77,9 @@ export function LatencySection({ data }: LatencySectionProps) {
               </div>
               <div className="mt-1 flex items-center gap-1.5 text-xs text-blue-400">
                 <TrendingDown className="h-3.5 w-3.5" />
-                <span>P50 response time from ClickHouse</span>
+                <span>
+                  P50 Median {summary?.avg_response_time_ms != null ? `· Fleet Mean: ${Math.round(summary.avg_response_time_ms)}ms` : ""}
+                </span>
               </div>
             </div>
 

@@ -108,9 +108,6 @@ uvicorn main:app --host 0.0.0.0 --port 8080 --reload
 | `GET` | `/api/dashboard` | Unified endpoint returning summary KPIs, time-series, traces, & apps |
 | `GET` | `/api/health` | Health check & ClickHouse connection status |
 | `GET` | `/docs` | Interactive Swagger API documentation |
-<<<<<<< HEAD
-=======
-
 
 ---
 
@@ -128,4 +125,3 @@ New endpoints:
 Accounts are stored in a local SQLite database at `./data/auth.db`, separate from ClickHouse telemetry. Set a strong `AUTH_SECRET_KEY` in `.env` before deployment.
 
 **Scope note:** this adds the authentication API but does not yet wire the Next.js UI to it or require authentication on `/api/dashboard`. See the production checklist in `AUTHENTICATION.md` before exposing the app publicly.
->>>>>>> 8394fde (Updated code Login SignUp)

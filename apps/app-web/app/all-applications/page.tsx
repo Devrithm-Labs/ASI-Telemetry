@@ -20,56 +20,10 @@ import { DashboardFilters } from "@/components/dashboard/layout/filters";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-const APPLICATIONS = [
-  {
-    id: "devrithm",
-    name: "devrithm",
-    description: "Main customer-facing conversational agent orchestrator & planner.",
-    version: "v2.8.4",
-    status: "Healthy",
-    rps: "412 req/s",
-    avgLatency: "138 ms",
-    errorRate: "0.21%",
-    traces24h: "1.2M",
-  },
-  {
-    id: "agent-runtime-core",
-    name: "agent-runtime-core",
-    description: "Autonomous tool execution sandbox, bash execs, and code runners.",
-    version: "v1.4.1",
-    status: "Healthy",
-    rps: "184 req/s",
-    avgLatency: "245 ms",
-    errorRate: "0.48%",
-    traces24h: "540K",
-  },
-  {
-    id: "asi-llm-gateway",
-    name: "asi-llm-gateway",
-    description: "Inference router, model rate-limiting, token caching & cost tracker.",
-    version: "v3.1.0",
-    status: "Healthy",
-    rps: "890 req/s",
-    avgLatency: "162 ms",
-    errorRate: "0.15%",
-    traces24h: "2.8M",
-  },
-  {
-    id: "vector-search-svc",
-    name: "vector-search-svc",
-    description: "Semantic embedding index, Pinecone/Qdrant vector similarity retriever.",
-    version: "v1.9.2",
-    status: "Healthy",
-    rps: "240 req/s",
-    avgLatency: "42 ms",
-    errorRate: "0.05%",
-    traces24h: "890K",
-  },
-];
-
 export default function AllApplicationsPage() {
   const router = useRouter();
   const {
+    applications,
     selectedProject,
     setSelectedProject,
     timeRange,
@@ -94,7 +48,7 @@ export default function AllApplicationsPage() {
         extraControls={
           <span className="flex items-center gap-1.5 rounded-md border border-emerald-900/60 bg-emerald-950/40 px-2.5 py-1 text-xs font-semibold text-emerald-300">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-            <span>4 Fleets Healthy</span>
+            <span>{applications.length} Fleets Active</span>
           </span>
         }
       />
@@ -111,11 +65,11 @@ export default function AllApplicationsPage() {
                 All Monitored Applications & Agent Fleets
               </h2>
               <span className="rounded-full border border-blue-900/60 bg-blue-950/40 px-2.5 py-0.5 text-xs font-mono font-semibold text-blue-300">
-                {APPLICATIONS.length} Applications Active
+                {applications.length} Applications Live
               </span>
             </div>
             <p className="mt-1 text-xs text-slate-400">
-              Fleet overview of all telemetry services reporting to ASI-Telemetry collector.
+              Fleet overview of all telemetry services reporting to ClickHouse database.
             </p>
           </div>
 
@@ -128,84 +82,73 @@ export default function AllApplicationsPage() {
         </div>
 
         {/* Applications Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {APPLICATIONS.map((app) => (
-            <Card
-              key={app.id}
-              className="border border-[#1e293b] bg-black p-5 hover:border-blue-500/50 transition-all flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-950/60 text-blue-400 border border-blue-900/50">
-                      <Server className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                        <span>{app.name}</span>
-                        <span className="rounded bg-[#111111] border border-[#1e293b] px-1.5 py-0.2 text-[10px] font-mono text-slate-400">
-                          {app.version}
-                        </span>
-                      </h3>
-                      <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 mt-0.5">
-                        <CheckCircle2 className="h-3 w-3" />
-                        <span>{app.status}</span>
+        {applications.length === 0 ? (
+          <div className="rounded-xl border border-[#1e293b] bg-black p-8 text-center text-slate-400">
+            <Server className="mx-auto h-8 w-8 text-slate-500 mb-2" />
+            <h3 className="text-sm font-semibold text-slate-200">No applications registered yet</h3>
+            <p className="text-xs text-slate-500 mt-1">Send telemetry data using the Python SDK to start monitoring agents.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {applications.map((app) => (
+              <Card
+                key={app.agent_name}
+                className="border border-[#1e293b] bg-black p-5 hover:border-blue-500/50 transition-all flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-950/60 text-blue-400 border border-blue-900/50">
+                        <Server className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                          <span>{app.agent_name}</span>
+                          <span className="rounded bg-[#111111] border border-[#1e293b] px-1.5 py-0.2 text-[10px] font-mono text-slate-400">
+                            {app.functions.length} functions
+                          </span>
+                        </h3>
+                        <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 mt-0.5">
+                          <CheckCircle2 className="h-3 w-3" />
+                          <span>Connected in ClickHouse</span>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <span className="text-[11px] font-mono text-slate-400">
-                    {app.traces24h} traces
-                  </span>
+                  <p className="mt-3 text-xs text-slate-400">
+                    Active agent reporting telemetry with functions: <span className="text-blue-300 font-mono">{app.functions.join(", ")}</span>
+                  </p>
                 </div>
 
-                <p className="mt-3 text-xs text-slate-400">
-                  {app.description}
-                </p>
-
-                <div className="mt-4 grid grid-cols-3 gap-2 border-t border-[#1e293b] pt-3 text-xs">
-                  <div>
-                    <span className="text-[10px] text-slate-500 uppercase font-mono">Throughput</span>
-                    <div className="font-semibold text-white font-mono mt-0.5">{app.rps}</div>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-slate-500 uppercase font-mono">Avg Latency</span>
-                    <div className="font-semibold text-blue-300 font-mono mt-0.5">{app.avgLatency}</div>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-slate-500 uppercase font-mono">Error Rate</span>
-                    <div className="font-semibold text-slate-200 font-mono mt-0.5">{app.errorRate}</div>
-                  </div>
+                <div className="mt-5 flex items-center gap-2 pt-3 border-t border-[#1e293b]">
+                  <Button
+                    onClick={() => {
+                      setSelectedProject(app.agent_name);
+                      router.push("/tool-monitoring");
+                    }}
+                    variant="outline"
+                    className="flex-1 border-[#1e293b] bg-black text-slate-300 hover:bg-[#111111] hover:text-white hover:border-blue-500/60 text-xs font-semibold"
+                  >
+                    <Gauge className="h-3.5 w-3.5 mr-1.5 text-blue-400" />
+                    Tool Monitoring
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setSelectedProject(app.agent_name);
+                      router.push("/tracing");
+                    }}
+                    variant="outline"
+                    className="flex-1 border-[#1e293b] bg-black text-slate-300 hover:bg-[#111111] hover:text-white hover:border-blue-500/60 text-xs font-semibold"
+                  >
+                    <Activity className="h-3.5 w-3.5 mr-1.5 text-blue-400" />
+                    View Traces
+                  </Button>
                 </div>
-              </div>
-
-              <div className="mt-5 flex items-center gap-2 pt-3 border-t border-[#1e293b]">
-                <Button
-                  onClick={() => {
-                    setSelectedProject(app.id);
-                    router.push("/tool-monitoring");
-                  }}
-                  variant="outline"
-                  className="flex-1 border-[#1e293b] bg-black text-slate-300 hover:bg-[#111111] hover:text-white hover:border-blue-500/60 text-xs font-semibold"
-                >
-                  <Gauge className="h-3.5 w-3.5 mr-1.5 text-blue-400" />
-                  Tool Monitoring
-                </Button>
-                <Button
-                  onClick={() => {
-                    setSelectedProject(app.id);
-                    router.push("/tracing");
-                  }}
-                  variant="outline"
-                  className="flex-1 border-[#1e293b] bg-black text-slate-300 hover:bg-[#111111] hover:text-white hover:border-blue-500/60 text-xs font-semibold"
-                >
-                  <Activity className="h-3.5 w-3.5 mr-1.5 text-blue-400" />
-                  View Traces
-                </Button>
-              </div>
-            </Card>
-          ))}
-        </div>
+              </Card>
+            ))}
+          </div>
+        )}
       </main>
     </>
   );

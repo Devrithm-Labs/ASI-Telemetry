@@ -100,7 +100,6 @@ export function TraceTable({ traces, onSelectTrace }: TraceTableProps) {
                 <th className="py-3 px-4 font-semibold">CPU %</th>
                 <th className="py-3 px-4 font-semibold">Model / Provider</th>
                 <th className="py-3 px-4 font-semibold">Timestamp</th>
-                <th className="py-3 px-4 text-right font-semibold">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#111e38]/70">
@@ -168,28 +167,11 @@ export function TraceTable({ traces, onSelectTrace }: TraceTableProps) {
                     <td className="py-3 px-4 text-slate-400 font-mono text-[11px]">
                       {trace.timestamp}
                     </td>
-                    <td className="py-3 px-4 text-right">
-                      <Button
-                        variant="ghost"
-                        size="xs"
-                        className="text-blue-400 hover:text-white hover:bg-blue-600/30"
-                      >
-                        <ExternalLink className="h-3.5 w-3.5" />
-                        <span>Inspect</span>
-                      </Button>
-                    </td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
-        </div>
-
-        <div className="flex items-center justify-between border-t border-[#1e293b] px-6 py-3 text-xs text-slate-400 bg-black">
-          <span>Showing {filteredTraces.length} of {traces.length} recent traces</span>
-          <div className="flex items-center gap-1 font-mono text-blue-400">
-            <span>Click any trace row to open span breakdown inspector</span>
-          </div>
         </div>
       </CardContent>
     </Card>

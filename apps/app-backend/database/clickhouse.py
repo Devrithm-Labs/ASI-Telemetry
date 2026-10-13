@@ -1,7 +1,4 @@
-<<<<<<< HEAD
 import uuid
-=======
->>>>>>> 8394fde (Updated code Login SignUp)
 import json
 import logging
 import math
@@ -23,10 +20,7 @@ class ClickHouseDB:
         self.is_connected = False
         # Memory fallback if ClickHouse is not currently running
         self.memory_records: List[Dict[str, Any]] = []
-<<<<<<< HEAD
         self.llm_records: List[Dict[str, Any]] = []
-=======
->>>>>>> 8394fde (Updated code Login SignUp)
 
     def connect(self):
         """Connects to ClickHouse and creates/updates table if needed."""
@@ -41,10 +35,7 @@ class ClickHouseDB:
                 connect_timeout=5,
             )
             self._create_table()
-<<<<<<< HEAD
             self._create_llm_table()
-=======
->>>>>>> 8394fde (Updated code Login SignUp)
             self._migrate_table()
             self.is_connected = True
             logger.info(f"Connected to ClickHouse at {settings.CLICKHOUSE_HOST}:{settings.CLICKHOUSE_PORT}")
@@ -75,7 +66,6 @@ class ClickHouseDB:
         """
         self.client.command(query)
 
-<<<<<<< HEAD
     def _create_llm_table(self):
         """Creates the dedicated llm_traces table in ClickHouse."""
         query = """
@@ -104,8 +94,6 @@ class ClickHouseDB:
         """
         self.client.command(query)
 
-=======
->>>>>>> 8394fde (Updated code Login SignUp)
     def _migrate_table(self):
         """Ensures table schema uses response_time_ms and drops legacy columns."""
         try:
@@ -279,35 +267,55 @@ class ClickHouseDB:
             except Exception as e:
                 logger.error(f"ClickHouse get_dashboard_data error: {e}")
 
-        # In-memory fallback if ClickHouse is not connected or empty
-        if not records and self.memory_records:
-            filtered = self.memory_records
-            if agent_name and agent_name not in ("all-applications", "All Applications", "all"):
-                filtered = [r for r in filtered if r.get("agent_name") == agent_name]
-            if func_name and func_name not in ("all", "All Functions", "All"):
-                filtered = [r for r in filtered if r.get("func_name") == func_name]
-            records = list(reversed(filtered))[:limit]
-
-        # 1. Discover Applications & Respective Functions
+        # 1. Discover Applications & Respective Functions across entire fleet from ClickHouse
         apps_map: Dict[str, set] = defaultdict(set)
-        for r in records:
-            apps_map[r["agent_name"]].add(r["func_name"])
-        for r in self.memory_records:
-            apps_map[r.get("agent_name", "assistant")].add(r.get("func_name", "handle_message"))
+        if self.is_connected and self.client:
+            try:
+                all_apps_res = self.client.query("SELECT DISTINCT agent_name, func_name FROM telemetry_metrics")
+                for row in all_apps_res.result_rows:
+                    if row[0]:
+                        apps_map[row[0]].add(row[1] or "default")
+            except Exception as e:
+                logger.warning(f"Error discovering all applications: {e}")
 
-        if not apps_map:
-            applications = [{"agent_name": "assistant", "functions": ["handle_message"]}]
-        else:
-            applications = [
-                {"agent_name": k, "functions": sorted(list(v))}
-                for k, v in sorted(apps_map.items())
-            ]
+        # If not connected to DB, only use memory records if they exist
+        if not self.is_connected:
+            for r in self.memory_records:
+                if r.get("agent_name"):
+                    apps_map[r["agent_name"]].add(r.get("func_name", "default"))
 
-        # 2. Compute Summary KPIs
+        applications = [
+            {"agent_name": k, "functions": sorted(list(v))}
+            for k, v in sorted(apps_map.items())
+        ]
+
+        # 2. Compute Summary KPIs (Exact ClickHouse aggregations without row truncation)
         total = len(records)
         succ = sum(1 for r in records if r["status"] == "success")
         err = total - succ
         avg_resp = round(sum(r["response_time_ms"] for r in records) / total, 2) if total else 0.0
+
+        if self.is_connected and self.client:
+            try:
+                kpi_res = self.client.query(f"""
+                    SELECT
+                        count(*),
+                        countIf(status = 'success'),
+                        avg(response_time_ms)
+                    FROM telemetry_metrics
+                    {where_clause}
+                """)
+                if kpi_res.result_rows and kpi_res.result_rows[0][0] is not None:
+                    row = kpi_res.result_rows[0]
+                    db_total = int(row[0] or 0)
+                    if db_total > 0:
+                        total = db_total
+                        succ = int(row[1] or 0)
+                        err = total - succ
+                        avg_resp = round(float(row[2] or 0.0), 2)
+            except Exception as e:
+                logger.warning(f"Error querying exact ClickHouse KPIs: {e}")
+
         latest = records[0] if records else {}
 
         summary = {
@@ -321,11 +329,21 @@ class ClickHouseDB:
             "current_memory": round(latest.get("memory_after", 0.0), 1),
         }
 
-        # 3. Compute Time-Series Buckets
+        # 3. Compute Time-Series Buckets (Chronological with Adaptive Interval Formatting)
         bucket_groups: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
-        for r in reversed(records):
+        chrono_records = sorted(records, key=lambda r: r["timestamp"])
+        for r in chrono_records:
             ts = r["timestamp"]
-            time_key = ts[11:16] + ":00" if len(ts) >= 16 else "now"
+            if time_range == "1h":
+                time_key = ts[11:16] if len(ts) >= 16 else "now"
+            elif time_range == "24h":
+                time_key = (ts[11:13] + ":00") if len(ts) >= 13 else "now"
+            elif time_range == "7d":
+                time_key = (ts[5:13] + ":00") if len(ts) >= 13 else "now"
+            elif time_range == "30d":
+                time_key = ts[5:10] if len(ts) >= 10 else "now"
+            else:
+                time_key = ts[5:16] if len(ts) >= 16 else "now"
             bucket_groups[time_key].append(r)
 
         def calc_pct(arr: List[float], p: float) -> float:
@@ -348,6 +366,25 @@ class ClickHouseDB:
             cpus = [i["cpu_after"] for i in items]
             mems = [i["memory_after"] for i in items]
             err_rate = round((fail_cnt / n * 100), 1) if n else 0.0
+
+            # Dynamic error categorization from HTTP codes and metadata
+            c_timeout = 0
+            c_ratelimit = 0
+            c_server = 0
+            c_validation = 0
+            for i in items:
+                if i["status"] != "success":
+                    meta = i.get("metadata") or {}
+                    status_code = meta.get("status_code") or meta.get("statusCode") or 500
+                    err_str = str(meta.get("error") or meta.get("message") or i.get("status") or "").lower()
+                    if status_code == 429 or "rate" in err_str or "429" in err_str:
+                        c_ratelimit += 1
+                    elif status_code == 504 or "timeout" in err_str or "timed out" in err_str or "504" in err_str:
+                        c_timeout += 1
+                    elif status_code in (400, 422) or "validation" in err_str or "schema" in err_str:
+                        c_validation += 1
+                    else:
+                        c_server += 1
 
             req_data.append({
                 "time": time_key,
@@ -377,10 +414,10 @@ class ClickHouseDB:
             err_data.append({
                 "time": time_key,
                 "errorRate": err_rate,
-                "timeout": 0,
-                "rateLimit": 0,
-                "serverError": fail_cnt,
-                "validationError": 0,
+                "timeout": c_timeout,
+                "rateLimit": c_ratelimit,
+                "serverError": c_server,
+                "validationError": c_validation,
             })
 
         # 4. Format Traces (Top 50 latest)
@@ -421,7 +458,6 @@ class ClickHouseDB:
             "applications": applications,
         }
 
-<<<<<<< HEAD
     def insert_llm_trace(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         """
         Inserts a single LLM trace/span into ClickHouse llm_traces table (or memory fallback).
@@ -603,9 +639,3 @@ class ClickHouseDB:
 
 # Global database instance
 db = ClickHouseDB()
-
-=======
-
-# Global database instance
-db = ClickHouseDB()
->>>>>>> 8394fde (Updated code Login SignUp)

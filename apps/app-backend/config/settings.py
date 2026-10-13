@@ -21,8 +21,6 @@ class Settings:
     CLICKHOUSE_SECURE: bool = os.getenv("CLICKHOUSE_SECURE", "false").lower() in ("true", "1")
 
 
-<<<<<<< HEAD
-=======
     # Authentication settings
     AUTH_DATABASE_PATH: str = os.getenv("AUTH_DATABASE_PATH", "./data/auth.db")
     AUTH_SECRET_KEY: str = os.getenv(
@@ -32,5 +30,4 @@ class Settings:
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
 
 
->>>>>>> 8394fde (Updated code Login SignUp)
 settings = Settings()

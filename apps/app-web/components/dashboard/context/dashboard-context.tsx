@@ -50,14 +50,9 @@ interface DashboardContextType {
 const DashboardContext = React.createContext<DashboardContextType | null>(null);
 
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
-  const [selectedProject, setSelectedProjectState] = React.useState("assistant");
+  const [selectedProject, setSelectedProjectState] = React.useState("all-applications");
   const [selectedFunction, setSelectedFunction] = React.useState("all");
-  const [applications, setApplications] = React.useState<ApplicationMetadata[]>([
-    { agent_name: "assistant", functions: ["handle_message", "test_fn"] },
-    { agent_name: "test-agent", functions: ["handle_query"] },
-    { agent_name: "cloud_test", functions: ["handle_message"] },
-    { agent_name: "agent_test", functions: ["f1"] },
-  ]);
+  const [applications, setApplications] = React.useState<ApplicationMetadata[]>([]);
 
   const [timeRange, setTimeRange] = React.useState<TimeRange>("7d");
   const [activeHeaderTab, setActiveHeaderTab] = React.useState<

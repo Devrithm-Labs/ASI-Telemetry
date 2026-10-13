@@ -15,11 +15,12 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { CpuMetricPoint } from "../context/dashboard-types";
+import { CpuMetricPoint, MetricSummary } from "../context/dashboard-types";
 import { Cpu, HardDrive } from "lucide-react";
 
 interface CpuSectionProps {
   data: CpuMetricPoint[];
+  summary?: MetricSummary | null;
 }
 
 const chartConfig = {
@@ -28,14 +29,18 @@ const chartConfig = {
     color: "#3b82f6",
   },
   memoryPercent: {
-    label: "Memory Footprint %",
+    label: "Memory (MB)",
     color: "#93c5fd",
   },
 } satisfies ChartConfig;
 
-export function CpuSection({ data }: CpuSectionProps) {
-  const latestCpu = data.length > 0 ? (data[data.length - 1]?.cpuPercent ?? 0) : 0;
-  const latestMem = data.length > 0 ? (data[data.length - 1]?.memoryPercent ?? 0) : 0;
+export function CpuSection({ data, summary }: CpuSectionProps) {
+  const latestCpu = summary?.current_cpu != null
+    ? Math.round(summary.current_cpu)
+    : (data.length > 0 ? (data[data.length - 1]?.cpuPercent ?? 0) : 0);
+  const latestMem = summary?.current_memory != null
+    ? Math.round(summary.current_memory)
+    : (data.length > 0 ? (data[data.length - 1]?.memoryPercent ?? 0) : 0);
   const latestLoad = data.length > 0 ? (data[data.length - 1]?.coreLoad ?? 0) : 0;
 
   return (
@@ -73,9 +78,9 @@ export function CpuSection({ data }: CpuSectionProps) {
           {/* Breakdown Badges */}
           <div className="mt-6 grid grid-cols-2 gap-2 border-t border-[#1e293b] pt-4">
             <div className="rounded-md border border-[#1e293b] bg-black p-2 text-center">
-              <div className="text-[10px] text-slate-400 font-medium">Memory Usage</div>
+              <div className="text-[10px] text-slate-400 font-medium">Memory Footprint</div>
               <div className="mt-1 font-mono text-xs font-bold text-[#93c5fd]">
-                {latestMem}%
+                {latestMem} MB
               </div>
             </div>
             <div className="rounded-md border border-[#1e293b] bg-black p-2 text-center">
@@ -100,7 +105,7 @@ export function CpuSection({ data }: CpuSectionProps) {
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="h-2.5 w-2.5 rounded-sm bg-[#93c5fd]" />
-                <span className="text-slate-400">Memory %</span>
+                <span className="text-slate-400">Memory (MB)</span>
               </div>
             </div>
           </div>
@@ -121,20 +126,24 @@ export function CpuSection({ data }: CpuSectionProps) {
                   fontSize={11}
                   tickLine={false}
                   axisLine={false}
-                  domain={[0, 100]}
-                  tickFormatter={(val) => `${val}%`}
+                  tickFormatter={(val) => `${val}`}
                 />
                 <ChartTooltip
                   cursor={{ fill: "rgba(59, 130, 246, 0.08)" }}
                   content={
                     <ChartTooltipContent
                       indicator="dot"
-                      formatter={(value, name) => (
-                        <div className="flex w-full items-center justify-between gap-3 text-xs">
-                          <span className="text-slate-400">{name}:</span>
-                          <span className="font-semibold text-blue-300 font-mono">{value}%</span>
-                        </div>
-                      )}
+                      formatter={(value, name) => {
+                        const isMem = String(name).toLowerCase().includes("memory");
+                        return (
+                          <div className="flex w-full items-center justify-between gap-3 text-xs">
+                            <span className="text-slate-400">{name}:</span>
+                            <span className="font-semibold text-blue-300 font-mono">
+                              {value}{isMem ? " MB" : "%"}
+                            </span>
+                          </div>
+                        );
+                      }}
                     />
                   }
                 />

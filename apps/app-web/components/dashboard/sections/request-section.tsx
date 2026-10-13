@@ -15,11 +15,13 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { RequestMetricPoint } from "../context/dashboard-types";
-import { Activity, ArrowUpRight, CheckCircle2 } from "lucide-react";
+import { RequestMetricPoint, TimeRange, MetricSummary } from "../context/dashboard-types";
+import { Activity } from "lucide-react";
 
 interface RequestSectionProps {
   data: RequestMetricPoint[];
+  timeRange?: TimeRange;
+  summary?: MetricSummary | null;
 }
 
 const chartConfig = {
@@ -33,19 +35,46 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-export function RequestSection({ data }: RequestSectionProps) {
+export function RequestSection({ data, timeRange = "24h", summary }: RequestSectionProps) {
+  const windowSeconds = React.useMemo(() => {
+    switch (timeRange) {
+      case "1h":
+        return 3600;
+      case "24h":
+        return 86400;
+      case "7d":
+        return 7 * 86400;
+      case "30d":
+        return 30 * 86400;
+      default:
+        return 3600;
+    }
+  }, [timeRange]);
+
   const totalSuccess = React.useMemo(
-    () => data.reduce((acc, curr) => acc + curr.success, 0),
-    [data]
+    () => summary?.total_success ?? data.reduce((acc, curr) => acc + curr.success, 0),
+    [data, summary]
   );
   const totalFailure = React.useMemo(
-    () => data.reduce((acc, curr) => acc + curr.failure, 0),
-    [data]
+    () => summary?.total_errors ?? data.reduce((acc, curr) => acc + curr.failure, 0),
+    [data, summary]
   );
-  const totalRequests = totalSuccess + totalFailure;
-  const successRate = totalRequests > 0
-    ? ((totalSuccess / totalRequests) * 100).toFixed(2)
-    : "100.00";
+  const totalRequests = summary?.total_requests ?? (totalSuccess + totalFailure);
+
+  // Requests per second calculation
+  const rps = React.useMemo(() => {
+    if (totalRequests === 0) return 0;
+    return totalRequests / windowSeconds;
+  }, [totalRequests, windowSeconds]);
+
+  const rpsFormatted = React.useMemo(() => {
+    if (totalRequests === 0) return "0.00";
+    if (rps >= 100) return rps.toFixed(1);
+    if (rps >= 1) return rps.toFixed(2);
+    if (rps >= 0.01) return rps.toFixed(2);
+    if (rps >= 0.001) return rps.toFixed(3);
+    return "< 0.01";
+  }, [rps, totalRequests]);
 
   return (
     <Card className="overflow-hidden border border-[#1e293b] bg-black shadow-xl">
@@ -59,23 +88,29 @@ export function RequestSection({ data }: RequestSectionProps) {
                   <Activity className="h-4 w-4" />
                 </div>
                 <span className="text-xs font-semibold uppercase tracking-wider text-slate-300">
-                  Total Requests
+                  Requests Per Sec
                 </span>
               </div>
-              
             </div>
 
             {/* Big Primary Metric Number */}
             <div className="mt-4">
-              <div className="text-4xl font-bold tracking-tight text-white font-mono">
-                {totalRequests >= 1000000
-                  ? `${(totalRequests / 1000000).toFixed(2)}M`
-                  : totalRequests.toLocaleString()}
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl font-bold tracking-tight text-white font-mono">
+                  {rpsFormatted}
+                </span>
+                <span className="text-sm font-semibold text-blue-400 font-mono">
+                  req/s
+                </span>
+              </div>
+              <div className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-400 font-mono">
+                <span className="text-slate-200 font-semibold">{totalRequests.toLocaleString()}</span>
+                <span>total requests</span>
               </div>
             </div>
 
             <p className="mt-3 text-xs text-slate-400 leading-relaxed">
-              Volume of incoming traces and execution invocations across all telemetry endpoints.
+              Rate of incoming traces and execution invocations per second across all telemetry endpoints.
             </p>
           </div>
 

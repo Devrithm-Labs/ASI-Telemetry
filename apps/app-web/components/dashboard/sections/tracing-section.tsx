@@ -36,26 +36,6 @@ export function TracingSection({
 
   return (
     <div className="space-y-6">
-      {/* Tracing Header Banner */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#1e293b] pb-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md border border-[#1e293b] bg-black text-blue-400">
-              <Activity className="h-4 w-4" />
-            </div>
-            <h2 className="text-xl font-bold tracking-tight text-white">
-              Distributed Traces & Spans
-            </h2>
-            <span className="rounded-full border border-blue-900/60 bg-blue-950/40 px-2.5 py-0.5 text-xs font-mono font-semibold text-blue-300">
-              {traces.length} Live Traces
-            </span>
-          </div>
-          <p className="mt-1 text-xs text-slate-400">
-            Real-time execution call trees, tool invocation latencies, and OpenTelemetry spans.
-          </p>
-        </div>
-      </div>
-
       {/* Tracing Overview Metric Strip */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="border border-[#1e293b] bg-black p-4">

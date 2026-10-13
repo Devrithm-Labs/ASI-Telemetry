@@ -40,6 +40,7 @@ interface DashboardFiltersProps {
   showTimeRange?: boolean;
   showProjectSelector?: boolean;
   showLiveToggle?: boolean;
+  hideFilterControls?: boolean;
 }
 
 export function DashboardFilters({
@@ -64,24 +65,23 @@ export function DashboardFilters({
   showTimeRange = true,
   showProjectSelector = true,
   showLiveToggle = false,
+  hideFilterControls = false,
 }: DashboardFiltersProps) {
   const [isProjectOpen, setIsProjectOpen] = React.useState(false);
   const [isFuncOpen, setIsFuncOpen] = React.useState(false);
   const [isTimeOpen, setIsTimeOpen] = React.useState(false);
 
-  // Available applications with respective functions
-  const defaultApps: ApplicationMetadata[] = [
-    { agent_name: "assistant", functions: ["handle_message", "test_fn"] },
-    { agent_name: "test-agent", functions: ["handle_query"] },
-    { agent_name: "cloud_test", functions: ["handle_message"] },
-    { agent_name: "agent_test", functions: ["f1"] },
-  ];
+  const appList = applications || [];
 
-  const appList = applications && applications.length > 0 ? applications : defaultApps;
-
-  // Find functions belonging to current project
-  const currentApp = appList.find((a) => a.agent_name === selectedProject);
-  const availableFuncs = currentApp?.functions || [];
+  const availableFuncs = React.useMemo(() => {
+    if (selectedProject === "all-applications") {
+      const allFn = new Set<string>();
+      appList.forEach((a) => a.functions.forEach((fn) => allFn.add(fn)));
+      return Array.from(allFn);
+    }
+    const currentApp = appList.find((a) => a.agent_name === selectedProject);
+    return currentApp?.functions || [];
+  }, [appList, selectedProject]);
 
   const timeRangeLabels: Record<TimeRange, string> = {
     "1h": "Last 1 hour",
@@ -89,6 +89,64 @@ export function DashboardFilters({
     "7d": "Last 7 days",
     "30d": "Last 30 days",
   };
+
+  if (hideFilterControls) {
+    return (
+      <div className="border-b border-[#1e293b] bg-black px-6 py-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* Distinct Route Breadcrumb */}
+          <div className="flex items-center gap-1.5 text-xs">
+            <RouteIcon className="h-4 w-4 text-blue-400 shrink-0" />
+            <span className="text-slate-400">{routeCategory}</span>
+            <span className="text-slate-600">/</span>
+            <span className="text-blue-300 font-semibold">{routeTitle}</span>
+          </div>
+
+          {/* Sub-Tabs Bar */}
+          {subTabs && subTabs.length > 0 && (
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 pt-0.5 no-scrollbar">
+              {subTabs.map((subTab) => {
+                const isActive = activeSubTab === subTab.id || activeSubTab === subTab.label;
+
+                return (
+                  <button
+                    key={subTab.id}
+                    onClick={() => {
+                      onSubTabChange?.(subTab.id);
+                      if (subTab.targetId) {
+                        const element = document.getElementById(subTab.targetId);
+                        if (element) {
+                          element.scrollIntoView({ behavior: "smooth", block: "start" });
+                        }
+                      }
+                    }}
+                    className={`whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
+                      isActive
+                        ? "bg-blue-600 text-white shadow-sm shadow-blue-600/30 font-semibold"
+                        : "text-slate-400 hover:bg-[#141414] hover:text-slate-200"
+                    }`}
+                  >
+                    <span>{subTab.label}</span>
+                    {subTab.badge && (
+                      <span
+                        className={`rounded px-1.5 py-0.2 text-[10px] font-mono ${
+                          isActive
+                            ? "bg-white/20 text-white"
+                            : "bg-blue-950/60 text-blue-300"
+                        }`}
+                      >
+                        {subTab.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="border-b border-[#1e293b] bg-black px-6 py-2.5 space-y-2.5">
@@ -116,7 +174,7 @@ export function DashboardFilters({
                 title="Select Agent Application"
               >
                 <Layers className="h-3.5 w-3.5 text-blue-400" />
-                <span>{selectedProject}</span>
+                <span>{selectedProject === "all-applications" ? "All Applications" : selectedProject}</span>
                 <ChevronDown className="h-3 w-3 text-slate-400" />
               </button>
 
