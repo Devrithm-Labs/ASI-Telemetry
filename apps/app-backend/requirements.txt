@@ -3,3 +3,9 @@ uvicorn>=0.30.0
 pydantic>=2.0.0
 clickhouse-connect>=0.8.0
 python-dotenv>=1.0.0
+<<<<<<< HEAD
+=======
+python-jose[cryptography]>=3.3.0
+pwdlib[argon2]>=0.2.1
+email-validator>=2.1.0
+>>>>>>> 8394fde (Updated code Login SignUp)

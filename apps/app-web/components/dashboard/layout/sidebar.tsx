@@ -10,7 +10,10 @@ import {
   ChevronDown,
   Gauge,
   Home,
+<<<<<<< HEAD
   Network,
+=======
+>>>>>>> 8394fde (Updated code Login SignUp)
   PanelLeftClose,
   PanelLeftOpen,
   Search,
@@ -60,12 +63,19 @@ export function DashboardSidebar({
       group: "Observability",
       items: [
         { label: "Tool Monitoring", href: "/tool-monitoring", icon: Gauge },
+<<<<<<< HEAD
         { label: "Tool Tracing", href: "/tracing", icon: Activity, badge: "1" },
         { label: "LLM Tracing", href: "/llm-traces", icon: Bot, badge: "New" },
         { label: "LLM Monitoring", href: "/llm-monitoring", icon: Bot },
       ],
     },
 
+=======
+        { label: "LLM Monitoring", href: "/llm-monitoring", icon: Bot },
+        { label: "Tracing", href: "/tracing", icon: Activity, badge: "1" },
+      ],
+    },
+>>>>>>> 8394fde (Updated code Login SignUp)
   ];
 
   return (
