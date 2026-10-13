@@ -1,14 +1,19 @@
 import functools
 import inspect
 import json
+<<<<<<< HEAD
 import os
 import threading
 import time
 import urllib.request
+=======
+import time
+>>>>>>> 8394fde (Updated code Login SignUp)
 import uuid
 from contextvars import ContextVar
 from datetime import datetime
 
+<<<<<<< HEAD
 
 def _send_llm_trace_async(payload):
     """Sends trace record to FastAPI/ClickHouse backend asynchronously."""
@@ -28,6 +33,8 @@ def _send_llm_trace_async(payload):
             pass
     threading.Thread(target=_worker, daemon=True).start()
 
+=======
+>>>>>>> 8394fde (Updated code Login SignUp)
 # ---------------------------------------------------------------
 # Global state
 # ---------------------------------------------------------------
@@ -45,7 +52,10 @@ LAST_TRACE = None
 PRICE_PER_MILLION = {
     "asi1-mini": {"input": 0.10, "output": 0.40},
     "asi-mini": {"input": 0.10, "output": 0.40},
+<<<<<<< HEAD
 
+=======
+>>>>>>> 8394fde (Updated code Login SignUp)
     "asi1": {"input": 0.50, "output": 1.50},
     "gemini-3.8-flash": {"input": 0.075, "output": 0.30},
     "deepseek-chat": {"input": 0.14, "output": 0.28},
@@ -97,6 +107,7 @@ def save_token_usage(response, span, model=None):
 # Start / end a span
 # ---------------------------------------------------------------
 
+<<<<<<< HEAD
 def get_current_trace_id():
     """Returns current trace_id if inside a traced context, else None."""
     span = current_span.get()
@@ -154,6 +165,20 @@ def start_span(function_name, run_type, metadata, args, kwargs):
         "span_id": span_id,
         "trace_id": trace_id,
         "parent_id": parent_id,
+=======
+def start_span(function_name, run_type, metadata, args, kwargs):
+    """Create a new span and make it the current one."""
+    parent_span = current_span.get()
+    is_top_level = parent_span is None
+
+    # Children share the parent's trace id. A top-level call starts a new trace.
+    trace_id = str(uuid.uuid4()) if is_top_level else parent_span["trace_id"]
+
+    span = {
+        "trace_id": trace_id,
+        "span_id": str(uuid.uuid4()),
+        "parent_id": None if is_top_level else parent_span["span_id"],
+>>>>>>> 8394fde (Updated code Login SignUp)
         "name": function_name,
         "run_type": run_type,
         "start_time": time.time(),
@@ -169,8 +194,15 @@ def start_span(function_name, run_type, metadata, args, kwargs):
     span_reset_token = current_span.set(span)
 
     if is_top_level:
+<<<<<<< HEAD
         trace_reset_token = spans_in_trace.set([span])
     else:
+=======
+        # Start a fresh list that will collect every span of this trace.
+        trace_reset_token = spans_in_trace.set([span])
+    else:
+        # Add this span to the list that the top-level call created.
+>>>>>>> 8394fde (Updated code Login SignUp)
         trace_reset_token = None
         all_spans = spans_in_trace.get()
         if all_spans is not None:
@@ -180,7 +212,11 @@ def start_span(function_name, run_type, metadata, args, kwargs):
 
 
 def end_span(span, span_reset_token, trace_reset_token, is_top_level, result=None, error=None):
+<<<<<<< HEAD
     """Finish the span and dispatch trace telemetry to backend."""
+=======
+    """Finish the span. If it was the top-level one, print the whole trace as JSON."""
+>>>>>>> 8394fde (Updated code Login SignUp)
     global LAST_TRACE
 
     try:
@@ -195,6 +231,7 @@ def end_span(span, span_reset_token, trace_reset_token, is_top_level, result=Non
     finally:
         current_span.reset(span_reset_token)
 
+<<<<<<< HEAD
         # Prepare span payload to ingest into ClickHouse
         in_val = span.get("inputs")
         input_str = json.dumps(in_val, default=str) if isinstance(in_val, (dict, list)) else str(in_val or "")
@@ -224,23 +261,36 @@ def end_span(span, span_reset_token, trace_reset_token, is_top_level, result=Non
         # Send each individual span with the shared trace_id
         _send_llm_trace_async(span_payload)
 
+=======
+>>>>>>> 8394fde (Updated code Login SignUp)
         if is_top_level and trace_reset_token:
             all_spans = spans_in_trace.get() or []
             spans_in_trace.reset(trace_reset_token)
 
             LAST_TRACE = {
+<<<<<<< HEAD
                 "trace_id": span.get("trace_id"),
                 "name": span.get("name"),
                 "total_latency_ms": span.get("duration_ms", 0.0),
                 "total_tokens": sum(s.get("tokens", {}).get("total", 0) for s in all_spans),
                 "total_cost_usd": round(sum(s.get("cost", 0.0) for s in all_spans), 6),
+=======
+                "trace_id": span["trace_id"],
+                "name": span["name"],
+                "total_latency_ms": span["duration_ms"],
+                "total_tokens": sum(s["tokens"]["total"] for s in all_spans),
+                "total_cost_usd": round(sum(s["cost"] for s in all_spans), 6),
+>>>>>>> 8394fde (Updated code Login SignUp)
                 "spans": all_spans,
             }
             print(json.dumps(LAST_TRACE, indent=2, default=str))
 
 
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> 8394fde (Updated code Login SignUp)
 # ---------------------------------------------------------------
 # The decorator
 # ---------------------------------------------------------------

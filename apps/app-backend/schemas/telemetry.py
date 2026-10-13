@@ -64,6 +64,7 @@ class AnalyticsBucket(BaseModel):
     avg_cpu: float
     avg_memory: float
     error_rate: float
+<<<<<<< HEAD
 
 
 class LLMTracePayload(BaseModel):
@@ -88,3 +89,5 @@ class LLMTracePayload(BaseModel):
     cost_usd: float = Field(default=0.0, description="Calculated cost in USD")
     metadata: Optional[Dict[str, Any]] = Field(default=None, description="Arbitrary metadata dictionary")
 
+=======
+>>>>>>> 8394fde (Updated code Login SignUp)

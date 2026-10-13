@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 import uuid
+=======
+>>>>>>> 8394fde (Updated code Login SignUp)
 import json
 import logging
 import math
@@ -20,7 +23,10 @@ class ClickHouseDB:
         self.is_connected = False
         # Memory fallback if ClickHouse is not currently running
         self.memory_records: List[Dict[str, Any]] = []
+<<<<<<< HEAD
         self.llm_records: List[Dict[str, Any]] = []
+=======
+>>>>>>> 8394fde (Updated code Login SignUp)
 
     def connect(self):
         """Connects to ClickHouse and creates/updates table if needed."""
@@ -35,7 +41,10 @@ class ClickHouseDB:
                 connect_timeout=5,
             )
             self._create_table()
+<<<<<<< HEAD
             self._create_llm_table()
+=======
+>>>>>>> 8394fde (Updated code Login SignUp)
             self._migrate_table()
             self.is_connected = True
             logger.info(f"Connected to ClickHouse at {settings.CLICKHOUSE_HOST}:{settings.CLICKHOUSE_PORT}")
@@ -66,6 +75,7 @@ class ClickHouseDB:
         """
         self.client.command(query)
 
+<<<<<<< HEAD
     def _create_llm_table(self):
         """Creates the dedicated llm_traces table in ClickHouse."""
         query = """
@@ -94,6 +104,8 @@ class ClickHouseDB:
         """
         self.client.command(query)
 
+=======
+>>>>>>> 8394fde (Updated code Login SignUp)
     def _migrate_table(self):
         """Ensures table schema uses response_time_ms and drops legacy columns."""
         try:
@@ -409,6 +421,7 @@ class ClickHouseDB:
             "applications": applications,
         }
 
+<<<<<<< HEAD
     def insert_llm_trace(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         """
         Inserts a single LLM trace/span into ClickHouse llm_traces table (or memory fallback).
@@ -591,3 +604,8 @@ class ClickHouseDB:
 # Global database instance
 db = ClickHouseDB()
 
+=======
+
+# Global database instance
+db = ClickHouseDB()
+>>>>>>> 8394fde (Updated code Login SignUp)

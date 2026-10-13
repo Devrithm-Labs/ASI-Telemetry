@@ -4,3 +4,9 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
+<<<<<<< HEAD
+=======
+
+# Local user-account database
+data/
+>>>>>>> 8394fde (Updated code Login SignUp)

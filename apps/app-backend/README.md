@@ -108,3 +108,24 @@ uvicorn main:app --host 0.0.0.0 --port 8080 --reload
 | `GET` | `/api/dashboard` | Unified endpoint returning summary KPIs, time-series, traces, & apps |
 | `GET` | `/api/health` | Health check & ClickHouse connection status |
 | `GET` | `/docs` | Interactive Swagger API documentation |
+<<<<<<< HEAD
+=======
+
+
+---
+
+## 🔐 Authentication (new)
+
+The backend now includes signup, login, signed JWT access tokens, password hashing with Argon2, and a protected `GET /api/auth/me` endpoint.
+
+Start with **[AUTHENTICATION.md](./AUTHENTICATION.md)** for the complete architecture, request/response examples, setup, code walkthrough, error cases, frontend integration notes, and production checklist.
+
+New endpoints:
+- `POST /api/auth/signup`
+- `POST /api/auth/login`
+- `GET /api/auth/me` (requires `Authorization: Bearer <access_token>`)
+
+Accounts are stored in a local SQLite database at `./data/auth.db`, separate from ClickHouse telemetry. Set a strong `AUTH_SECRET_KEY` in `.env` before deployment.
+
+**Scope note:** this adds the authentication API but does not yet wire the Next.js UI to it or require authentication on `/api/dashboard`. See the production checklist in `AUTHENTICATION.md` before exposing the app publicly.
+>>>>>>> 8394fde (Updated code Login SignUp)

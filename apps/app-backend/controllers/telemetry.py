@@ -1,6 +1,12 @@
+<<<<<<< HEAD
 from typing import Any, Dict, Optional
 from database import db
 from schemas.telemetry import MetricPayload, LLMTracePayload
+=======
+from typing import Optional
+from database import db
+from schemas.telemetry import MetricPayload
+>>>>>>> 8394fde (Updated code Login SignUp)
 
 
 class TelemetryController:
@@ -16,6 +22,7 @@ class TelemetryController:
             "data": record,
         }
 
+<<<<<<< HEAD
     @staticmethod
     def ingest_llm_trace(payload: LLMTracePayload):
         """Stores LLM tracing record into ClickHouse or memory fallback."""
@@ -46,6 +53,8 @@ class TelemetryController:
         """Clears all LLM traces from ClickHouse and memory."""
         return db.clear_llm_traces()
 
+=======
+>>>>>>> 8394fde (Updated code Login SignUp)
 
     @staticmethod
     def get_dashboard_payload(
@@ -75,6 +84,10 @@ class TelemetryController:
             "status": "healthy",
             "clickhouse_connected": db.is_connected,
             "total_records": len(db.memory_records),
+<<<<<<< HEAD
             "total_llm_records": len(db.llm_records),
         }
 
+=======
+        }
+>>>>>>> 8394fde (Updated code Login SignUp)
