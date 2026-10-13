@@ -1,7 +1,15 @@
 import asyncio
+import os
+import sys
+
+# Import SDK directly from local app-sdk folder
+SDK_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "app-sdk", "src"))
+if SDK_PATH not in sys.path:
+    sys.path.insert(0, SDK_PATH)
+
 from uagents import Agent, Context, Model
 from uagents.resolver import RulesBasedResolver
-from observ import AgentMonitor
+from asi_telemetry import AgentMonitor
 
 # Initialize telemetry monitor for the sender agent
 monitor = AgentMonitor(agent_name="sender")

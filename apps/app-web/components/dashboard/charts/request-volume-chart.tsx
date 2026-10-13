@@ -53,27 +53,27 @@ export function RequestVolumeChart({ data }: RequestVolumeChartProps) {
     : "100.00";
 
   return (
-    <Card className="border-[#1e293b] bg-black shadow-xl backdrop-blur-sm">
-      <CardHeader className="flex flex-row items-center justify-between border-b border-[#1e293b] pb-4">
+    <Card className="border-slate-200 dark:border-[#1e293b] bg-white dark:bg-black shadow-sm dark:shadow-xl backdrop-blur-sm">
+      <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1e293b] pb-4">
         <div>
           <div className="flex items-center gap-2">
             <span className="flex h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
-            <CardTitle className="text-base font-semibold text-slate-100">
+            <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-100">
               Request Volume & Throughput
             </CardTitle>
           </div>
-          <CardDescription className="text-xs text-slate-400 mt-0.5">
+          <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Total incoming traces partitioned by execution status
           </CardDescription>
         </div>
         <div className="flex items-center gap-4">
           <div className="text-right">
-            <div className="text-xs text-slate-400">Success Rate</div>
-            <div className="text-sm font-semibold text-blue-400">{successRate}%</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">Success Rate</div>
+            <div className="text-sm font-semibold text-blue-600 dark:text-blue-400 font-mono">{successRate}%</div>
           </div>
-          <div className="flex items-center gap-2 rounded-md border border-blue-900/60 bg-blue-950/40 px-2.5 py-1 text-xs text-blue-300">
-            <Activity className="h-3.5 w-3.5 text-blue-400" />
-            <span>{(totalSuccess + totalFailure).toLocaleString()} total</span>
+          <div className="flex items-center gap-2 rounded-md border border-blue-200 dark:border-blue-900/60 bg-blue-50 dark:bg-blue-950/40 px-2.5 py-1 text-xs text-blue-700 dark:text-blue-300">
+            <Activity className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+            <span className="font-mono">{(totalSuccess + totalFailure).toLocaleString()} total</span>
           </div>
         </div>
       </CardHeader>
@@ -90,7 +90,7 @@ export function RequestVolumeChart({ data }: RequestVolumeChartProps) {
                 <stop offset="95%" stopColor="#93c5fd" stopOpacity={0.0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.3} vertical={false} />
             <XAxis
               dataKey="time"
               stroke="#64748b"
@@ -133,21 +133,21 @@ export function RequestVolumeChart({ data }: RequestVolumeChartProps) {
           </AreaChart>
         </ChartContainer>
 
-        <div className="mt-3 flex items-center justify-between border-t border-[#1e293b] pt-3 text-xs text-slate-400">
+        <div className="mt-3 flex items-center justify-between border-t border-slate-200 dark:border-[#1e293b] pt-3 text-xs text-slate-500 dark:text-slate-400">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-[#3b82f6]" />
-              <span className="text-slate-300">Success</span>
-              <span className="font-semibold text-slate-100">{totalSuccess.toLocaleString()}</span>
+              <span className="text-slate-700 dark:text-slate-300">Success</span>
+              <span className="font-semibold text-slate-900 dark:text-slate-100 font-mono">{totalSuccess.toLocaleString()}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-[#93c5fd]" />
-              <span className="text-slate-300">Failure / Errors</span>
-              <span className="font-semibold text-slate-100">{totalFailure.toLocaleString()}</span>
+              <span className="text-slate-700 dark:text-slate-300">Failure / Errors</span>
+              <span className="font-semibold text-slate-900 dark:text-slate-100 font-mono">{totalFailure.toLocaleString()}</span>
             </div>
           </div>
-          <div className="flex items-center gap-1 text-blue-400 font-medium">
-            <span>Peak: {Math.max(...data.map(d => d.total)).toLocaleString()} req</span>
+          <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400 font-medium font-mono">
+            <span>Peak: {Math.max(...(data.map(d => d.total) || [0])).toLocaleString()} req</span>
             <ArrowUpRight className="h-3 w-3" />
           </div>
         </div>

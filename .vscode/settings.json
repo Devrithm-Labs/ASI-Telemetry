@@ -2,6 +2,8 @@
   "python.defaultInterpreterPath": "${workspaceFolder}/apps/testing/.venv/Scripts/python.exe",
   "python.analysis.extraPaths": [
     "${workspaceFolder}/apps/testing",
-    "${workspaceFolder}/apps/testing/src"
+    "${workspaceFolder}/apps/testing/src",
+    "${workspaceFolder}/apps/app-sdk",
+    "${workspaceFolder}/apps/app-sdk/src"
   ]
 }

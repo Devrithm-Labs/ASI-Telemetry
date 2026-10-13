@@ -28,8 +28,9 @@ def _send_llm_trace_async(payload):
             pass
     threading.Thread(target=_worker, daemon=True).start()
 
+
 # ---------------------------------------------------------------
-# Global state
+# Global state & Context Variables
 # ---------------------------------------------------------------
 
 # The span (one traced function call) that is running right now.
@@ -45,7 +46,6 @@ LAST_TRACE = None
 PRICE_PER_MILLION = {
     "asi1-mini": {"input": 0.10, "output": 0.40},
     "asi-mini": {"input": 0.10, "output": 0.40},
-
     "asi1": {"input": 0.50, "output": 1.50},
     "gemini-3.8-flash": {"input": 0.075, "output": 0.30},
     "deepseek-chat": {"input": 0.14, "output": 0.28},
@@ -94,7 +94,7 @@ def save_token_usage(response, span, model=None):
 
 
 # ---------------------------------------------------------------
-# Start / end a span
+# Start / end a span & Context Propagation
 # ---------------------------------------------------------------
 
 def get_current_trace_id():
@@ -239,10 +239,8 @@ def end_span(span, span_reset_token, trace_reset_token, is_top_level, result=Non
             print(json.dumps(LAST_TRACE, indent=2, default=str))
 
 
-
-
 # ---------------------------------------------------------------
-# The decorator
+# The @traceable decorator
 # ---------------------------------------------------------------
 
 def traceable(name=None, run_type="chain", metadata=None):

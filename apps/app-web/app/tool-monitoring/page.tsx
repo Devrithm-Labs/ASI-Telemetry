@@ -28,8 +28,6 @@ export default function ToolMonitoringPage() {
     timeRange,
     setTimeRange,
     activeHeaderTab,
-    isLive,
-    setIsLive,
     summary,
     requestData,
     latencyData,
@@ -95,12 +93,12 @@ export default function ToolMonitoringPage() {
         {activeHeaderTab === "Monitoring" ? (
           <div className="space-y-6">
             {/* Dashboard Title & Overview Header with Aligned Professional Filter Toolbar */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-[#1e293b]/70 pb-4">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-slate-200 dark:border-[#1e293b]/70 pb-4">
               <div>
-                <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
                   Agent Tool Monitoring Dashboard
                 </h1>
-                <p className="mt-1 text-xs text-slate-400">
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                   Live ClickHouse telemetry observability for distributed agent executions, response times, host resource pressure, and trace spans.
                 </p>
               </div>
@@ -169,14 +167,14 @@ export default function ToolMonitoringPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-bold text-slate-100">Saved Observability Dashboards</h2>
-                <p className="text-xs text-slate-400 mt-1">
+                <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Saved Observability Dashboards</h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                   Custom telemetry views, multi-tenant agent fleets, and SLO tracking boards
                 </p>
               </div>
               <button
                 onClick={() => setIsDashboardModalOpen(true)}
-                className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-500"
+                className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-500 shadow-sm"
               >
                 + New Board
               </button>
@@ -205,25 +203,25 @@ export default function ToolMonitoringPage() {
               ].map((dash, idx) => (
                 <div
                   key={idx}
-                  className="group rounded-xl border border-[#1e293b] bg-black p-5 shadow-lg hover:border-blue-500/50 transition-all cursor-pointer"
+                  className="group rounded-xl border border-slate-200 dark:border-[#1e293b] bg-white dark:bg-black p-5 shadow-sm dark:shadow-lg hover:border-blue-500/50 transition-all cursor-pointer"
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-950/60 text-blue-400 border border-blue-900/50">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-900/50">
                       <LayoutDashboard className="h-4 w-4" />
                     </div>
-                    <span className="text-[11px] font-mono text-blue-400">
+                    <span className="text-[11px] font-mono text-blue-600 dark:text-blue-400">
                       {dash.widgets} Widgets
                     </span>
                   </div>
-                  <h3 className="mt-3 text-sm font-semibold text-slate-100 group-hover:text-blue-300 transition-colors">
+                  <h3 className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors">
                     {dash.title}
                   </h3>
-                  <p className="mt-1 text-xs text-slate-400 line-clamp-2">
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
                     {dash.desc}
                   </p>
-                  <div className="mt-4 flex items-center justify-between border-t border-[#1e293b] pt-3 text-[11px] text-slate-500">
+                  <div className="mt-4 flex items-center justify-between border-t border-slate-100 dark:border-[#1e293b] pt-3 text-[11px] text-slate-400 dark:text-slate-500">
                     <span>Updated {dash.updated}</span>
-                    <span className="text-blue-400 font-medium group-hover:underline">Open Board →</span>
+                    <span className="text-blue-600 dark:text-blue-400 font-medium group-hover:underline">Open Board →</span>
                   </div>
                 </div>
               ))}
@@ -235,14 +233,14 @@ export default function ToolMonitoringPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-bold text-slate-100">Active Alert Rules & Incidents</h2>
-                <p className="text-xs text-slate-400 mt-1">
+                <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Active Alert Rules &amp; Incidents</h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                   Threshold monitor rules, SLA breaches, and incident routing
                 </p>
               </div>
               <button
                 onClick={() => setIsAlertModalOpen(true)}
-                className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-500"
+                className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-500 shadow-sm"
               >
                 + Add Alert Policy
               </button>
@@ -274,29 +272,29 @@ export default function ToolMonitoringPage() {
               ].map((rule, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center justify-between rounded-xl border border-[#1e293b] bg-black p-4 text-xs"
+                  className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-[#1e293b] bg-white dark:bg-black p-4 text-xs shadow-sm dark:shadow-md"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-950/60 text-blue-400 border border-blue-900/50">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-900/50">
                       <Bell className="h-4 w-4" />
                     </div>
                     <div>
-                      <h4 className="font-semibold text-slate-100">{rule.name}</h4>
-                      <div className="font-mono text-[11px] text-slate-400 mt-0.5">
+                      <h4 className="font-semibold text-slate-900 dark:text-slate-100">{rule.name}</h4>
+                      <div className="font-mono text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                         {rule.condition}
                       </div>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-6">
-                    <div className="text-slate-400">
-                      Destination: <span className="text-blue-300">{rule.channel}</span>
+                    <div className="text-slate-500 dark:text-slate-400">
+                      Destination: <span className="text-blue-600 dark:text-blue-300">{rule.channel}</span>
                     </div>
                     <span
                       className={`rounded px-2.5 py-1 text-[11px] font-semibold ${
                         rule.status === "Healthy"
-                          ? "bg-blue-950/60 text-blue-300 border border-blue-800/60"
-                          : "bg-amber-950/60 text-amber-300 border border-amber-800/60"
+                          ? "bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800/60"
+                          : "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800/60"
                       }`}
                     >
                       {rule.status}

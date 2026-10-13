@@ -17,7 +17,6 @@ export default function TracingPage() {
     timeRange,
     setTimeRange,
     isLive,
-    setIsLive,
     handleRefresh,
     isRefreshing,
     traces,
@@ -58,13 +57,13 @@ export default function TracingPage() {
 
       <main className="flex-1 overflow-y-auto px-6 py-5 space-y-6 scroll-smooth">
         {/* Dashboard Title & Overview Header with Aligned Professional Filter Toolbar */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-[#1e293b]/70 pb-4">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-slate-200 dark:border-[#1e293b]/70 pb-4">
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                            <Activity className="h-4 w-4" />
-Live Trace Spans Stream
+            <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+              <Activity className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              Live Trace Spans Stream
             </h1>
-            <p className="mt-1 text-xs text-slate-400">
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
               Detailed waterfall traces, span execution latency, and error diagnostics recorded in ClickHouse.
             </p>
           </div>

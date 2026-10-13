@@ -69,21 +69,24 @@ export function DashboardSidebar({
   return (
     <aside
       className={cn(
-        "relative flex flex-col border-r border-[#1e293b] bg-black text-slate-300 transition-all duration-300 ease-in-out shrink-0 select-none",
+        "relative flex flex-col border-r border-slate-200 dark:border-[#1e293b] bg-white/95 dark:bg-black text-slate-700 dark:text-slate-300 transition-all duration-300 ease-in-out shrink-0 select-none",
         collapsed ? "w-16" : "w-64"
       )}
     >
       {/* Brand & Workspace Switcher Header */}
-      <div className="flex h-14 items-center justify-between border-b border-[#1e293b] px-3.5">
+      <div className="flex h-14 items-center justify-between border-b border-slate-200 dark:border-[#1e293b] px-3.5">
         {!collapsed && (
-          <div className="flex items-center gap-2 overflow-hidden">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white shadow-md shadow-blue-500/20">
+          <div className="flex items-center gap-2.5 overflow-hidden">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white shadow-md shadow-blue-500/20 shrink-0">
               <Activity className="h-4 w-4" />
             </div>
             <div className="flex flex-col truncate">
-              <div className="flex items-center gap-1.5 font-bold text-sm text-slate-100 tracking-tight">
-                <span className="font-extrabold text-xl">ASI-Telemetry</span>
+              <div className="flex items-center gap-1.5 font-bold text-sm tracking-tight text-slate-900 dark:text-white">
+                <span className="font-extrabold text-base">ASI:Telemetry</span>
               </div>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 -mt-0.5">
+                Observability Platform
+              </span>
             </div>
           </div>
         )}
@@ -96,7 +99,7 @@ export function DashboardSidebar({
 
         <button
           onClick={onToggleCollapse}
-          className="flex h-7 w-7 items-center justify-center rounded-md text-slate-400 hover:bg-[#171717] hover:text-slate-200 transition-colors"
+          className="flex h-7 w-7 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 dark:hover:bg-[#171717] hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {collapsed ? (
@@ -117,9 +120,9 @@ export function DashboardSidebar({
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-8 w-full rounded-md border border-[#1e293b] bg-black pl-8 pr-12 text-xs text-slate-200 placeholder:text-slate-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="h-8 w-full rounded-md border border-slate-200 dark:border-[#1e293b] bg-slate-50 dark:bg-black pl-8 pr-12 text-xs text-slate-900 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
             />
-            <div className="absolute right-2 flex items-center gap-0.5 rounded border border-[#1e293b] bg-[#111111] px-1 py-0.5 text-[9px] text-slate-400 font-mono">
+            <div className="absolute right-2 flex items-center gap-0.5 rounded border border-slate-200 dark:border-[#1e293b] bg-slate-100 dark:bg-[#111111] px-1 py-0.5 text-[9px] text-slate-500 dark:text-slate-400 font-mono">
               <span>Ctrl</span>
               <span>K</span>
             </div>
@@ -129,7 +132,7 @@ export function DashboardSidebar({
         <div className="flex justify-center pt-3 pb-1">
           <button
             onClick={onToggleCollapse}
-            className="flex h-8 w-8 items-center justify-center rounded-md border border-[#1e293b] bg-black text-slate-400 hover:text-slate-200 hover:border-blue-500"
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 dark:border-[#1e293b] bg-slate-50 dark:bg-black text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:border-blue-500 transition-colors"
             title="Search (Ctrl+K)"
           >
             <Search className="h-3.5 w-3.5" />
@@ -142,7 +145,7 @@ export function DashboardSidebar({
         {navigationGroups.map((group, idx) => (
           <div key={idx} className="space-y-0.5">
             {!collapsed && (
-              <div className="px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              <div className="px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 {group.group}
               </div>
             )}
@@ -163,7 +166,7 @@ export function DashboardSidebar({
                     "group relative flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all",
                     isActive
                       ? "bg-blue-600 text-white shadow-md shadow-blue-600/30 font-semibold"
-                      : "text-slate-400 hover:bg-[#141414] hover:text-slate-200",
+                      : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#141414] hover:text-slate-900 dark:hover:text-slate-200",
                     collapsed && "justify-center px-0 h-9 w-full"
                   )}
                 >
@@ -172,7 +175,7 @@ export function DashboardSidebar({
                       "h-4 w-4 shrink-0 transition-colors",
                       isActive
                         ? "text-white"
-                        : "text-slate-400 group-hover:text-blue-400"
+                        : "text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400"
                     )}
                   />
 
@@ -181,19 +184,22 @@ export function DashboardSidebar({
                       <span className="truncate flex-1 text-left">{item.label}</span>
 
                       {item.badge && (
-                        <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-900/60 px-1 text-[10px] text-blue-200">
+                        <span className={cn(
+                          "flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px]",
+                          isActive ? "bg-white/20 text-white" : "bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-200"
+                        )}>
                           {item.badge}
                         </span>
                       )}
 
                       {item.isPlus && (
-                        <span className="rounded bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-amber-300 border border-amber-500/20">
+                        <span className="rounded bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-amber-600 dark:text-amber-300 border border-amber-500/20">
                           Plus
                         </span>
                       )}
 
                       {item.hasSub && (
-                        <ChevronDown className="h-3.5 w-3.5 text-slate-500" />
+                        <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
                       )}
                     </>
                   )}
@@ -205,13 +211,12 @@ export function DashboardSidebar({
       </div>
 
       {/* Footer / System Status & Settings */}
-      <div className="border-t border-[#1e293b] p-2 space-y-1 bg-black">
+      <div className="border-t border-slate-200 dark:border-[#1e293b] p-2 space-y-1 bg-white dark:bg-black">
         <button
           onClick={() => onNavChange?.("Settings")}
           className={cn(
-            "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium text-slate-400 hover:bg-[#141414] hover:text-slate-200 transition-colors",
-            activeNav === "Settings" && "bg-blue-600 text-white",
-            collapsed && "justify-center px-0"
+            "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#141414] hover:text-slate-900 dark:hover:text-slate-200 transition-colors",
+            activeNav === "Settings" && "bg-blue-600 text-white"
           )}
           title={collapsed ? "Settings" : undefined}
         >
@@ -220,15 +225,15 @@ export function DashboardSidebar({
         </button>
 
         {!collapsed && (
-          <div className="flex items-center gap-2.5 px-2.5 py-1.5 border-t border-[#1e293b]/70 pt-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-950 border border-blue-700/60 text-blue-300 font-bold text-xs">
+          <div className="flex items-center gap-2.5 px-2.5 py-1.5 border-t border-slate-200 dark:border-[#1e293b]/70 pt-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 border border-blue-200 text-blue-700 dark:bg-blue-950 dark:border-blue-700/60 dark:text-blue-300 font-bold text-xs">
               DL
             </div>
             <div className="flex flex-col truncate">
-              <span className="text-xs font-medium text-slate-200 truncate">
+              <span className="text-xs font-medium text-slate-900 dark:text-slate-200 truncate">
                 Devrithm Labs
               </span>
-              <span className="text-[10px] text-slate-400 truncate">
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
                 admin@devrithm.io
               </span>
             </div>

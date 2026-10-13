@@ -9,6 +9,11 @@ import psutil
 
 
 class AgentMonitor:
+    """
+    Real-time Agent and Tool execution monitor.
+    Tracks latency, CPU time, memory consumption, and execution status,
+    dispatching telemetry to the ASI Telemetry backend and ClickHouse.
+    """
     def __init__(self, agent_name: str = "assistant", backend_url: str = None):
         self.agent_name = agent_name
         # Backend endpoint to receive metrics
@@ -36,8 +41,8 @@ class AgentMonitor:
         Decorator to track agent execution:
         Measures response time, CPU time, and memory, then sends data to the backend.
         Supports:
-          @monitor.track(agentname="wheater")
-          @monitor.track("wheater")
+          @monitor.track(agentname="weather")
+          @monitor.track("weather")
           @monitor.track()
           @monitor.track
         """

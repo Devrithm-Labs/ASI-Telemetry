@@ -18,12 +18,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark bg-black" suppressHydrationWarning>
-      <body className="min-h-screen bg-black text-foreground antialiased selection:bg-blue-600/30 selection:text-blue-200">
+    <html lang="en" suppressHydrationWarning>
+      <body className="min-h-screen bg-background text-foreground antialiased selection:bg-blue-600/30 selection:text-blue-600 dark:selection:text-blue-200">
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
-          forcedTheme="dark"
           enableSystem={false}
           disableTransitionOnChange
         >

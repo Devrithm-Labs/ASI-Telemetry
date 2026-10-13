@@ -24,7 +24,6 @@ import {
   BarChart3,
   ShieldCheck,
   Check,
-  RefreshCw,
   GitBranch,
   GitMerge,
   Link2,
@@ -304,10 +303,10 @@ export default function LLMMonitoringPage() {
     });
     const total = filteredTraces.length || 1;
     const colors: Record<string, string> = {
-      llm: "#2563eb",
-      agent: "#38bdf8",
-      chain: "#818cf8",
-      tool: "#34d399",
+      llm: "#2563eb", // Primary Blue
+      agent: "#3b82f6", // Royal Blue
+      chain: "#60a5fa", // Sky Blue
+      tool: "#10b981", // Emerald
     };
     return Object.entries(grouped).map(([type, count]) => ({
       type,
@@ -373,16 +372,16 @@ export default function LLMMonitoringPage() {
           <div className="relative">
             <button
               onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
-              className="flex h-7.5 items-center gap-1.5 rounded-md border border-[#1e293b] bg-black px-2.5 text-xs font-semibold text-slate-200 hover:border-blue-500/60 hover:text-white transition-colors"
+              className="flex h-7.5 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-xs font-semibold text-foreground hover:border-blue-500 transition-colors"
             >
-              <Bot className="h-3.5 w-3.5 text-blue-400" />
+              <Bot className="h-3.5 w-3.5 text-blue-500" />
               <span>{selectedModel}</span>
-              <ChevronDown className="h-3 w-3 text-slate-400" />
+              <ChevronDown className="h-3 w-3 text-muted-foreground" />
             </button>
 
             {isModelDropdownOpen && (
-              <div className="absolute right-0 top-9 z-50 w-48 rounded-md border border-[#1e293b] bg-[#090d16] py-1 shadow-2xl backdrop-blur-md">
-                <div className="px-2.5 py-1 text-[10px] font-semibold uppercase text-slate-400">
+              <div className="absolute right-0 top-9 z-50 w-48 rounded-xl border border-border bg-card py-1 shadow-2xl backdrop-blur-xl">
+                <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                   Filter Model
                 </div>
                 {models.map((m) => (
@@ -394,12 +393,12 @@ export default function LLMMonitoringPage() {
                     }}
                     className={`flex w-full items-center justify-between px-2.5 py-1.5 text-xs transition-colors ${
                       selectedModel === m
-                        ? "bg-blue-600/20 text-blue-300 font-semibold"
-                        : "text-slate-300 hover:bg-[#141414] hover:text-white"
+                        ? "bg-blue-500/10 text-blue-500 font-semibold"
+                        : "text-foreground hover:bg-muted"
                     }`}
                   >
                     <span>{m}</span>
-                    {selectedModel === m && <Check className="h-3.5 w-3.5 text-blue-400" />}
+                    {selectedModel === m && <Check className="h-3.5 w-3.5 text-blue-500" />}
                   </button>
                 ))}
               </div>
@@ -412,79 +411,87 @@ export default function LLMMonitoringPage() {
         {/* Top LLM KPI Overview Strip */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {/* 1. Total Tokens */}
-          <Card className="border border-[#1e293b] bg-black p-4 hover:border-blue-500/50 transition-colors">
+          <Card className="border border-border bg-card p-4 transition-all shadow-sm">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-400">Total Tokens Streamed</span>
-              <BrainCircuit className="h-4 w-4 text-blue-400" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total Tokens Streamed</span>
+              <div className="flex h-6 w-6 items-center justify-center rounded bg-blue-500/10 text-blue-500">
+                <BrainCircuit className="h-3.5 w-3.5" />
+              </div>
             </div>
-            <div className="mt-2 text-2xl font-bold text-white font-mono">{displayTotalTokens}</div>
-            <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
+            <div className="mt-2 text-2xl font-extrabold text-foreground font-mono tracking-tight">{displayTotalTokens}</div>
+            <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
               <span>Prompt: {displayPromptTokens}</span>
-              <span className="text-blue-300 font-mono">Comp: {displayCompTokens}</span>
+              <span className="text-blue-500 font-mono">Comp: {displayCompTokens}</span>
             </div>
           </Card>
 
           {/* 2. Avg TTFT */}
-          <Card className="border border-[#1e293b] bg-black p-4 hover:border-blue-500/50 transition-colors">
+          <Card className="border border-border bg-card p-4 transition-all shadow-sm">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-400">Time to First Token (TTFT)</span>
-              <Clock className="h-4 w-4 text-blue-400" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Latency / TTFT</span>
+              <div className="flex h-6 w-6 items-center justify-center rounded bg-blue-500/10 text-blue-500">
+                <Clock className="h-3.5 w-3.5" />
+              </div>
             </div>
-            <div className="mt-2 text-2xl font-bold text-white font-mono">{avgLatency} ms</div>
-            <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
+            <div className="mt-2 text-2xl font-extrabold text-blue-500 font-mono tracking-tight">{avgLatency} ms</div>
+            <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
               <span>P90: {p90Latency}ms</span>
-              <span className="text-blue-300 font-semibold">SLA: 99.8%</span>
+              <span className="text-blue-500 font-semibold">SLA: 99.8%</span>
             </div>
           </Card>
 
           {/* 3. Incurred Cost */}
-          <Card className="border border-[#1e293b] bg-black p-4 hover:border-blue-500/50 transition-colors">
+          <Card className="border border-border bg-card p-4 transition-all shadow-sm">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-400">Total Incurred Spend</span>
-              <Coins className="h-4 w-4 text-blue-400" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total Spend</span>
+              <div className="flex h-6 w-6 items-center justify-center rounded bg-amber-500/10 text-amber-500">
+                <Coins className="h-3.5 w-3.5" />
+              </div>
             </div>
-            <div className="mt-2 text-2xl font-bold text-white font-mono">{displaySpend}</div>
-            <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
+            <div className="mt-2 text-2xl font-extrabold text-amber-500 font-mono tracking-tight">{displaySpend}</div>
+            <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
               <span>Avg: ${filteredTraces.length > 0 ? (totalCost / filteredTraces.length).toFixed(6) : "0.0029"} / call</span>
-              <span className="text-emerald-400 font-semibold">Optimized</span>
+              <span className="text-emerald-500 font-semibold">Optimized</span>
             </div>
           </Card>
 
           {/* 4. Rate Limit Status */}
-          <Card className="border border-[#1e293b] bg-black p-4 hover:border-blue-500/50 transition-colors">
+          <Card className="border border-border bg-card p-4 transition-all shadow-sm">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-400">Rate Limit Breaches (429)</span>
-              <AlertOctagon className="h-4 w-4 text-blue-400" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Rate Limits (429)</span>
+              <div className="flex h-6 w-6 items-center justify-center rounded bg-emerald-500/10 text-emerald-500">
+                <AlertOctagon className="h-3.5 w-3.5" />
+              </div>
             </div>
-            <div className="mt-2 text-2xl font-bold text-white font-mono">
-              {hasLiveTraces ? `${errorCount} Events` : "11 Events"}
+            <div className="mt-2 text-2xl font-extrabold text-foreground font-mono tracking-tight">
+              {hasLiveTraces ? `${errorCount} Events` : "0 Events"}
             </div>
-            <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
+            <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
               <span>Auto-retries: 100% ok</span>
-              <span className={`font-semibold ${errorCount === 0 ? "text-blue-300" : "text-amber-300"}`}>
+              <span className={`font-semibold ${errorCount === 0 ? "text-emerald-500" : "text-amber-500"}`}>
                 {errorCount === 0 ? "Healthy" : "Observed"}
               </span>
             </div>
           </Card>
         </div>
 
-        {/* Section Title Dropdown matching media_1791662388097.png */}
+        {/* Section Title Dropdown */}
         <div className="relative pt-2">
-          <div className="flex items-center justify-between border-b border-[#1e293b] pb-3">
+          <div className="flex items-center justify-between border-b border-border pb-3">
             <button
               onClick={() => setIsSectionMenuOpen(!isSectionMenuOpen)}
-              className="group flex items-center gap-2 text-lg font-bold text-white hover:text-blue-400 transition-colors select-none"
+              className="group flex items-center gap-2 text-lg font-bold text-foreground hover:text-blue-500 transition-colors select-none"
             >
               <span>{activeTabMeta.label}</span>
-              <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${isSectionMenuOpen ? "rotate-180 text-blue-400" : ""}`} />
+              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isSectionMenuOpen ? "rotate-180 text-blue-500" : ""}`} />
             </button>
 
-            <div className="flex items-center gap-3 text-xs text-slate-400">
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                 <span>Live ClickHouse Stream</span>
               </span>
-              <span className="rounded border border-[#1e293b] bg-[#0d111a] px-2 py-0.5 font-mono text-[11px] text-blue-300">
+              <span className="rounded border border-border bg-card px-2 py-0.5 font-mono text-[11px] text-blue-500">
                 {filteredTraces.length} Traces Loaded
               </span>
             </div>
@@ -492,7 +499,7 @@ export default function LLMMonitoringPage() {
 
           {/* Switch section dropdown */}
           {isSectionMenuOpen && (
-            <div className="absolute left-0 top-12 z-40 w-56 rounded-md border border-[#1e293b] bg-[#0c101a] py-1 shadow-2xl backdrop-blur-md">
+            <div className="absolute left-0 top-12 z-40 w-56 rounded-md border border-border bg-card py-1 shadow-2xl backdrop-blur-md">
               {LLM_TABS.map((tab) => (
                 <button
                   key={tab.id}
@@ -502,12 +509,12 @@ export default function LLMMonitoringPage() {
                   }}
                   className={`flex w-full items-center justify-between px-3 py-2 text-xs transition-colors ${
                     activeSubTab === tab.id
-                      ? "bg-blue-600/20 text-blue-300 font-semibold"
-                      : "text-slate-300 hover:bg-[#161d2d] hover:text-white"
+                      ? "bg-blue-600/10 text-blue-500 font-semibold"
+                      : "text-foreground hover:bg-muted"
                   }`}
                 >
                   <span>{tab.label}</span>
-                  {activeSubTab === tab.id && <Check className="h-3.5 w-3.5 text-blue-400" />}
+                  {activeSubTab === tab.id && <Check className="h-3.5 w-3.5 text-blue-500" />}
                 </button>
               ))}
             </div>
@@ -520,67 +527,67 @@ export default function LLMMonitoringPage() {
         {activeSubTab === "traces" && (
           <div className="space-y-6">
             {/* Card: Trace Count - Total number of traces over time */}
-            <Card className="border border-[#1e293b] bg-black p-5 shadow-xl hover:border-blue-500/40 transition-colors">
-              <div className="flex flex-col gap-1 pb-4 border-b border-[#1e293b]">
+            <Card className="border border-border bg-card p-5 shadow-sm hover:border-blue-500/40 transition-colors">
+              <div className="flex flex-col gap-1 pb-4 border-b border-border">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-base font-bold text-white tracking-tight">Trace Count</h3>
+                  <h3 className="text-base font-bold text-foreground tracking-tight">Trace Count</h3>
                   <div className="flex items-center gap-3 text-xs">
                     <div className="flex items-center gap-1.5">
                       <span className="h-2 w-2 rounded-full bg-blue-500" />
-                      <span className="text-slate-400">Total Traces</span>
+                      <span className="text-muted-foreground">Total Traces</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                      <span className="text-slate-400">Success</span>
+                      <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                      <span className="text-muted-foreground">Success</span>
                     </div>
                     {errorCount > 0 && (
                       <div className="flex items-center gap-1.5">
                         <span className="h-2 w-2 rounded-full bg-rose-500" />
-                        <span className="text-slate-400">Failed</span>
+                        <span className="text-muted-foreground">Failed</span>
                       </div>
                     )}
                   </div>
                 </div>
-                <p className="text-xs text-slate-400">Total number of traces over time</p>
+                <p className="text-xs text-muted-foreground">Total number of traces over time</p>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-4 items-center">
                 {/* Stats Column */}
-                <div className="lg:col-span-4 space-y-4 lg:border-r border-[#1e293b] lg:pr-6">
+                <div className="lg:col-span-4 space-y-4 lg:border-r border-border lg:pr-6">
                   <div>
-                    <span className="text-xs text-slate-400">Total Recorded</span>
-                    <div className="text-3xl font-extrabold text-white font-mono mt-0.5">
+                    <span className="text-xs text-muted-foreground">Total Recorded</span>
+                    <div className="text-3xl font-extrabold text-foreground font-mono mt-0.5">
                       {filteredTraces.length > 0 ? filteredTraces.length : "314"}
                     </div>
-                    <span className="text-[11px] text-emerald-400 flex items-center gap-1 mt-1 font-medium">
+                    <span className="text-[11px] text-emerald-500 flex items-center gap-1 mt-1 font-medium">
                       <TrendingUp className="h-3 w-3" />
                       <span>{successRate}% overall success rate</span>
                     </span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="rounded-lg border border-[#1e293b] bg-[#080808] p-2.5">
-                      <span className="text-[11px] text-slate-400">Successful</span>
-                      <div className="text-sm font-bold text-emerald-400 font-mono mt-0.5">
+                    <div className="rounded-lg border border-border bg-background p-2.5">
+                      <span className="text-[11px] text-muted-foreground">Successful</span>
+                      <div className="text-sm font-bold text-emerald-500 font-mono mt-0.5">
                         {successCount}
                       </div>
                     </div>
-                    <div className="rounded-lg border border-[#1e293b] bg-[#080808] p-2.5">
-                      <span className="text-[11px] text-slate-400">Failures</span>
-                      <div className={`text-sm font-bold font-mono mt-0.5 ${errorCount > 0 ? "text-rose-400" : "text-slate-400"}`}>
+                    <div className="rounded-lg border border-border bg-background p-2.5">
+                      <span className="text-[11px] text-muted-foreground">Failures</span>
+                      <div className={`text-sm font-bold font-mono mt-0.5 ${errorCount > 0 ? "text-rose-500" : "text-muted-foreground"}`}>
                         {errorCount}
                       </div>
                     </div>
                   </div>
 
-                  <div className="rounded-lg border border-[#1e293b] bg-[#080808] p-3 text-xs space-y-1.5">
-                    <div className="flex justify-between text-slate-400">
+                  <div className="rounded-lg border border-border bg-background p-3 text-xs space-y-1.5">
+                    <div className="flex justify-between text-muted-foreground">
                       <span>Live Ingestion:</span>
-                      <span className="font-semibold text-blue-300 font-mono">ClickHouse active</span>
+                      <span className="font-semibold text-blue-500 font-mono">ClickHouse active</span>
                     </div>
-                    <div className="flex justify-between text-slate-400">
+                    <div className="flex justify-between text-muted-foreground">
                       <span>Trace Stream:</span>
-                      <span className="font-semibold text-emerald-400 font-mono">WebSocket connected</span>
+                      <span className="font-semibold text-emerald-500 font-mono">WebSocket connected</span>
                     </div>
                   </div>
                 </div>
@@ -590,12 +597,12 @@ export default function LLMMonitoringPage() {
                   <div className="h-56 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={traceCountData} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} opacity={0.6} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} opacity={0.6} />
                         <XAxis dataKey="time" stroke="#64748b" tickLine={false} axisLine={false} fontSize={11} />
                         <YAxis stroke="#64748b" tickLine={false} axisLine={false} fontSize={11} />
                         <Tooltip
-                          contentStyle={{ backgroundColor: "#0c0e14", borderColor: "#1e293b", borderRadius: "8px", fontSize: "12px" }}
-                          labelStyle={{ color: "#94a3b8" }}
+                          contentStyle={{ backgroundColor: "var(--card)", borderColor: "var(--border)", borderRadius: "8px", fontSize: "12px", color: "var(--foreground)" }}
+                          labelStyle={{ color: "var(--muted-foreground)" }}
                         />
                         <Bar dataKey="traces" fill="#2563eb" radius={[4, 4, 0, 0]} name="Traces" />
                         <Bar dataKey="success" fill="#10b981" radius={[4, 4, 0, 0]} name="Success" />
@@ -607,45 +614,45 @@ export default function LLMMonitoringPage() {
             </Card>
 
             {/* Card: Trace Latency Trends */}
-            <Card className="border border-[#1e293b] bg-black p-5 shadow-xl hover:border-blue-500/40 transition-colors">
-              <div className="flex flex-col gap-1 pb-4 border-b border-[#1e293b]">
+            <Card className="border border-border bg-card p-5 shadow-sm hover:border-blue-500/40 transition-colors">
+              <div className="flex flex-col gap-1 pb-4 border-b border-border">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-base font-bold text-white tracking-tight">Trace Latency (ms)</h3>
+                  <h3 className="text-base font-bold text-foreground tracking-tight">Trace Latency (ms)</h3>
                   <div className="flex items-center gap-3 text-xs">
                     <div className="flex items-center gap-1.5">
                       <span className="h-2 w-2 rounded-full bg-blue-500" />
-                      <span className="text-slate-400">P50 Latency</span>
+                      <span className="text-muted-foreground">P50 Latency</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="h-2 w-2 rounded-full bg-sky-400" />
-                      <span className="text-slate-400">P90 Latency</span>
+                      <span className="text-muted-foreground">P90 Latency</span>
                     </div>
                   </div>
                 </div>
-                <p className="text-xs text-slate-400">End-to-end execution duration over time</p>
+                <p className="text-xs text-muted-foreground">End-to-end execution duration over time</p>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-4 items-center">
-                <div className="lg:col-span-4 space-y-4 lg:border-r border-[#1e293b] lg:pr-6">
+                <div className="lg:col-span-4 space-y-4 lg:border-r border-border lg:pr-6">
                   <div>
-                    <span className="text-xs text-slate-400">Average Duration</span>
-                    <div className="text-3xl font-extrabold text-white font-mono mt-0.5">
+                    <span className="text-xs text-muted-foreground">Average Duration</span>
+                    <div className="text-3xl font-extrabold text-foreground font-mono mt-0.5">
                       {avgLatency} ms
                     </div>
-                    <span className="text-[11px] text-blue-300 flex items-center gap-1 mt-1 font-medium">
+                    <span className="text-[11px] text-blue-500 flex items-center gap-1 mt-1 font-medium">
                       <CheckCircle2 className="h-3 w-3" />
                       <span>99.8% within 2000ms SLA target</span>
                     </span>
                   </div>
 
-                  <div className="space-y-2 border-t border-[#1e293b] pt-3 text-xs">
-                    <div className="flex justify-between text-slate-400">
+                  <div className="space-y-2 border-t border-border pt-3 text-xs">
+                    <div className="flex justify-between text-muted-foreground">
                       <span>P90 Duration:</span>
-                      <span className="font-semibold text-white font-mono">{p90Latency} ms</span>
+                      <span className="font-semibold text-foreground font-mono">{p90Latency} ms</span>
                     </div>
-                    <div className="flex justify-between text-slate-400">
+                    <div className="flex justify-between text-muted-foreground">
                       <span>Fastest Span:</span>
-                      <span className="font-semibold text-emerald-400 font-mono">
+                      <span className="font-semibold text-emerald-500 font-mono">
                         {filteredTraces.length > 0 ? `${Math.min(...filteredTraces.map((t) => t.latency_ms || 100))} ms` : "95 ms"}
                       </span>
                     </div>
@@ -662,11 +669,11 @@ export default function LLMMonitoringPage() {
                             <stop offset="95%" stopColor="#2563eb" stopOpacity={0.0} />
                           </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} opacity={0.6} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} opacity={0.6} />
                         <XAxis dataKey="time" stroke="#64748b" tickLine={false} axisLine={false} fontSize={11} />
                         <YAxis stroke="#64748b" tickLine={false} axisLine={false} fontSize={11} tickFormatter={(v) => `${v}ms`} />
                         <Tooltip
-                          contentStyle={{ backgroundColor: "#0c0e14", borderColor: "#1e293b", borderRadius: "8px", fontSize: "12px" }}
+                          contentStyle={{ backgroundColor: "var(--card)", borderColor: "var(--border)", borderRadius: "8px", fontSize: "12px", color: "var(--foreground)" }}
                         />
                         <Area type="monotone" dataKey="p90" stroke="#38bdf8" strokeWidth={2} fillOpacity={0.1} fill="#38bdf8" name="P90" />
                         <Area type="monotone" dataKey="p50" stroke="#2563eb" strokeWidth={2} fillOpacity={1} fill="url(#latencyGradient)" name="P50" />
@@ -684,54 +691,54 @@ export default function LLMMonitoringPage() {
         {/* ============================================================== */}
         {activeSubTab === "llm-calls" && (
           <div className="space-y-6">
-            <Card className="border border-[#1e293b] bg-black p-5 shadow-xl hover:border-blue-500/40 transition-colors">
-              <div className="flex flex-col gap-1 pb-4 border-b border-[#1e293b]">
+            <Card className="border border-border bg-card p-5 shadow-sm hover:border-blue-500/40 transition-colors">
+              <div className="flex flex-col gap-1 pb-4 border-b border-border">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-base font-bold text-white tracking-tight">Model Latency Distribution</h3>
+                  <h3 className="text-base font-bold text-foreground tracking-tight">Model Latency Distribution</h3>
                   <div className="flex items-center gap-3 text-xs">
                     <div className="flex items-center gap-1.5">
                       <span className="h-2 w-2 rounded-full bg-blue-600" />
-                      <span className="text-slate-400">P50 (ms)</span>
+                      <span className="text-muted-foreground">P50 (ms)</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="h-2 w-2 rounded-full bg-sky-400" />
-                      <span className="text-slate-400">P90 (ms)</span>
+                      <span className="text-muted-foreground">P90 (ms)</span>
                     </div>
                   </div>
                 </div>
-                <p className="text-xs text-slate-400">P50 vs P90 Across Foundation Model Families</p>
+                <p className="text-xs text-muted-foreground">P50 vs P90 Across Foundation Model Families</p>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-4 items-center">
-                <div className="lg:col-span-4 space-y-3 lg:border-r border-[#1e293b] lg:pr-6">
+                <div className="lg:col-span-4 space-y-3 lg:border-r border-border lg:pr-6">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white shadow-md shadow-blue-500/20">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
                       <Gauge className="h-4 w-4" />
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-white">Inference Performance</h4>
-                      <p className="text-[11px] text-slate-400">Benchmark comparison</p>
+                      <h4 className="text-sm font-bold text-foreground">Inference Performance</h4>
+                      <p className="text-[11px] text-muted-foreground">Benchmark comparison</p>
                     </div>
                   </div>
 
                   <div className="pt-2">
-                    <div className="text-3xl font-extrabold text-white tracking-tight font-mono">
+                    <div className="text-3xl font-extrabold text-foreground tracking-tight font-mono">
                       {avgLatency} ms
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-blue-400 font-medium mt-1">
+                    <div className="flex items-center gap-2 text-xs text-blue-500 font-medium mt-1">
                       <CheckCircle2 className="h-3.5 w-3.5" />
                       <span>Active inference latency average</span>
                     </div>
                   </div>
 
-                  <div className="space-y-1.5 pt-2 border-t border-[#1e293b] text-xs">
-                    <div className="flex items-center justify-between text-slate-400">
+                  <div className="space-y-1.5 pt-2 border-t border-border text-xs">
+                    <div className="flex items-center justify-between text-muted-foreground">
                       <span>P90 Roundtrip:</span>
-                      <span className="font-semibold text-white font-mono">{p90Latency} ms</span>
+                      <span className="font-semibold text-foreground font-mono">{p90Latency} ms</span>
                     </div>
-                    <div className="flex items-center justify-between text-slate-400">
+                    <div className="flex items-center justify-between text-muted-foreground">
                       <span>Active Models:</span>
-                      <span className="font-semibold text-blue-300 font-mono">{models.length - 1} configured</span>
+                      <span className="font-semibold text-blue-500 font-mono">{models.length - 1} configured</span>
                     </div>
                   </div>
                 </div>
@@ -740,11 +747,11 @@ export default function LLMMonitoringPage() {
                   <div className="h-56 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={latencyChartData} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} opacity={0.6} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} opacity={0.6} />
                         <XAxis dataKey="model" stroke="#64748b" tickLine={false} axisLine={false} fontSize={11} />
                         <YAxis stroke="#64748b" tickLine={false} axisLine={false} fontSize={11} />
                         <Tooltip
-                          contentStyle={{ backgroundColor: "#0c0e14", borderColor: "#1e293b", borderRadius: "8px", fontSize: "12px" }}
+                          contentStyle={{ backgroundColor: "var(--card)", borderColor: "var(--border)", borderRadius: "8px", fontSize: "12px", color: "var(--foreground)" }}
                         />
                         <Bar dataKey="p50" fill="#2563eb" radius={[4, 4, 0, 0]} name="P50 (ms)" />
                         <Bar dataKey="p90" fill="#38bdf8" radius={[4, 4, 0, 0]} name="P90 (ms)" />
@@ -763,39 +770,39 @@ export default function LLMMonitoringPage() {
         {activeSubTab === "cost-tokens" && (
           <div className="space-y-6">
             {/* Token Throughput Card */}
-            <Card className="border border-[#1e293b] bg-black p-5 shadow-xl hover:border-blue-500/40 transition-colors">
+            <Card className="border border-border bg-card p-5 shadow-sm hover:border-blue-500/40 transition-colors">
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-center">
-                <div className="lg:col-span-4 border-b lg:border-b-0 lg:border-r border-[#1e293b] pb-4 lg:pb-0 lg:pr-6 space-y-3">
+                <div className="lg:col-span-4 border-b lg:border-b-0 lg:border-r border-border pb-4 lg:pb-0 lg:pr-6 space-y-3">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white shadow-md shadow-blue-500/20">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
                       <BrainCircuit className="h-4 w-4" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-bold text-white">Token Throughput</h3>
-                      <p className="text-[11px] text-slate-400">Prompt vs Completion Breakdown</p>
+                      <h3 className="text-sm font-bold text-foreground">Token Throughput</h3>
+                      <p className="text-[11px] text-muted-foreground">Prompt vs Completion Breakdown</p>
                     </div>
                   </div>
 
                   <div className="pt-2">
-                    <div className="text-3xl font-extrabold text-white tracking-tight font-mono">
+                    <div className="text-3xl font-extrabold text-foreground tracking-tight font-mono">
                       {hasLiveTraces ? totalTokens.toLocaleString() : "18,420,119"}
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-blue-400 font-medium mt-1">
+                    <div className="flex items-center gap-2 text-xs text-blue-500 font-medium mt-1">
                       <TrendingUp className="h-3.5 w-3.5" />
                       <span>Real-time Ingestion Stream</span>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#1e293b] text-xs">
-                    <div className="rounded-lg border border-[#1e293b] bg-[#080808] p-2.5">
-                      <span className="text-[11px] text-slate-400">Prompt Tokens</span>
-                      <div className="text-sm font-bold text-blue-400 font-mono mt-0.5">
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border text-xs">
+                    <div className="rounded-lg border border-border bg-background p-2.5">
+                      <span className="text-[11px] text-muted-foreground">Prompt Tokens</span>
+                      <div className="text-sm font-bold text-blue-500 font-mono mt-0.5">
                         {displayPromptTokens}
                       </div>
                     </div>
-                    <div className="rounded-lg border border-[#1e293b] bg-[#080808] p-2.5">
-                      <span className="text-[11px] text-slate-400">Completion Tokens</span>
-                      <div className="text-sm font-bold text-sky-300 font-mono mt-0.5">
+                    <div className="rounded-lg border border-border bg-background p-2.5">
+                      <span className="text-[11px] text-muted-foreground">Completion Tokens</span>
+                      <div className="text-sm font-bold text-sky-400 font-mono mt-0.5">
                         {displayCompTokens}
                       </div>
                     </div>
@@ -804,15 +811,15 @@ export default function LLMMonitoringPage() {
 
                 <div className="lg:col-span-8">
                   <div className="flex items-center justify-between mb-3 text-xs">
-                    <span className="font-semibold text-slate-300">Hourly Token Ingestion</span>
+                    <span className="font-semibold text-foreground">Hourly Token Ingestion</span>
                     <div className="flex items-center gap-3">
                       <div className="flex items-center gap-1.5">
                         <span className="h-2 w-2 rounded-full bg-blue-600" />
-                        <span className="text-[11px] text-slate-400">Prompt</span>
+                        <span className="text-[11px] text-muted-foreground">Prompt</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <span className="h-2 w-2 rounded-full bg-sky-400" />
-                        <span className="text-[11px] text-slate-400">Completion</span>
+                        <span className="text-[11px] text-muted-foreground">Completion</span>
                       </div>
                     </div>
                   </div>
@@ -820,11 +827,11 @@ export default function LLMMonitoringPage() {
                   <div className="h-48 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={tokenChartData} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} opacity={0.6} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} opacity={0.6} />
                         <XAxis dataKey="time" stroke="#64748b" tickLine={false} axisLine={false} fontSize={10} />
                         <YAxis stroke="#64748b" tickLine={false} axisLine={false} fontSize={10} />
                         <Tooltip
-                          contentStyle={{ backgroundColor: "#0c0e14", borderColor: "#1e293b", borderRadius: "8px", fontSize: "12px" }}
+                          contentStyle={{ backgroundColor: "var(--card)", borderColor: "var(--border)", borderRadius: "8px", fontSize: "12px", color: "var(--foreground)" }}
                         />
                         <Bar dataKey="promptTokens" fill="#2563eb" radius={[0, 0, 0, 0]} stackId="tokens" name="Prompt" />
                         <Bar dataKey="completionTokens" fill="#38bdf8" radius={[4, 4, 0, 0]} stackId="tokens" name="Completion" />
@@ -836,39 +843,39 @@ export default function LLMMonitoringPage() {
             </Card>
 
             {/* Inference Cost Spend Card */}
-            <Card className="border border-[#1e293b] bg-black p-5 shadow-xl hover:border-blue-500/40 transition-colors">
+            <Card className="border border-border bg-card p-5 shadow-sm hover:border-blue-500/40 transition-colors">
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-center">
-                <div className="lg:col-span-4 border-b lg:border-b-0 lg:border-r border-[#1e293b] pb-4 lg:pb-0 lg:pr-6 space-y-3">
+                <div className="lg:col-span-4 border-b lg:border-b-0 lg:border-r border-border pb-4 lg:pb-0 lg:pr-6 space-y-3">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white shadow-md shadow-blue-500/20">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
                       <Coins className="h-4 w-4" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-bold text-white">Inference Cost Spend</h3>
-                      <p className="text-[11px] text-slate-400">Total API Billing Accumulation</p>
+                      <h3 className="text-sm font-bold text-foreground">Inference Cost Spend</h3>
+                      <p className="text-[11px] text-muted-foreground">Total API Billing Accumulation</p>
                     </div>
                   </div>
 
                   <div className="pt-2">
-                    <div className="text-3xl font-extrabold text-white tracking-tight font-mono">
+                    <div className="text-3xl font-extrabold text-foreground tracking-tight font-mono">
                       {displaySpend}
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-blue-400 font-medium mt-1">
-                      <TrendingDown className="h-3.5 w-3.5 text-emerald-400" />
-                      <span className="text-emerald-400">Tracked in ClickHouse MergeTree</span>
+                    <div className="flex items-center gap-2 text-xs text-blue-500 font-medium mt-1">
+                      <TrendingDown className="h-3.5 w-3.5 text-emerald-500" />
+                      <span className="text-emerald-500">Tracked in ClickHouse MergeTree</span>
                     </div>
                   </div>
 
-                  <div className="space-y-1.5 pt-2 border-t border-[#1e293b] text-xs">
-                    <div className="flex items-center justify-between text-slate-400">
+                  <div className="space-y-1.5 pt-2 border-t border-border text-xs">
+                    <div className="flex items-center justify-between text-muted-foreground">
                       <span>Prompt Token Cost:</span>
-                      <span className="font-semibold text-white font-mono">
+                      <span className="font-semibold text-foreground font-mono">
                         ${((promptTokens * 0.075) / 1000000).toFixed(6)}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between text-slate-400">
+                    <div className="flex items-center justify-between text-muted-foreground">
                       <span>Completion Token Cost:</span>
-                      <span className="font-semibold text-blue-300 font-mono">
+                      <span className="font-semibold text-blue-500 font-mono">
                         ${((completionTokens * 0.3) / 1000000).toFixed(6)}
                       </span>
                     </div>
@@ -877,18 +884,18 @@ export default function LLMMonitoringPage() {
 
                 <div className="lg:col-span-8">
                   <div className="flex items-center justify-between mb-3 text-xs">
-                    <span className="font-semibold text-slate-300">Cost by Time Slot ($ USD)</span>
-                    <span className="text-[11px] text-blue-400 font-mono">Real-time Ingestion</span>
+                    <span className="font-semibold text-foreground">Cost by Time Slot ($ USD)</span>
+                    <span className="text-[11px] text-blue-500 font-mono">Real-time Ingestion</span>
                   </div>
 
                   <div className="h-48 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={tokenChartData} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} opacity={0.6} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} opacity={0.6} />
                         <XAxis dataKey="time" stroke="#64748b" tickLine={false} axisLine={false} fontSize={10} />
                         <YAxis stroke="#64748b" tickLine={false} axisLine={false} fontSize={10} tickFormatter={(v) => `$${v}`} />
                         <Tooltip
-                          contentStyle={{ backgroundColor: "#0c0e14", borderColor: "#1e293b", borderRadius: "8px", fontSize: "12px" }}
+                          contentStyle={{ backgroundColor: "var(--card)", borderColor: "var(--border)", borderRadius: "8px", fontSize: "12px", color: "var(--foreground)" }}
                         />
                         <Bar dataKey="cost" fill="#2563eb" radius={[4, 4, 0, 0]} name="Spend ($)" />
                       </BarChart>
@@ -905,27 +912,27 @@ export default function LLMMonitoringPage() {
         {/* ============================================================== */}
         {activeSubTab === "tools" && (
           <div className="space-y-6">
-            <Card className="border border-[#1e293b] bg-black p-5 shadow-xl hover:border-blue-500/40 transition-colors">
-              <div className="flex flex-col gap-1 pb-4 border-b border-[#1e293b]">
+            <Card className="border border-border bg-card p-5 shadow-sm hover:border-blue-500/40 transition-colors">
+              <div className="flex flex-col gap-1 pb-4 border-b border-border">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white shadow-md shadow-blue-500/20">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
                       <Wrench className="h-4 w-4" />
                     </div>
                     <div>
-                      <h3 className="text-base font-bold text-white tracking-tight">Agent Tool Invocations</h3>
-                      <p className="text-xs text-slate-400">Connected uAgent tools and remote API calls</p>
+                      <h3 className="text-base font-bold text-foreground tracking-tight">Agent Tool Invocations</h3>
+                      <p className="text-xs text-muted-foreground">Connected uAgent tools and remote API calls</p>
                     </div>
                   </div>
-                  <span className="rounded bg-emerald-950/40 border border-emerald-800/40 px-2 py-0.5 font-mono text-xs text-emerald-400">
+                  <span className="rounded bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 font-mono text-xs text-emerald-500">
                     100% Healthy
                   </span>
                 </div>
               </div>
 
               <div className="pt-4 overflow-x-auto">
-                <table className="w-full text-left text-xs text-slate-300">
-                  <thead className="border-b border-[#1e293b] text-[11px] text-slate-400 uppercase tracking-wider">
+                <table className="w-full text-left text-xs text-muted-foreground">
+                  <thead className="border-b border-border text-[11px] text-muted-foreground uppercase tracking-wider">
                     <tr>
                       <th className="pb-3 font-semibold">Tool Identifier</th>
                       <th className="pb-3 font-semibold">Total Invocations</th>
@@ -934,18 +941,18 @@ export default function LLMMonitoringPage() {
                       <th className="pb-3 font-semibold">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#161d2d]">
+                  <tbody className="divide-y divide-border">
                     {toolsData.map((tool) => (
-                      <tr key={tool.name} className="hover:bg-[#0e131d] transition-colors">
-                        <td className="py-3 font-mono font-medium text-white flex items-center gap-2">
-                          <Wrench className="h-3.5 w-3.5 text-blue-400" />
+                      <tr key={tool.name} className="hover:bg-muted/50 transition-colors">
+                        <td className="py-3 font-mono font-medium text-foreground flex items-center gap-2">
+                          <Wrench className="h-3.5 w-3.5 text-blue-500" />
                           <span>{tool.name}</span>
                         </td>
-                        <td className="py-3 font-mono text-slate-300">{tool.calls} calls</td>
-                        <td className="py-3 font-mono text-blue-300">{tool.avgLatency}</td>
-                        <td className="py-3 font-mono text-emerald-400">{tool.success}</td>
+                        <td className="py-3 font-mono text-foreground">{tool.calls} calls</td>
+                        <td className="py-3 font-mono text-blue-500">{tool.avgLatency}</td>
+                        <td className="py-3 font-mono text-emerald-500">{tool.success}</td>
                         <td className="py-3">
-                          <span className="rounded bg-emerald-950/40 border border-emerald-800/40 px-1.5 py-0.5 text-[10px] text-emerald-300 font-mono">
+                          <span className="rounded bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 text-[10px] text-emerald-500 font-mono">
                             active
                           </span>
                         </td>
@@ -963,16 +970,16 @@ export default function LLMMonitoringPage() {
         {/* ============================================================== */}
         {activeSubTab === "run-types" && (
           <div className="space-y-6">
-            <Card className="border border-[#1e293b] bg-black p-5 shadow-xl hover:border-blue-500/40 transition-colors">
-              <div className="flex flex-col gap-1 pb-4 border-b border-[#1e293b]">
+            <Card className="border border-border bg-card p-5 shadow-sm hover:border-blue-500/40 transition-colors">
+              <div className="flex flex-col gap-1 pb-4 border-b border-border">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white shadow-md shadow-blue-500/20">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
                       <GitFork className="h-4 w-4" />
                     </div>
                     <div>
-                      <h3 className="text-base font-bold text-white tracking-tight">Run Types Breakdown</h3>
-                      <p className="text-xs text-slate-400">Execution distribution by run archetype</p>
+                      <h3 className="text-base font-bold text-foreground tracking-tight">Run Types Breakdown</h3>
+                      <p className="text-xs text-muted-foreground">Execution distribution by run archetype</p>
                     </div>
                   </div>
                 </div>
@@ -982,10 +989,10 @@ export default function LLMMonitoringPage() {
                 {runTypesData.map((rt) => (
                   <div
                     key={rt.type}
-                    className="rounded-lg border border-[#1e293b] bg-[#090c14] p-4 hover:border-blue-500/40 transition-colors space-y-2"
+                    className="rounded-lg border border-border bg-background p-4 hover:border-blue-500/40 transition-colors space-y-2"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-sm text-white">{rt.label}</span>
+                      <span className="font-semibold text-sm text-foreground">{rt.label}</span>
                       <span
                         className="rounded px-1.5 py-0.5 font-mono text-[10px] font-bold"
                         style={{ backgroundColor: `${rt.color}20`, color: rt.color }}
@@ -993,10 +1000,10 @@ export default function LLMMonitoringPage() {
                         {rt.share}
                       </span>
                     </div>
-                    <div className="text-2xl font-bold font-mono text-white">{rt.count}</div>
-                    <div className="flex items-center justify-between text-xs text-slate-400 border-t border-[#1e293b] pt-2">
+                    <div className="text-2xl font-bold font-mono text-foreground">{rt.count}</div>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border pt-2">
                       <span>Avg Latency:</span>
-                      <span className="font-mono text-blue-300 font-semibold">{rt.avgLatency}</span>
+                      <span className="font-mono text-blue-500 font-semibold">{rt.avgLatency}</span>
                     </div>
                   </div>
                 ))}

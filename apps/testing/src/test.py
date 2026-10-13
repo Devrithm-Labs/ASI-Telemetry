@@ -1,13 +1,17 @@
-
-from asi_tracer import instrument_llm_provider,instrument_gemini
 import os
+import sys
 from dotenv import load_dotenv
 
 # Load environment variables before initializing tracing
 env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
 load_dotenv(dotenv_path=env_path)
 
-from asi_tracer import traceable, instrument_gemini
+# Import SDK directly from local app-sdk folder
+SDK_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "app-sdk", "src"))
+if SDK_PATH not in sys.path:
+    sys.path.insert(0, SDK_PATH)
+
+from asi_telemetry import traceable, instrument_gemini, instrument_llm_provider
 from google import genai
 
 # Initialize the Google Gemini client

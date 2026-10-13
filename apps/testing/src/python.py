@@ -1,15 +1,20 @@
 import asyncio
 import os
+import sys
 from dotenv import load_dotenv
 
 # Load environment variables
 env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
 load_dotenv(dotenv_path=env_path)
 
+# Import SDK directly from local app-sdk folder
+SDK_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "app-sdk", "src"))
+if SDK_PATH not in sys.path:
+    sys.path.insert(0, SDK_PATH)
+
 from uagents import Agent, Context, Model
 from uagents.resolver import RulesBasedResolver
-from observ import AgentMonitor
-from asi_tracer import traceable, instrument_gemini
+from asi_telemetry import AgentMonitor, traceable, instrument_gemini
 from google import genai
 
 # 1. Initialize Telemetry Monitors

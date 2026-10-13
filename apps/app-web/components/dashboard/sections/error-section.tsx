@@ -16,7 +16,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { ErrorMetricPoint, MetricSummary } from "../context/dashboard-types";
-import { AlertCircle, ShieldAlert, TrendingDown } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 
 interface ErrorSectionProps {
   data: ErrorMetricPoint[];
@@ -61,17 +61,17 @@ export function ErrorSection({ data, summary }: ErrorSectionProps) {
   const faultsCount = summary?.total_errors ?? totalErrors;
 
   return (
-    <Card className="overflow-hidden border border-[#1e293b] bg-black shadow-xl">
+    <Card className="overflow-hidden border border-slate-200 dark:border-[#1e293b] bg-white dark:bg-black shadow-sm dark:shadow-xl">
       <div className="flex flex-col lg:flex-row">
         {/* Left Column: Metric Numbers & Stats */}
-        <div className="flex w-full flex-col justify-between border-b border-[#1e293b] p-6 lg:w-80 lg:border-b-0 lg:border-r shrink-0">
+        <div className="flex w-full flex-col justify-between border-b border-slate-200 dark:border-[#1e293b] p-6 lg:w-80 lg:border-b-0 lg:border-r bg-slate-50/50 dark:bg-black shrink-0">
           <div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-md border border-[#1e293b] bg-black text-blue-400">
+                <div className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 dark:border-[#1e293b] bg-white dark:bg-black text-blue-600 dark:text-blue-400">
                   <AlertCircle className="h-4 w-4" />
                 </div>
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-300">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                   Failure & Errors
                 </span>
               </div>
@@ -79,36 +79,36 @@ export function ErrorSection({ data, summary }: ErrorSectionProps) {
 
             {/* Big Primary Metric Number */}
             <div className="mt-4">
-              <div className="text-4xl font-bold tracking-tight text-white font-mono">
-                {errorRateDisplay} <span className="text-xl text-blue-400 font-sans font-medium">%</span>
+              <div className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white font-mono">
+                {errorRateDisplay} <span className="text-xl text-blue-600 dark:text-blue-400 font-sans font-medium">%</span>
               </div>
-              <div className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-400 font-mono">
-                <span className="text-red-400 font-semibold">{faultsCount.toLocaleString()}</span>
+              <div className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-mono">
+                <span className="text-red-500 dark:text-red-400 font-semibold">{faultsCount.toLocaleString()}</span>
                 <span>failed invocations</span>
               </div>
             </div>
 
-            <p className="mt-3 text-xs text-slate-400 leading-relaxed">
+            <p className="mt-3 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
               HTTP error codes and agent execution faults recorded by telemetry probes.
             </p>
           </div>
 
           {/* Breakdown Badges */}
-          <div className="mt-6 grid grid-cols-3 gap-1.5 border-t border-[#1e293b] pt-4">
-            <div className="rounded-md border border-[#1e293b] bg-black p-2 text-center">
-              <div className="text-[10px] text-slate-400 font-medium">500 Errors</div>
+          <div className="mt-6 grid grid-cols-3 gap-1.5 border-t border-slate-200 dark:border-[#1e293b] pt-4">
+            <div className="rounded-md border border-slate-200 dark:border-[#1e293b] bg-white dark:bg-black p-2 text-center">
+              <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">500 Errors</div>
               <div className="mt-1 font-mono text-xs font-bold text-[#93c5fd]">
                 {data.reduce((a, c) => a + c.serverError, 0).toLocaleString()}
               </div>
             </div>
-            <div className="rounded-md border border-[#1e293b] bg-black p-2 text-center">
-              <div className="text-[10px] text-slate-400 font-medium">429 Limits</div>
+            <div className="rounded-md border border-slate-200 dark:border-[#1e293b] bg-white dark:bg-black p-2 text-center">
+              <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">429 Limits</div>
               <div className="mt-1 font-mono text-xs font-bold text-[#3b82f6]">
                 {data.reduce((a, c) => a + c.rateLimit, 0).toLocaleString()}
               </div>
             </div>
-            <div className="rounded-md border border-[#1e293b] bg-black p-2 text-center">
-              <div className="text-[10px] text-slate-400 font-medium">504 Timeouts</div>
+            <div className="rounded-md border border-slate-200 dark:border-[#1e293b] bg-white dark:bg-black p-2 text-center">
+              <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">504 Timeouts</div>
               <div className="mt-1 font-mono text-xs font-bold text-[#60a5fa]">
                 {data.reduce((a, c) => a + c.timeout, 0).toLocaleString()}
               </div>
@@ -119,25 +119,25 @@ export function ErrorSection({ data, summary }: ErrorSectionProps) {
         {/* Right Column: Error Bar Graph */}
         <div className="flex flex-1 flex-col p-6">
           <div className="flex items-center justify-between pb-3">
-            <div className="text-xs font-medium text-slate-300">
+            <div className="text-xs font-medium text-slate-700 dark:text-slate-300">
               Error Incident Breakdown By Category (Bar Graph)
             </div>
             <div className="flex items-center gap-4 text-xs">
               <div className="flex items-center gap-1.5">
                 <span className="h-2.5 w-2.5 rounded-sm bg-[#3b82f6]" />
-                <span className="text-slate-400">429</span>
+                <span className="text-slate-500 dark:text-slate-400">429</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="h-2.5 w-2.5 rounded-sm bg-[#60a5fa]" />
-                <span className="text-slate-400">504</span>
+                <span className="text-slate-500 dark:text-slate-400">504</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="h-2.5 w-2.5 rounded-sm bg-[#93c5fd]" />
-                <span className="text-slate-400">500</span>
+                <span className="text-slate-500 dark:text-slate-400">500</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="h-2.5 w-2.5 rounded-sm bg-[#1d4ed8]" />
-                <span className="text-slate-400">400</span>
+                <span className="text-slate-500 dark:text-slate-400">400</span>
               </div>
             </div>
           </div>
@@ -145,7 +145,7 @@ export function ErrorSection({ data, summary }: ErrorSectionProps) {
           <div className="flex-1 min-h-[220px]">
             <ChartContainer config={chartConfig} className="aspect-auto h-[220px] w-full">
               <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.3} vertical={false} />
                 <XAxis
                   dataKey="time"
                   stroke="#64748b"

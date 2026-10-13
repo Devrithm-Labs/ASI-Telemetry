@@ -4,18 +4,11 @@ import * as React from "react";
 import {
   Activity,
   CheckCircle2,
-  Clock,
-  Cpu,
-  ExternalLink,
-  Filter,
   Search,
-  SlidersHorizontal,
   XCircle,
-  Zap,
 } from "lucide-react";
 import { TraceRecord } from "./context/dashboard-types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 
 interface TraceTableProps {
   traces: TraceRecord[];
@@ -41,16 +34,16 @@ export function TraceTable({ traces, onSelectTrace }: TraceTableProps) {
   }, [traces, search, statusFilter]);
 
   return (
-    <Card className="border-[#1e293b] bg-black shadow-xl backdrop-blur-sm overflow-hidden">
-      <CardHeader className="flex flex-row items-center justify-between border-b border-[#1e293b] pb-4 px-6">
+    <Card className="border-slate-200 dark:border-[#1e293b] bg-white dark:bg-black shadow-sm dark:shadow-xl backdrop-blur-sm overflow-hidden">
+      <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1e293b] pb-4 px-6">
         <div>
           <div className="flex items-center gap-2">
-            <Activity className="h-4 w-4 text-blue-400" />
-            <CardTitle className="text-base font-semibold text-slate-100">
+            <Activity className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-100">
               Live Trace Execution Logs
             </CardTitle>
           </div>
-          <CardDescription className="text-xs text-slate-400 mt-0.5">
+          <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Real-time incoming agent spans, HTTP traces, and latency profile
           </CardDescription>
         </div>
@@ -64,20 +57,20 @@ export function TraceTable({ traces, onSelectTrace }: TraceTableProps) {
               placeholder="Filter trace ID or operation..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-8 w-60 rounded-md border border-[#1e293b] bg-black pl-8 pr-3 text-xs text-slate-200 placeholder:text-slate-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="h-8 w-60 rounded-md border border-slate-200 dark:border-[#1e293b] bg-slate-50 dark:bg-black pl-8 pr-3 text-xs text-slate-900 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
             />
           </div>
 
           {/* Status Filter Buttons */}
-          <div className="flex items-center rounded-md border border-[#1e293b] bg-black p-0.5 text-xs">
+          <div className="flex items-center rounded-md border border-slate-200 dark:border-[#1e293b] bg-slate-100 dark:bg-black p-0.5 text-xs">
             {(["all", "success", "error", "rate_limited"] as const).map((st) => (
               <button
                 key={st}
                 onClick={() => setStatusFilter(st)}
-                className={`rounded px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                className={`rounded px-2.5 py-1 text-[11px] font-medium transition-colors select-none ${
                   statusFilter === st
-                    ? "bg-blue-600 text-white font-semibold"
-                    : "text-slate-400 hover:text-slate-200"
+                    ? "bg-blue-600 text-white font-semibold shadow-sm"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
                 }`}
               >
                 {st === "all" ? "All" : st === "rate_limited" ? "429 Rate" : st}
@@ -89,8 +82,8 @@ export function TraceTable({ traces, onSelectTrace }: TraceTableProps) {
 
       <CardContent className="p-0">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="border-b border-[#1e293b] bg-black text-[11px] uppercase tracking-wider text-slate-400">
+          <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300">
+            <thead className="border-b border-slate-200 dark:border-[#1e293b] bg-slate-50/75 dark:bg-black text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
               <tr>
                 <th className="py-3 px-4 font-semibold">Trace ID</th>
                 <th className="py-3 px-4 font-semibold">Operation / Span</th>
@@ -102,10 +95,10 @@ export function TraceTable({ traces, onSelectTrace }: TraceTableProps) {
                 <th className="py-3 px-4 font-semibold">Timestamp</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#111e38]/70">
+            <tbody className="divide-y divide-slate-100 dark:divide-[#111e38]/70">
               {filteredTraces.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-8 text-center text-slate-500">
+                  <td colSpan={8} className="py-8 text-center text-slate-400">
                     No matching traces found.
                   </td>
                 </tr>
@@ -114,16 +107,16 @@ export function TraceTable({ traces, onSelectTrace }: TraceTableProps) {
                   <tr
                     key={trace.id}
                     onClick={() => onSelectTrace(trace)}
-                    className="group cursor-pointer hover:bg-blue-950/20 transition-colors"
+                    className="group cursor-pointer hover:bg-blue-50/60 dark:hover:bg-blue-950/20 transition-colors"
                   >
-                    <td className="py-3 px-4 font-mono text-blue-400 font-semibold group-hover:underline">
+                    <td className="py-3 px-4 font-mono text-blue-600 dark:text-blue-400 font-semibold group-hover:underline">
                       {trace.id}
                     </td>
-                    <td className="py-3 px-4 font-medium text-slate-200">
+                    <td className="py-3 px-4 font-medium text-slate-900 dark:text-slate-200">
                       {trace.name}
                     </td>
-                    <td className="py-3 px-4 text-slate-400">
-                      <span className="rounded bg-[#0c1527] px-2 py-0.5 border border-[#172554] text-[11px]">
+                    <td className="py-3 px-4 text-slate-500 dark:text-slate-400">
+                      <span className="rounded bg-slate-100 dark:bg-[#0c1527] px-2 py-0.5 border border-slate-200 dark:border-[#172554] text-[11px] font-mono">
                         {trace.service}
                       </span>
                     </td>
@@ -131,16 +124,16 @@ export function TraceTable({ traces, onSelectTrace }: TraceTableProps) {
                       <span
                         className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-semibold ${
                           trace.status === "success"
-                            ? "bg-blue-950/60 text-blue-300 border border-blue-800/60"
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800/60"
                             : trace.status === "rate_limited"
-                            ? "bg-amber-950/60 text-amber-300 border border-amber-800/60"
-                            : "bg-rose-950/60 text-rose-300 border border-rose-800/60"
+                            ? "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800/60"
+                            : "bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800/60"
                         }`}
                       >
                         {trace.status === "success" ? (
-                          <CheckCircle2 className="h-3 w-3 text-blue-400" />
+                          <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-blue-400" />
                         ) : (
-                          <XCircle className="h-3 w-3 text-rose-400" />
+                          <XCircle className="h-3 w-3 text-rose-600 dark:text-rose-400" />
                         )}
                         {trace.statusCode}
                       </span>
@@ -149,22 +142,22 @@ export function TraceTable({ traces, onSelectTrace }: TraceTableProps) {
                       <span
                         className={`font-semibold ${
                           trace.latencyMs > 1000
-                            ? "text-rose-400"
+                            ? "text-rose-600 dark:text-rose-400"
                             : trace.latencyMs > 300
-                            ? "text-blue-300"
-                            : "text-blue-400"
+                            ? "text-amber-600 dark:text-blue-300"
+                            : "text-blue-600 dark:text-blue-400"
                         }`}
                       >
                         {trace.latencyMs} ms
                       </span>
                     </td>
-                    <td className="py-3 px-4 font-mono text-blue-300">
+                    <td className="py-3 px-4 font-mono text-slate-700 dark:text-blue-300">
                       {trace.cpuPercent}%
                     </td>
-                    <td className="py-3 px-4 text-slate-300">
+                    <td className="py-3 px-4 text-slate-600 dark:text-slate-300">
                       {trace.model}
                     </td>
-                    <td className="py-3 px-4 text-slate-400 font-mono text-[11px]">
+                    <td className="py-3 px-4 text-slate-500 dark:text-slate-400 font-mono text-[11px]">
                       {trace.timestamp}
                     </td>
                   </tr>
