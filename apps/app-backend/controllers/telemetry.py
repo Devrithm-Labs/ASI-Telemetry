@@ -1,5 +1,5 @@
 from typing import Optional, List
-from database.telemetry_repo import telemetry_repo
+from database.telemetry import telemetry_repo
 from schemas.telemetry import MetricPayload
 
 

@@ -1,5 +1,5 @@
 from typing import Optional
-from database.llm_repo import llm_repo
+from database.llm import llm_repo
 from schemas.telemetry import LLMTracePayload
 
 

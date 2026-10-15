@@ -4,8 +4,12 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config.database import db_connection
 from database.schema import initialize_schema
-from routes import telemetry_router
-from routes.auth import router as auth_router
+from routes import (
+    telemetry_router,
+    llm_router,
+    health_router,
+    auth_router,
+)
 from auth.database import initialize_auth_database
 
 
@@ -36,6 +40,8 @@ app.add_middleware(
 
 # Register API routes
 app.include_router(telemetry_router)
+app.include_router(llm_router)
+app.include_router(health_router)
 app.include_router(auth_router)
 
 

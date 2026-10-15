@@ -1,6 +1,6 @@
 from database.schema import initialize_schema
-from database.telemetry_repo import telemetry_repo, TelemetryRepository
-from database.llm_repo import llm_repo, LLMRepository
+from database.telemetry import telemetry_repo, TelemetryRepository
+from database.llm import llm_repo, LLMRepository
 
 __all__ = [
     "initialize_schema",
