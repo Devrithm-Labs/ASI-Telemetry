@@ -85,31 +85,9 @@ export default function LLMTracingPage() {
     }
   }, [searchQuery, statusFilter]);
 
-  // Connect WebSocket for live streaming
+  // Fetch traces on mount and when filters change
   React.useEffect(() => {
     fetchTraces();
-
-    let ws: WebSocket | null = null;
-    try {
-      ws = new WebSocket("ws://127.0.0.1:8080/ws/telemetry");
-      ws.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data);
-          if (msg.type === "llm_trace_received" && msg.trace) {
-            const newTrace: LLMTraceItem = msg.trace;
-            setTraces((prev) => [newTrace, ...prev.filter((t) => t.id !== newTrace.id)]);
-          }
-        } catch {
-          // Ignore
-        }
-      };
-    } catch {
-      // Offline fallback
-    }
-
-    return () => {
-      if (ws) ws.close();
-    };
   }, [fetchTraces]);
 
   const handleClearTraces = async () => {

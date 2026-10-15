@@ -2,7 +2,6 @@ from typing import Optional
 from fastapi import APIRouter
 from controllers.telemetry import TelemetryController
 from schemas.telemetry import MetricPayload, LLMTracePayload
-from .websocket import manager
 
 router = APIRouter(prefix="/api", tags=["Telemetry"])
 
@@ -15,18 +14,9 @@ def ingest_metrics(payload: MetricPayload):
 
 
 @router.post("/llm/traces", status_code=201)
-async def ingest_llm_trace(payload: LLMTracePayload):
-    """Ingests single or root LLM execution trace into ClickHouse and broadcasts over WebSocket."""
-    result = TelemetryController.ingest_llm_trace(payload)
-    if result.get("data"):
-        try:
-            await manager.broadcast({
-                "type": "llm_trace_received",
-                "trace": result["data"],
-            })
-        except Exception:
-            pass
-    return result
+def ingest_llm_trace(payload: LLMTracePayload):
+    """Ingests single or root LLM execution trace into ClickHouse."""
+    return TelemetryController.ingest_llm_trace(payload)
 
 
 @router.get("/llm/traces")
@@ -55,25 +45,13 @@ def clear_llm_traces():
 def delete_traces(ids: Optional[str] = None):
     """Deletes specific traces by comma-separated IDs or clears all tool traces if ids parameter is omitted."""
     trace_ids = [i.strip() for i in ids.split(",") if i.strip()] if ids else None
-    res = TelemetryController.delete_traces(trace_ids)
-    try:
-        from .websocket import clear_recent_traces
-        clear_recent_traces(trace_ids)
-    except Exception:
-        pass
-    return res
+    return TelemetryController.delete_traces(trace_ids)
 
 
 @router.delete("/traces/{trace_id}")
 def delete_single_trace(trace_id: str):
     """Deletes a single tool trace by trace ID."""
-    res = TelemetryController.delete_traces([trace_id])
-    try:
-        from .websocket import clear_recent_traces
-        clear_recent_traces([trace_id])
-    except Exception:
-        pass
-    return res
+    return TelemetryController.delete_traces([trace_id])
 
 
 @router.get("/dashboard")
