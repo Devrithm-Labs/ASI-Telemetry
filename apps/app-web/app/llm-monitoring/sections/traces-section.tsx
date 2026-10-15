@@ -35,8 +35,8 @@ const traceErrorRateConfig: ChartConfig = {
 };
 
 interface TracesSectionProps {
-  collapsed: boolean;
-  onToggle: () => void;
+  collapsed?: boolean;
+  onToggle?: () => void;
   countData: Array<{ time: string; success: number; error: number; total: number }>;
   latencyData: Array<{ time: string; p50: number; p99: number }>;
   errorRateData: Array<{ time: string; errorRate: number }>;
@@ -44,7 +44,7 @@ interface TracesSectionProps {
 }
 
 export function TracesSection({
-  collapsed,
+  collapsed = false,
   onToggle,
   countData,
   latencyData,
@@ -64,16 +64,8 @@ export function TracesSection({
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-bold text-foreground group-hover:text-blue-500 transition-colors flex items-center gap-1.5">
             <span>Traces</span>
-            <ChevronDown
-              className={cn(
-                "h-4 w-4 text-muted-foreground transition-transform duration-200",
-                collapsed ? "-rotate-90" : "rotate-0"
-              )}
-            />
           </h2>
-          <span className="text-xs text-muted-foreground font-normal">
-            — Execution traces and latency percentiles
-          </span>
+
         </div>
         <span className="text-[11px] text-muted-foreground font-mono">
           {totalRuns} {totalRuns === 1 ? "run" : "runs"} recorded

@@ -34,8 +34,8 @@ const inputPerTraceConfig: ChartConfig = {
 };
 
 interface CostTokensSectionProps {
-  collapsed: boolean;
-  onToggle: () => void;
+  collapsed?: boolean;
+  onToggle?: () => void;
   costData: Array<{ time: string; total: number }>;
   costPerTraceData?: Array<{ time: string; cost: number }>;
   tokensData: Array<{ time: string; input: number; output: number }>;
@@ -45,7 +45,7 @@ interface CostTokensSectionProps {
 }
 
 export function CostTokensSection({
-  collapsed,
+  collapsed = false,
   onToggle,
   costData,
   costPerTraceData = [],
@@ -69,16 +69,7 @@ export function CostTokensSection({
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-bold text-foreground group-hover:text-blue-500 transition-colors flex items-center gap-1.5">
             <span>Cost & Tokens</span>
-            <ChevronDown
-              className={cn(
-                "h-4 w-4 text-muted-foreground transition-transform duration-200",
-                collapsed ? "-rotate-90" : "rotate-0"
-              )}
-            />
           </h2>
-          <span className="text-xs text-muted-foreground font-normal">
-            — Token usage and expenditure per trace
-          </span>
         </div>
         <span className="text-[11px] text-muted-foreground font-mono">
           ${totalCostUSD.toFixed(4)} total
@@ -151,7 +142,7 @@ export function CostTokensSection({
           {/* 4. Output Tokens per Trace */}
           <MonitoringChartCard
             title="Output Tokens per Trace"
-            subtitle="Output tokens used per trace over time"
+            subtitle="Median output tokens used per trace over time"
             legend={[{ label: "Output / Trace", color: "#818cf8" }]}
             empty={!hasOutputPerTrace}
           >
@@ -187,7 +178,7 @@ export function CostTokensSection({
           {/* 6. Input Tokens per Trace */}
           <MonitoringChartCard
             title="Input Tokens per Trace"
-            subtitle="Input tokens used per trace over time"
+            subtitle="Median input tokens used per trace over time"
             legend={[{ label: "Input / Trace", color: "#38bdf8" }]}
             empty={!hasInputPerTrace}
           >

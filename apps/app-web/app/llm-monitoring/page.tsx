@@ -37,17 +37,6 @@ export default function LLMMonitoringPage() {
 
   const [activeTab, setActiveTab] = React.useState<MonitoringTab>("traces");
 
-  const [collapsed, setCollapsed] = React.useState<Record<string, boolean>>({
-    traces: false,
-    "llm-calls": false,
-    "cost-tokens": false,
-    tools: false,
-  });
-
-  const toggleSection = (id: string) => {
-    setCollapsed((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
-
   const handleTabChange = (tabId: MonitoringTab) => {
     setActiveTab(tabId);
     const el = document.getElementById(`section-${tabId}`);
@@ -79,8 +68,6 @@ export default function LLMMonitoringPage() {
 
         {/* 1. Traces Section */}
         <TracesSection
-          collapsed={!!collapsed["traces"]}
-          onToggle={() => toggleSection("traces")}
           countData={traceCountData}
           latencyData={traceLatencyData}
           errorRateData={traceErrorRateData}
@@ -89,8 +76,6 @@ export default function LLMMonitoringPage() {
 
         {/* 2. LLM Calls Section */}
         <LLMCallsSection
-          collapsed={!!collapsed["llm-calls"]}
-          onToggle={() => toggleSection("llm-calls")}
           countData={llmCountData}
           latencyData={llmLatencyData}
           activeModelsCount={models.length > 1 ? models.length - 1 : models.length}
@@ -98,8 +83,6 @@ export default function LLMMonitoringPage() {
 
         {/* 3. Cost & Tokens Section */}
         <CostTokensSection
-          collapsed={!!collapsed["cost-tokens"]}
-          onToggle={() => toggleSection("cost-tokens")}
           costData={totalCostData}
           costPerTraceData={costPerTraceData}
           tokensData={tokensData}
@@ -110,8 +93,6 @@ export default function LLMMonitoringPage() {
 
         {/* 4. Tools Section */}
         <ToolsSection
-          collapsed={!!collapsed["tools"]}
-          onToggle={() => toggleSection("tools")}
           toolNames={toolNames}
           toolsCountData={toolsCountData}
           toolsLatencyData={toolsLatencyData}

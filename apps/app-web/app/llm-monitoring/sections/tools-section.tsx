@@ -15,15 +15,15 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts";
 const TOOL_PALETTE = ["#3b82f6", "#f59e0b", "#10b981", "#a855f7", "#ec4899", "#06b6d4"];
 
 interface ToolsSectionProps {
-  collapsed: boolean;
-  onToggle: () => void;
+  collapsed?: boolean;
+  onToggle?: () => void;
   toolNames: string[];
   toolsCountData: Array<Record<string, any>>;
   toolsLatencyData: Array<Record<string, any>>;
 }
 
 export function ToolsSection({
-  collapsed,
+  collapsed = false,
   onToggle,
   toolNames,
   toolsCountData,
@@ -58,16 +58,7 @@ export function ToolsSection({
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-bold text-foreground group-hover:text-blue-500 transition-colors flex items-center gap-1.5">
             <span>Tools</span>
-            <ChevronDown
-              className={cn(
-                "h-4 w-4 text-muted-foreground transition-transform duration-200",
-                collapsed ? "-rotate-90" : "rotate-0"
-              )}
-            />
           </h2>
-          <span className="text-xs text-muted-foreground font-normal">
-            — Sub-agent tool executions and function calls
-          </span>
         </div>
         <span className="text-[11px] text-muted-foreground font-mono">
           {toolNames.length} {toolNames.length === 1 ? "tool" : "tools"} detected
