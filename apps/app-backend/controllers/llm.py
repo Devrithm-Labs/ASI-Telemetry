@@ -33,11 +33,13 @@ class LLMController:
 
     @staticmethod
     def get_llm_monitoring_data(
+        time_range: str = "7d",
         model: Optional[str] = None,
         limit: int = 2000,
     ):
         """Calculates and aggregates all LLM metrics, KPIs, and chart series on the backend."""
         return llm_repo.get_llm_monitoring_data(
+            time_range=time_range,
             model=model,
             limit=limit,
         )

@@ -14,6 +14,8 @@ export default function LLMMonitoringPage() {
   const {
     loading,
     refresh,
+    timeRange,
+    setTimeRange,
     models,
     selectedModel,
     setSelectedModel,
@@ -60,6 +62,8 @@ export default function LLMMonitoringPage() {
       <TopControls
         activeTab={activeTab}
         onTabChange={handleTabChange}
+        timeRange={timeRange}
+        onTimeRangeChange={setTimeRange}
         selectedModel={selectedModel}
         onModelChange={setSelectedModel}
         models={models}

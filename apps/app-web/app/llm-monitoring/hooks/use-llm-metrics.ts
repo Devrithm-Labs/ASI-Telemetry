@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { LLMMetricsSummary } from "../types";
+import { LLMMetricsSummary, TimeRange } from "../types";
 
 const INITIAL_SUMMARY: LLMMetricsSummary = {
   totalCount: 0,
@@ -18,6 +18,7 @@ const INITIAL_SUMMARY: LLMMetricsSummary = {
 
 export function useLLMMetrics() {
   const [loading, setLoading] = React.useState(true);
+  const [timeRange, setTimeRange] = React.useState<TimeRange>("7d");
   const [selectedModel, setSelectedModel] = React.useState("All Models");
   const [models, setModels] = React.useState<string[]>(["All Models"]);
   const [summary, setSummary] = React.useState<LLMMetricsSummary>(INITIAL_SUMMARY);
@@ -37,43 +38,58 @@ export function useLLMMetrics() {
   const [toolsCountData, setToolsCountData] = React.useState<any[]>([]);
   const [toolsLatencyData, setToolsLatencyData] = React.useState<any[]>([]);
 
-  const fetchMetrics = React.useCallback(async (modelToFetch = selectedModel) => {
-    setLoading(true);
-    try {
-      const url =
-        modelToFetch && modelToFetch !== "All Models"
-          ? `http://127.0.0.1:8080/api/llm/monitoring?model=${encodeURIComponent(modelToFetch)}`
+  const fetchMetrics = React.useCallback(
+    async (rangeToFetch = timeRange, modelToFetch = selectedModel) => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (rangeToFetch) {
+          params.append("time_range", rangeToFetch);
+        }
+        if (modelToFetch && modelToFetch !== "All Models") {
+          params.append("model", modelToFetch);
+        }
+
+        const qs = params.toString();
+        const url = qs
+          ? `http://127.0.0.1:8080/api/llm/monitoring?${qs}`
           : "http://127.0.0.1:8080/api/llm/monitoring";
 
-      const res = await fetch(url);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.summary) setSummary(data.summary);
-        if (Array.isArray(data.models)) setModels(data.models);
-        if (Array.isArray(data.toolNames)) setToolNames(data.toolNames);
-        setTraceCountData(data.traceCountData || []);
-        setTraceLatencyData(data.traceLatencyData || []);
-        setTraceErrorRateData(data.traceErrorRateData || []);
-        setLlmCountData(data.llmCountData || []);
-        setLlmLatencyData(data.llmLatencyData || []);
-        setTotalCostData(data.totalCostData || []);
-        setCostPerTraceData(data.costPerTraceData || []);
-        setTokensData(data.tokensData || []);
-        setOutputTokensPerTraceData(data.outputTokensPerTraceData || []);
-        setInputTokensPerTraceData(data.inputTokensPerTraceData || []);
-        setToolsCountData(data.toolsCountData || []);
-        setToolsLatencyData(data.toolsLatencyData || []);
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.summary) setSummary(data.summary);
+          if (Array.isArray(data.models)) setModels(data.models);
+          if (Array.isArray(data.toolNames)) setToolNames(data.toolNames);
+          setTraceCountData(data.traceCountData || []);
+          setTraceLatencyData(data.traceLatencyData || []);
+          setTraceErrorRateData(data.traceErrorRateData || []);
+          setLlmCountData(data.llmCountData || []);
+          setLlmLatencyData(data.llmLatencyData || []);
+          setTotalCostData(data.totalCostData || []);
+          setCostPerTraceData(data.costPerTraceData || []);
+          setTokensData(data.tokensData || []);
+          setOutputTokensPerTraceData(data.outputTokensPerTraceData || []);
+          setInputTokensPerTraceData(data.inputTokensPerTraceData || []);
+          setToolsCountData(data.toolsCountData || []);
+          setToolsLatencyData(data.toolsLatencyData || []);
+        }
+      } catch (e) {
+        console.error("Failed to fetch LLM monitoring data from backend:", e);
+      } finally {
+        setLoading(false);
       }
-    } catch (e) {
-      console.error("Failed to fetch LLM monitoring data from backend:", e);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedModel]);
+    },
+    [timeRange, selectedModel]
+  );
 
   React.useEffect(() => {
-    fetchMetrics();
-  }, [fetchMetrics]);
+    fetchMetrics(timeRange, selectedModel);
+  }, [fetchMetrics, timeRange, selectedModel]);
+
+  const handleTimeRangeChange = (range: TimeRange) => {
+    setTimeRange(range);
+  };
 
   const handleModelChange = (model: string) => {
     setSelectedModel(model);
@@ -81,7 +97,9 @@ export function useLLMMetrics() {
 
   return {
     loading,
-    refresh: () => fetchMetrics(selectedModel),
+    refresh: () => fetchMetrics(timeRange, selectedModel),
+    timeRange,
+    setTimeRange: handleTimeRangeChange,
     models,
     selectedModel,
     setSelectedModel: handleModelChange,

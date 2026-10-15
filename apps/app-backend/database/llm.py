@@ -2,7 +2,7 @@ import json
 import logging
 import uuid
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 from config.database import ClickHouseConnection, db_connection
 
@@ -190,10 +190,25 @@ class LLMRepository:
 
     def get_llm_monitoring_data(
         self,
+        time_range: str = "7d",
         model: Optional[str] = None,
         limit: int = 2000,
     ) -> Dict[str, Any]:
         """Calculates all LLM monitoring metrics, KPIs, and chart time-series in the backend."""
+        now_dt = datetime.now().astimezone()
+        time_range_norm = (time_range or "7d").lower()
+
+        if time_range_norm == "1h":
+            delta = timedelta(hours=1)
+        elif time_range_norm in ("24h", "1d"):
+            delta = timedelta(hours=24)
+        elif time_range_norm == "7d":
+            delta = timedelta(days=7)
+        elif time_range_norm == "30d":
+            delta = timedelta(days=30)
+        else:
+            delta = None
+
         records: List[Dict[str, Any]] = []
         distinct_models: List[str] = []
 
@@ -206,6 +221,10 @@ class LLMRepository:
                 if model and model not in ("All Models", "all", "All"):
                     safe_model = model.replace("'", "\\'")
                     where_clauses.append(f"model = '{safe_model}'")
+
+                if delta is not None:
+                    cutoff_utc = (datetime.now(timezone.utc) - delta).strftime("%Y-%m-%d %H:%M:%S")
+                    where_clauses.append(f"start_time >= '{cutoff_utc}'")
 
                 where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
                 sql = f"SELECT * FROM llm_traces {where_sql} ORDER BY start_time ASC LIMIT {limit}"
@@ -226,6 +245,18 @@ class LLMRepository:
             distinct_models = sorted(list(set(r.get("model") for r in mem if r.get("model"))))
             if model and model not in ("All Models", "all", "All"):
                 mem = [r for r in mem if r.get("model") == model]
+            if delta is not None:
+                cutoff_ts = datetime.now(timezone.utc) - delta
+                def is_recent(r):
+                    st = r.get("start_time")
+                    try:
+                        dt = datetime.fromisoformat(str(st).replace("Z", "+00:00"))
+                        if not dt.tzinfo:
+                            dt = dt.replace(tzinfo=timezone.utc)
+                        return dt >= cutoff_ts
+                    except Exception:
+                        return True
+                mem = [r for r in mem if is_recent(r)]
             records = mem[:limit]
 
         models = ["All Models"] + [m for m in distinct_models if m != "All Models"]
@@ -283,21 +314,84 @@ class LLMRepository:
                 tool_names_set.add(meta.get("tool_name") or name)
         tool_names = sorted(list(tool_names_set))
 
-        def parse_bucket_key(ts_str: Optional[str]) -> str:
-            if not ts_str:
-                return "Unknown"
+        # Generate Timeline Ticks & Labels according to requested time_range
+        if time_range_norm == "1h":
+            # 6 ticks over 1 hour (every 12 mins)
+            start_tick = now_dt - timedelta(hours=1)
+            ticks = [start_tick + timedelta(minutes=12 * i) for i in range(6)]
+            labels = []
+            for i, dt in enumerate(ticks):
+                if i == 0 or dt.date() != ticks[max(0, i - 1)].date():
+                    labels.append(f"{dt.month}/{dt.day}/{str(dt.year)[-2:]}")
+                else:
+                    labels.append(dt.strftime("%I:%M %p").lstrip("0"))
+
+        elif time_range_norm in ("24h", "1d"):
+            # 6 ticks over 24 hours (every 4.8 hours)
+            start_tick = now_dt - timedelta(hours=24)
+            step = timedelta(hours=24) / 5
+            ticks = [start_tick + step * i for i in range(6)]
+            labels = []
+            for i, dt in enumerate(ticks):
+                if i == 0 or (i == len(ticks) - 1 and dt.date() != ticks[0].date()):
+                    labels.append(f"{dt.month}/{dt.day}/{str(dt.year)[-2:]}")
+                else:
+                    labels.append(dt.strftime("%I %p").lstrip("0"))
+
+        elif time_range_norm == "7d":
+            # 7 daily ticks over 7 days
+            start_tick = now_dt - timedelta(days=6)
+            ticks = [start_tick + timedelta(days=i) for i in range(7)]
+            labels = [f"{dt.month}/{dt.day}/{str(dt.year)[-2:]}" for dt in ticks]
+
+        elif time_range_norm == "30d":
+            # 6 ticks over 30 days (every 6 days)
+            start_tick = now_dt - timedelta(days=30)
+            ticks = [start_tick + timedelta(days=6 * i) for i in range(6)]
+            labels = [f"{dt.month}/{dt.day}/{str(dt.year)[-2:]}" for dt in ticks]
+
+        else:
+            # Fallback for "all": span from earliest record or last 30d
+            def parse_rec_dt(r):
+                st = r.get("start_time")
+                if isinstance(st, datetime):
+                    return st.astimezone() if st.tzinfo else st.replace(tzinfo=timezone.utc).astimezone()
+                try:
+                    dt = datetime.fromisoformat(str(st).replace("Z", "+00:00"))
+                    return dt.astimezone() if dt.tzinfo else dt.replace(tzinfo=timezone.utc).astimezone()
+                except Exception:
+                    return now_dt
+
+            if records:
+                earliest_dt = min((parse_rec_dt(r) for r in records), default=now_dt - timedelta(days=30))
+                span_days = max(1, (now_dt - earliest_dt).days)
+                step = timedelta(days=span_days) / 5
+                ticks = [earliest_dt + step * i for i in range(6)]
+                labels = [f"{dt.month}/{dt.day}/{str(dt.year)[-2:]}" for dt in ticks]
+            else:
+                start_tick = now_dt - timedelta(days=30)
+                ticks = [start_tick + timedelta(days=6 * i) for i in range(6)]
+                labels = [f"{dt.month}/{dt.day}/{str(dt.year)[-2:]}" for dt in ticks]
+
+        def get_record_local_dt(ts_val) -> Optional[datetime]:
+            if not ts_val:
+                return None
+            if isinstance(ts_val, datetime):
+                return ts_val.astimezone() if ts_val.tzinfo else ts_val.replace(tzinfo=timezone.utc).astimezone()
             try:
-                dt = datetime.fromisoformat(str(ts_str).replace("Z", "+00:00"))
-                return dt.strftime("%m/%d %H:%M")
+                dt = datetime.fromisoformat(str(ts_val).replace("Z", "+00:00"))
+                return dt.astimezone() if dt.tzinfo else dt.replace(tzinfo=timezone.utc).astimezone()
             except Exception:
-                return str(ts_str)[:16]
+                return None
 
-        buckets_map: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+        # Group records by closest tick bucket
+        buckets_map: Dict[str, List[Dict[str, Any]]] = {lbl: [] for lbl in labels}
         for r in records:
-            b_key = parse_bucket_key(r.get("start_time"))
-            buckets_map[b_key].append(r)
-
-        bucket_keys = list(buckets_map.keys())
+            r_dt = get_record_local_dt(r.get("start_time"))
+            if not r_dt:
+                continue
+            closest_idx = min(range(len(ticks)), key=lambda idx: abs((r_dt - ticks[idx]).total_seconds()))
+            buckets_map[labels[closest_idx]].append(r)
 
         trace_count_data = []
         trace_latency_data = []
@@ -314,7 +408,7 @@ class LLMRepository:
 
         running_cost = 0.0
 
-        for t_key in bucket_keys:
+        for t_key in labels:
             group = buckets_map[t_key]
             g_total = len(group)
             g_err = sum(1 for r in group if r.get("status") == "error")
@@ -322,9 +416,9 @@ class LLMRepository:
             g_err_rate = round((g_err / g_total) * 100, 1) if g_total else 0.0
 
             g_lats = sorted([float(r.get("latency_ms") or 0.0) for r in group])
-            p50_sec = round((g_lats[len(g_lats) // 2] if g_lats else 0.0) / 1000.0, 2)
+            p50_sec = round((g_lats[len(g_lats) // 2]) / 1000.0, 2) if g_lats else None
             p99_idx = min(int(len(g_lats) * 0.99), len(g_lats) - 1) if g_lats else 0
-            p99_sec = round((g_lats[p99_idx] if g_lats else 0.0) / 1000.0, 2)
+            p99_sec = round((g_lats[p99_idx]) / 1000.0, 2) if g_lats else None
 
             trace_count_data.append({
                 "time": t_key,
@@ -352,9 +446,9 @@ class LLMRepository:
             llm_err = sum(1 for r in llm_group if r.get("status") == "error")
             llm_succ = llm_tot - llm_err
             llm_lats = sorted([float(r.get("latency_ms") or 0.0) for r in llm_group])
-            llm_p50 = round((llm_lats[len(llm_lats) // 2] if llm_lats else 0.0) / 1000.0, 2)
+            llm_p50 = round((llm_lats[len(llm_lats) // 2]) / 1000.0, 2) if llm_lats else None
             llm_p99_idx = min(int(len(llm_lats) * 0.99), len(llm_lats) - 1) if llm_lats else 0
-            llm_p99 = round((llm_lats[llm_p99_idx] if llm_lats else 0.0) / 1000.0, 2)
+            llm_p99 = round((llm_lats[llm_p99_idx]) / 1000.0, 2) if llm_lats else None
 
             llm_count_data.append({
                 "time": t_key,
@@ -414,7 +508,7 @@ class LLMRepository:
                     t_avg_lat = (
                         round(sum(float(m.get("latency_ms") or 0.0) for m in matches) / len(matches) / 1000.0, 2)
                         if matches
-                        else 0.0
+                        else None
                     )
                     t_lat_entry[tname] = t_avg_lat
 

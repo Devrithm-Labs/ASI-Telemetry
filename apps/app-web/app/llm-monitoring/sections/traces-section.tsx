@@ -52,6 +52,7 @@ export function TracesSection({
   totalRuns,
 }: TracesSectionProps) {
   const hasData = countData.length > 0;
+  const hasLatencyData = latencyData.some((d) => (d.p50 != null && d.p50 > 0) || (d.p99 != null && d.p99 > 0));
 
   return (
     <section id="section-traces" className="space-y-4">
@@ -111,7 +112,8 @@ export function TracesSection({
               { label: "P50", color: "#3b82f6" },
               { label: "P99", color: "#f59e0b" },
             ]}
-            empty={!hasData}
+            empty={!hasLatencyData}
+            emptyTitle="No latency data recorded in this time range"
           >
             <ChartContainer config={traceLatencyConfig} className="h-56 w-full">
               <LineChart data={latencyData} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
@@ -119,8 +121,8 @@ export function TracesSection({
                 <XAxis dataKey="time" stroke="#64748b" tickLine={false} axisLine={false} fontSize={11} />
                 <YAxis stroke="#64748b" tickLine={false} axisLine={false} fontSize={11} unit="s" />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Line type="monotone" dataKey="p50" stroke="#3b82f6" strokeWidth={2} dot={{ r: 2.5 }} />
-                <Line type="monotone" dataKey="p99" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3.5 }} />
+                <Line type="monotone" dataKey="p50" stroke="#3b82f6" strokeWidth={2} dot={{ r: 2.5 }} connectNulls={false} />
+                <Line type="monotone" dataKey="p99" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3.5 }} connectNulls={false} />
               </LineChart>
             </ChartContainer>
           </MonitoringChartCard>

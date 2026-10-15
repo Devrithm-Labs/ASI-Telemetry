@@ -1,9 +1,19 @@
 "use client";
 
 import * as React from "react";
-import { Bot, Check, ChevronDown, RefreshCw } from "lucide-react";
+import {
+  Bot,
+  Calendar,
+  Check,
+  ChevronDown,
+  Globe,
+  Hourglass,
+  Layers,
+  RefreshCw,
+  SlidersHorizontal,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { MonitoringTab, TabMeta } from "../types";
+import { MonitoringTab, TabMeta, TimeRange } from "../types";
 
 export const MONITORING_TABS: TabMeta[] = [
   { id: "traces", label: "Traces" },
@@ -12,9 +22,19 @@ export const MONITORING_TABS: TabMeta[] = [
   { id: "tools", label: "Tools" },
 ];
 
+export const TIME_RANGE_OPTIONS: { id: TimeRange; label: string }[] = [
+  { id: "1h", label: "Last 1 hour" },
+  { id: "24h", label: "Last 1 day" },
+  { id: "7d", label: "Last 7 days" },
+  { id: "30d", label: "Last 30 days" },
+  { id: "all", label: "All time" },
+];
+
 interface TopControlsProps {
   activeTab: MonitoringTab;
   onTabChange: (tab: MonitoringTab) => void;
+  timeRange: TimeRange;
+  onTimeRangeChange: (range: TimeRange) => void;
   selectedModel: string;
   onModelChange: (model: string) => void;
   models: string[];
@@ -26,6 +46,8 @@ interface TopControlsProps {
 export function TopControls({
   activeTab,
   onTabChange,
+  timeRange,
+  onTimeRangeChange,
   selectedModel,
   onModelChange,
   models,
@@ -33,43 +55,103 @@ export function TopControls({
   onRefresh,
   loading,
 }: TopControlsProps) {
+  const [isTimeDropdownOpen, setIsTimeDropdownOpen] = React.useState(false);
+  const [isEnvDropdownOpen, setIsEnvDropdownOpen] = React.useState(false);
   const [isModelDropdownOpen, setIsModelDropdownOpen] = React.useState(false);
+  const [isGroupByOpen, setIsGroupByOpen] = React.useState(false);
+  const [selectedEnv, setSelectedEnv] = React.useState("Production");
+  const [selectedGroupBy, setSelectedGroupBy] = React.useState("None");
+
+  const currentTimeLabel =
+    TIME_RANGE_OPTIONS.find((opt) => opt.id === timeRange)?.label || "Last 7 days";
+
+  // Close menus on outside click
+  React.useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest("[data-top-controls-menu]")) {
+        setIsTimeDropdownOpen(false);
+        setIsEnvDropdownOpen(false);
+        setIsModelDropdownOpen(false);
+        setIsGroupByOpen(false);
+      }
+    };
+    document.addEventListener("click", handleOutsideClick);
+    return () => document.removeEventListener("click", handleOutsideClick);
+  }, []);
 
   return (
-    <div className="sticky top-0 z-30 flex flex-col border-b border-border/80 bg-background/95 backdrop-blur-md px-6 pt-3 pb-2.5">
+    <div
+      data-top-controls-menu
+      className="sticky top-0 z-30 flex flex-col border-b border-border/80 bg-background/95 backdrop-blur-md px-6 pt-3 pb-2.5 gap-2.5"
+    >
+      {/* Top Row: Environment, Time Range, and Secondary Actions */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        {/* Navigation Tabs */}
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
-          {MONITORING_TABS.map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => onTabChange(tab.id)}
+        {/* Left: Environment & Time Range Filter */}
+        <div className="flex items-center gap-2">
+          {/* Environment Selector */}
+
+          {/* Time Range Filter Dropdown (1h, 24h, 7d, 30d, all) */}
+          <div className="relative">
+            <button
+              onClick={() => {
+                setIsTimeDropdownOpen(!isTimeDropdownOpen);
+                setIsEnvDropdownOpen(false);
+                setIsModelDropdownOpen(false);
+                setIsGroupByOpen(false);
+              }}
+              className="flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-medium text-foreground hover:border-blue-500/50 hover:bg-muted/40 transition-colors cursor-pointer select-none ring-1 ring-border/50"
+              title="Filter by time range"
+            >
+              <Hourglass className="h-3.5 w-3.5 text-amber-500" />
+              <span className="font-semibold">{currentTimeLabel}</span>
+              <ChevronDown
                 className={cn(
-                  "relative flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-150 select-none cursor-pointer",
-                  isActive
-                    ? "bg-slate-900 text-white dark:bg-card dark:text-foreground shadow-xs ring-1 ring-border/80"
-                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                  "h-3 w-3 text-muted-foreground transition-transform duration-150",
+                  isTimeDropdownOpen && "rotate-180 text-blue-500"
                 )}
-              >
-                <span>{tab.label}</span>
-                {tab.id === "traces" && totalTracesCount > 0 && (
-                  <span className="rounded-full bg-blue-500/20 px-1.5 text-[10px] font-mono text-blue-500 font-bold">
-                    {totalTracesCount}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+              />
+            </button>
+
+            {isTimeDropdownOpen && (
+              <div className="absolute left-0 top-9.5 z-50 w-48 rounded-xl border border-border bg-card p-1 shadow-2xl backdrop-blur-xl animate-in fade-in-0 zoom-in-95 duration-150">
+                <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Select Time Range
+                </div>
+                {TIME_RANGE_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.id}
+                    onClick={() => {
+                      onTimeRangeChange(opt.id);
+                      setIsTimeDropdownOpen(false);
+                    }}
+                    className={cn(
+                      "flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs transition-colors cursor-pointer",
+                      timeRange === opt.id
+                        ? "bg-blue-500/10 text-blue-500 font-semibold"
+                        : "text-foreground hover:bg-muted"
+                    )}
+                  >
+                    <span>{opt.label}</span>
+                    {timeRange === opt.id && <Check className="h-3.5 w-3.5 text-blue-500 shrink-0" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Right Controls: Model filter & Refresh */}
+        {/* Right: Model filter & Refresh */}
         <div className="flex items-center gap-2">
           {/* Model Filter Dropdown */}
           <div className="relative">
             <button
-              onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
+              onClick={() => {
+                setIsModelDropdownOpen(!isModelDropdownOpen);
+                setIsTimeDropdownOpen(false);
+                setIsEnvDropdownOpen(false);
+                setIsGroupByOpen(false);
+              }}
               className="flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-medium text-foreground hover:border-blue-500/50 hover:bg-muted/40 transition-colors cursor-pointer"
             >
               <Bot className="h-3.5 w-3.5 text-blue-500" />
@@ -78,7 +160,7 @@ export function TopControls({
             </button>
 
             {isModelDropdownOpen && (
-              <div className="absolute right-0 top-9 z-50 w-48 rounded-xl border border-border bg-card p-1 shadow-xl backdrop-blur-xl animate-in fade-in-0 zoom-in-95">
+              <div className="absolute right-0 top-9.5 z-50 w-48 rounded-xl border border-border bg-card p-1 shadow-xl backdrop-blur-xl animate-in fade-in-0 zoom-in-95">
                 <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                   Filter Model
                 </div>
@@ -114,6 +196,81 @@ export function TopControls({
           </button>
         </div>
       </div>
+
+      {/* Second Row: Navigation Tabs & Group By */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-0.5">
+        {/* Navigation Tabs */}
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+          {MONITORING_TABS.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => onTabChange(tab.id)}
+                className={cn(
+                  "relative flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-150 select-none cursor-pointer",
+                  isActive
+                    ? "bg-slate-900 text-white dark:bg-card dark:text-foreground shadow-xs ring-1 ring-border/80"
+                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                )}
+              >
+                <span>{tab.label}</span>
+                {tab.id === "traces" && totalTracesCount > 0 && (
+                  <span className="rounded-full bg-blue-500/20 px-1.5 text-[10px] font-mono text-blue-500 font-bold">
+                    {totalTracesCount}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Group By Dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => {
+              setIsGroupByOpen(!isGroupByOpen);
+              setIsTimeDropdownOpen(false);
+              setIsEnvDropdownOpen(false);
+              setIsModelDropdownOpen(false);
+            }}
+            className="flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-border/90 hover:bg-muted/40 transition-colors cursor-pointer select-none"
+          >
+            <span>Group by</span>
+            {selectedGroupBy !== "None" && (
+              <span className="font-semibold text-blue-500">{selectedGroupBy}</span>
+            )}
+            <ChevronDown className="h-3 w-3 text-muted-foreground" />
+          </button>
+
+          {isGroupByOpen && (
+            <div className="absolute right-0 top-9.5 z-50 w-40 rounded-xl border border-border bg-card p-1 shadow-xl backdrop-blur-xl animate-in fade-in-0 zoom-in-95">
+              <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                Group By
+              </div>
+              {["None", "Model", "Status", "Run Type"].map((gb) => (
+                <button
+                  key={gb}
+                  onClick={() => {
+                    setSelectedGroupBy(gb);
+                    setIsGroupByOpen(false);
+                  }}
+                  className={cn(
+                    "flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs transition-colors cursor-pointer",
+                    selectedGroupBy === gb
+                      ? "bg-blue-500/10 text-blue-500 font-semibold"
+                      : "text-foreground hover:bg-muted"
+                  )}
+                >
+                  <span>{gb}</span>
+                  {selectedGroupBy === gb && <Check className="h-3.5 w-3.5 text-blue-500 shrink-0" />}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
+

@@ -19,12 +19,16 @@ export interface LLMTraceRecord {
   metadata?: Record<string, any>;
 }
 
+export type TimeRange = "1h" | "24h" | "7d" | "30d" | "all";
+
 export type MonitoringTab =
   | "all"
   | "traces"
   | "llm-calls"
   | "cost-tokens"
-  | "tools";
+  | "tools"
+  | "run-types"
+  | "feedback-scores";
 
 export interface TabMeta {
   id: MonitoringTab;
