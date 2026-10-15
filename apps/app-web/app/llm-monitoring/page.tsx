@@ -25,7 +25,10 @@ export default function LLMMonitoringPage() {
     llmCountData,
     llmLatencyData,
     totalCostData,
+    costPerTraceData,
     tokensData,
+    outputTokensPerTraceData,
+    inputTokensPerTraceData,
     toolsCountData,
     toolsLatencyData,
   } = useLLMMetrics();
@@ -94,7 +97,10 @@ export default function LLMMonitoringPage() {
           collapsed={!!collapsed["cost-tokens"]}
           onToggle={() => toggleSection("cost-tokens")}
           costData={totalCostData}
+          costPerTraceData={costPerTraceData}
           tokensData={tokensData}
+          outputTokensPerTraceData={outputTokensPerTraceData}
+          inputTokensPerTraceData={inputTokensPerTraceData}
           totalCostUSD={summary.totalCost}
         />
 

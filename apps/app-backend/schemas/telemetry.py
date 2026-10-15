@@ -87,3 +87,12 @@ class LLMTracePayload(BaseModel):
     total_tokens: int = Field(default=0, description="Total tokens used")
     cost_usd: float = Field(default=0.0, description="Calculated cost in USD")
     metadata: Optional[Dict[str, Any]] = Field(default=None, description="Arbitrary metadata dictionary")
+
+    @model_validator(mode="after")
+    def sync_total_tokens(self):
+        calc_total = (self.prompt_tokens or 0) + (self.completion_tokens or 0)
+        if calc_total > 0:
+            self.total_tokens = calc_total
+        elif self.total_tokens > 0 and calc_total == 0:
+            self.prompt_tokens = self.total_tokens
+        return self

@@ -13,19 +13,34 @@ import {
 import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts";
 
 const totalCostConfig: ChartConfig = {
-  total: { label: "Total", color: "#3b82f6" },
+  total: { label: "Total Cost", color: "#3b82f6" },
+};
+
+const costPerTraceConfig: ChartConfig = {
+  cost: { label: "Cost / Trace", color: "#38bdf8" },
 };
 
 const tokensConfig: ChartConfig = {
-  output: { label: "Output", color: "#818cf8" },
-  input: { label: "Input", color: "#38bdf8" },
+  output: { label: "Output Tokens", color: "#818cf8" },
+  input: { label: "Input Tokens", color: "#38bdf8" },
+};
+
+const outputPerTraceConfig: ChartConfig = {
+  output: { label: "Output / Trace", color: "#818cf8" },
+};
+
+const inputPerTraceConfig: ChartConfig = {
+  input: { label: "Input / Trace", color: "#38bdf8" },
 };
 
 interface CostTokensSectionProps {
   collapsed: boolean;
   onToggle: () => void;
   costData: Array<{ time: string; total: number }>;
+  costPerTraceData?: Array<{ time: string; cost: number }>;
   tokensData: Array<{ time: string; input: number; output: number }>;
+  outputTokensPerTraceData?: Array<{ time: string; output: number }>;
+  inputTokensPerTraceData?: Array<{ time: string; input: number }>;
   totalCostUSD: number;
 }
 
@@ -33,11 +48,17 @@ export function CostTokensSection({
   collapsed,
   onToggle,
   costData,
+  costPerTraceData = [],
   tokensData,
+  outputTokensPerTraceData = [],
+  inputTokensPerTraceData = [],
   totalCostUSD,
 }: CostTokensSectionProps) {
   const hasCost = costData.length > 0 && costData.some((d) => d.total > 0);
+  const hasCostPerTrace = costPerTraceData.length > 0 && costPerTraceData.some((d) => d.cost > 0);
   const hasTokens = tokensData.length > 0 && tokensData.some((d) => d.input > 0 || d.output > 0);
+  const hasOutputPerTrace = outputTokensPerTraceData.length > 0 && outputTokensPerTraceData.some((d) => d.output > 0);
+  const hasInputPerTrace = inputTokensPerTraceData.length > 0 && inputTokensPerTraceData.some((d) => d.input > 0);
 
   return (
     <section id="section-cost-tokens" className="space-y-4">
@@ -69,8 +90,8 @@ export function CostTokensSection({
           {/* 1. Total Cost */}
           <MonitoringChartCard
             title="Total Cost"
-            subtitle="Total cost over time"
-            legend={[{ label: "Total", color: "#3b82f6" }]}
+            subtitle="Cumulative inference cost over time"
+            legend={[{ label: "Total Cost", color: "#3b82f6" }]}
             empty={!hasCost}
           >
             <ChartContainer config={totalCostConfig} className="h-56 w-full">
@@ -94,16 +115,26 @@ export function CostTokensSection({
           {/* 2. Cost per Trace */}
           <MonitoringChartCard
             title="Cost per Trace"
-            subtitle="Median cost per trace"
-            empty={true}
-            emptyTitle="No charting data found"
-          />
+            subtitle="Average cost per trace over time"
+            legend={[{ label: "Cost / Trace", color: "#38bdf8" }]}
+            empty={!hasCostPerTrace}
+          >
+            <ChartContainer config={costPerTraceConfig} className="h-56 w-full">
+              <LineChart data={costPerTraceData} margin={{ top: 10, right: 10, bottom: 0, left: -10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={true} />
+                <XAxis dataKey="time" stroke="#64748b" tickLine={false} axisLine={false} fontSize={11} />
+                <YAxis stroke="#64748b" tickLine={false} axisLine={false} fontSize={11} tickFormatter={(v) => `$${v}`} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Line type="monotone" dataKey="cost" stroke="#38bdf8" strokeWidth={2} dot={{ r: 3 }} />
+              </LineChart>
+            </ChartContainer>
+          </MonitoringChartCard>
 
           {/* 3. Output Tokens */}
           <MonitoringChartCard
             title="Output Tokens"
             subtitle="Total output tokens over time"
-            legend={[{ label: "Output", color: "#818cf8" }]}
+            legend={[{ label: "Output Tokens", color: "#818cf8" }]}
             empty={!hasTokens}
           >
             <ChartContainer config={tokensConfig} className="h-56 w-full">
@@ -121,15 +152,25 @@ export function CostTokensSection({
           <MonitoringChartCard
             title="Output Tokens per Trace"
             subtitle="Output tokens used per trace over time"
-            empty={true}
-            emptyTitle="No charting data found"
-          />
+            legend={[{ label: "Output / Trace", color: "#818cf8" }]}
+            empty={!hasOutputPerTrace}
+          >
+            <ChartContainer config={outputPerTraceConfig} className="h-56 w-full">
+              <LineChart data={outputTokensPerTraceData} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={true} />
+                <XAxis dataKey="time" stroke="#64748b" tickLine={false} axisLine={false} fontSize={11} />
+                <YAxis stroke="#64748b" tickLine={false} axisLine={false} fontSize={11} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Line type="monotone" dataKey="output" stroke="#818cf8" strokeWidth={2} dot={{ r: 3 }} />
+              </LineChart>
+            </ChartContainer>
+          </MonitoringChartCard>
 
           {/* 5. Input Tokens */}
           <MonitoringChartCard
             title="Input Tokens"
             subtitle="Total input tokens over time"
-            legend={[{ label: "Input", color: "#38bdf8" }]}
+            legend={[{ label: "Input Tokens", color: "#38bdf8" }]}
             empty={!hasTokens}
           >
             <ChartContainer config={tokensConfig} className="h-56 w-full">
@@ -147,9 +188,19 @@ export function CostTokensSection({
           <MonitoringChartCard
             title="Input Tokens per Trace"
             subtitle="Input tokens used per trace over time"
-            empty={true}
-            emptyTitle="No charting data found"
-          />
+            legend={[{ label: "Input / Trace", color: "#38bdf8" }]}
+            empty={!hasInputPerTrace}
+          >
+            <ChartContainer config={inputPerTraceConfig} className="h-56 w-full">
+              <LineChart data={inputTokensPerTraceData} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={true} />
+                <XAxis dataKey="time" stroke="#64748b" tickLine={false} axisLine={false} fontSize={11} />
+                <YAxis stroke="#64748b" tickLine={false} axisLine={false} fontSize={11} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Line type="monotone" dataKey="input" stroke="#38bdf8" strokeWidth={2} dot={{ r: 3 }} />
+              </LineChart>
+            </ChartContainer>
+          </MonitoringChartCard>
         </div>
       )}
     </section>
