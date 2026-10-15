@@ -33,6 +33,8 @@ interface DashboardFiltersProps {
   isRefreshing?: boolean;
   showTimeRange?: boolean;
   showProjectSelector?: boolean;
+  isLive?: boolean;
+  onToggleLive?: () => void;
   showLiveToggle?: boolean;
   routeCategory?: string;
   routeTitle?: string;
@@ -80,7 +82,7 @@ export function DashboardFilters({
   const availableFuncs = React.useMemo(() => {
     if (!selectedProject || selectedProject === "all-applications") {
       const set = new Set<string>();
-      appList.forEach((a) => a.functions.forEach((f) => set.add(f)));
+      appList.forEach((a) => a.functions.forEach((f: string) => set.add(f)));
       return Array.from(set);
     }
     const app = appList.find((a) => a.agent_name === selectedProject);
@@ -214,7 +216,7 @@ export function DashboardFilters({
                     >
                       <span className="truncate font-medium">{app.agent_name}</span>
                       <div className="flex items-center gap-1 overflow-hidden ml-2 max-w-[130px]">
-                        {app.functions.slice(0, 2).map((fn) => (
+                        {app.functions.slice(0, 2).map((fn: string) => (
                           <span
                             key={fn}
                             className="rounded bg-slate-100 dark:bg-[#070a10] border border-slate-200 dark:border-[#1e293b] px-1.5 py-0.5 font-mono text-[10px] text-slate-600 dark:text-slate-300 truncate"
@@ -277,7 +279,7 @@ export function DashboardFilters({
                     All Functions (Entire Agent)
                   </button>
 
-                  {availableFuncs.map((fn) => (
+                  {availableFuncs.map((fn: string) => (
                     <button
                       key={fn}
                       onClick={() => {

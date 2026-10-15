@@ -72,3 +72,5 @@ export interface ApplicationMetadata {
   agent_name: string;
   functions: string[];
 }
+
+export type ApplicationItem = ApplicationMetadata;

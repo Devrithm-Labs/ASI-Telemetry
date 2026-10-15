@@ -47,6 +47,11 @@ class TelemetryController:
         return db.clear_llm_traces()
 
     @staticmethod
+    def delete_traces(trace_ids: Optional[list] = None):
+        """Clears all or deletes specific tool traces from ClickHouse and memory."""
+        return db.delete_traces(trace_ids)
+
+    @staticmethod
     def get_dashboard_payload(
         time_range: str = "7d",
         limit: int = 500,

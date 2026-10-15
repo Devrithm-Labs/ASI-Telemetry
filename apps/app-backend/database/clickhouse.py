@@ -636,6 +636,32 @@ class ClickHouseDB:
                 logger.warning(f"Error truncating llm_traces table: {e}")
         return {"status": "success", "message": "All LLM traces cleared"}
 
+    def delete_traces(self, trace_ids: Optional[List[str]] = None) -> Dict[str, Any]:
+        """Deletes specific telemetry/tool traces by ID or truncates telemetry_metrics if no IDs specified."""
+        if not trace_ids:
+            self.memory_records.clear()
+            if self.is_connected and self.client:
+                try:
+                    self.client.command("TRUNCATE TABLE IF EXISTS telemetry_metrics")
+                except Exception as e:
+                    logger.error(f"Error truncating telemetry_metrics: {e}")
+                    return {"status": "error", "message": str(e)}
+            return {"status": "success", "message": "All tracing data cleared successfully"}
+        else:
+            ids_set = set(trace_ids)
+            self.memory_records = [r for r in self.memory_records if r.get("id") not in ids_set]
+            if self.is_connected and self.client:
+                try:
+                    # Sanitize IDs to avoid SQL injection
+                    safe_ids = ["'" + "".join(c for c in tid if c.isalnum() or c in ("-", "_", ".")) + "'" for tid in trace_ids]
+                    if safe_ids:
+                        in_clause = ", ".join(safe_ids)
+                        self.client.command(f"DELETE FROM telemetry_metrics WHERE id IN ({in_clause})")
+                except Exception as e:
+                    logger.error(f"Error deleting traces from ClickHouse: {e}")
+                    return {"status": "error", "message": str(e)}
+            return {"status": "success", "message": f"{len(trace_ids)} trace(s) deleted successfully"}
+
 
 # Global database instance
 db = ClickHouseDB()

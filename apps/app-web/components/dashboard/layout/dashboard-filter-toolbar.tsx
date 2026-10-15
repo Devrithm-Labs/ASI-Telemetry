@@ -60,7 +60,7 @@ export function DashboardFilterToolbar({
   const availableFuncs = React.useMemo(() => {
     if (!selectedProject || selectedProject === "all-applications") {
       const set = new Set<string>();
-      applications.forEach((a) => a.functions.forEach((f) => set.add(f)));
+      applications.forEach((a) => a.functions.forEach((f: string) => set.add(f)));
       return Array.from(set);
     }
     const app = applications.find((a) => a.agent_name === selectedProject);
@@ -229,7 +229,7 @@ export function DashboardFilterToolbar({
               </button>
 
               {/* Dynamic individual functions */}
-              {availableFuncs.map((fn) => (
+              {availableFuncs.map((fn: string) => (
                 <button
                   key={fn}
                   type="button"

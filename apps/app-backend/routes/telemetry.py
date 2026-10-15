@@ -51,6 +51,31 @@ def clear_llm_traces():
     return TelemetryController.clear_llm_traces()
 
 
+@router.delete("/traces")
+def delete_traces(ids: Optional[str] = None):
+    """Deletes specific traces by comma-separated IDs or clears all tool traces if ids parameter is omitted."""
+    trace_ids = [i.strip() for i in ids.split(",") if i.strip()] if ids else None
+    res = TelemetryController.delete_traces(trace_ids)
+    try:
+        from .websocket import clear_recent_traces
+        clear_recent_traces(trace_ids)
+    except Exception:
+        pass
+    return res
+
+
+@router.delete("/traces/{trace_id}")
+def delete_single_trace(trace_id: str):
+    """Deletes a single tool trace by trace ID."""
+    res = TelemetryController.delete_traces([trace_id])
+    try:
+        from .websocket import clear_recent_traces
+        clear_recent_traces([trace_id])
+    except Exception:
+        pass
+    return res
+
+
 @router.get("/dashboard")
 def get_dashboard_data(
     time_range: str = "7d",

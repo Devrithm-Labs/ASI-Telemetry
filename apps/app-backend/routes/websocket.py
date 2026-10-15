@@ -168,6 +168,19 @@ async def ingest_trace(payload: TracePayload):
     return {"status": "success", "trace_id": payload.trace_id}
 
 
+def clear_recent_traces(trace_ids: Optional[List[str]] = None):
+    """Clears or removes specified traces from memory buffer."""
+    global RECENT_TRACES
+    if not trace_ids:
+        RECENT_TRACES.clear()
+    else:
+        ids_set = set(trace_ids)
+        RECENT_TRACES = [
+            t for t in RECENT_TRACES
+            if t.get("trace_id") not in ids_set and t.get("id") not in ids_set
+        ]
+
+
 @ws_router.get("/api/traces")
 def get_traces(limit: int = 20):
     """Returns recent traces."""

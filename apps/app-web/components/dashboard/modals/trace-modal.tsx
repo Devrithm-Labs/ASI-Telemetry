@@ -5,10 +5,13 @@ import {
   Activity,
   AlertTriangle,
   CheckCircle2,
+  Loader2,
+  Trash2,
   X,
   XCircle,
 } from "lucide-react";
 import { TraceRecord } from "../context/dashboard-types";
+import { useDashboard } from "../context/dashboard-context";
 import { Button } from "@/components/ui/button";
 
 interface TraceModalProps {
@@ -18,9 +21,23 @@ interface TraceModalProps {
 }
 
 export function TraceModal({ trace, open, onClose }: TraceModalProps) {
+  const { deleteTraces } = useDashboard();
   const [activeTab, setActiveTab] = React.useState<"waterfall" | "raw" | "error">("waterfall");
+  const [isDeleting, setIsDeleting] = React.useState(false);
+  const [confirmDelete, setConfirmDelete] = React.useState(false);
 
   if (!open || !trace) return null;
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await deleteTraces([trace.id]);
+      onClose();
+    } finally {
+      setIsDeleting(false);
+      setConfirmDelete(false);
+    }
+  };
 
   const totalDuration = trace.spans.reduce((acc, s) => acc + s.durationMs, 0) || trace.responseTimeMs || trace.latencyMs;
 
@@ -201,17 +218,56 @@ export function TraceModal({ trace, open, onClose }: TraceModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between border-t border-slate-200 dark:border-[#1e293b] px-6 py-3 bg-slate-50 dark:bg-black">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-200 dark:border-[#1e293b] px-6 py-3 bg-slate-50 dark:bg-black">
           <span className="text-[11px] text-slate-500">
             Recorded at {trace.timestamp} • Service: {trace.service}
           </span>
-          <Button
-            size="sm"
-            onClick={onClose}
-            className="bg-blue-600 text-white hover:bg-blue-500 text-xs font-semibold"
-          >
-            Close Inspector
-          </Button>
+          <div className="flex items-center gap-2">
+            {confirmDelete ? (
+              <div className="flex items-center gap-2 bg-rose-500/10 border border-rose-500/30 rounded-lg px-2.5 py-1">
+                <span className="text-xs text-rose-600 dark:text-rose-400 font-medium">Delete permanently?</span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={isDeleting}
+                  onClick={() => setConfirmDelete(false)}
+                  className="h-7 px-2 text-xs border-slate-200 dark:border-[#1e293b]"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  disabled={isDeleting}
+                  onClick={handleDelete}
+                  className="h-7 px-2.5 text-xs bg-rose-600 hover:bg-rose-700 text-white font-semibold flex items-center gap-1"
+                >
+                  {isDeleting ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-3 w-3" />
+                  )}
+                  <span>Delete</span>
+                </Button>
+              </div>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setConfirmDelete(true)}
+                className="text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 border-rose-500/30 flex items-center gap-1.5"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                <span>Delete Trace</span>
+              </Button>
+            )}
+            <Button
+              size="sm"
+              onClick={onClose}
+              className="bg-blue-600 text-white hover:bg-blue-500 text-xs font-semibold"
+            >
+              Close Inspector
+            </Button>
+          </div>
         </div>
       </div>
     </div>

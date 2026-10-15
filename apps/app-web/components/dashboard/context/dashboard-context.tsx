@@ -37,6 +37,8 @@ interface DashboardContextType {
   traces: TraceRecord[];
   setTraces: React.Dispatch<React.SetStateAction<TraceRecord[]>>;
   addTrace: (trace: TraceRecord) => void;
+  deleteTraces: (traceIds?: string[]) => Promise<boolean>;
+  clearAllTraces: () => Promise<boolean>;
   selectedTrace: TraceRecord | null;
   setSelectedTrace: (trace: TraceRecord | null) => void;
   isAlertModalOpen: boolean;
@@ -144,6 +146,53 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     await fetchDatabaseTelemetry();
   }, [fetchDatabaseTelemetry]);
 
+  const clearAllTraces = React.useCallback(async () => {
+    try {
+      const res = await fetch("http://localhost:8080/api/traces", {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setTraces([]);
+        setSelectedTrace(null);
+        await fetchDatabaseTelemetry();
+        return true;
+      }
+    } catch (err) {
+      console.error("Failed to clear traces:", err);
+      setTraces([]);
+      setSelectedTrace(null);
+      return true;
+    }
+    return false;
+  }, [fetchDatabaseTelemetry]);
+
+  const deleteTraces = React.useCallback(
+    async (traceIds?: string[]) => {
+      if (!traceIds || traceIds.length === 0) {
+        return clearAllTraces();
+      }
+      try {
+        const params = new URLSearchParams({ ids: traceIds.join(",") });
+        const res = await fetch(`http://localhost:8080/api/traces?${params.toString()}`, {
+          method: "DELETE",
+        });
+        if (res.ok) {
+          setTraces((prev) => prev.filter((t) => !traceIds.includes(t.id)));
+          setSelectedTrace((curr) => (curr && traceIds.includes(curr.id) ? null : curr));
+          await fetchDatabaseTelemetry();
+          return true;
+        }
+      } catch (err) {
+        console.error("Failed to delete traces:", err);
+        setTraces((prev) => prev.filter((t) => !traceIds.includes(t.id)));
+        setSelectedTrace((curr) => (curr && traceIds.includes(curr.id) ? null : curr));
+        return true;
+      }
+      return false;
+    },
+    [fetchDatabaseTelemetry, clearAllTraces]
+  );
+
   return (
     <DashboardContext.Provider
       value={{
@@ -170,6 +219,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         traces,
         setTraces,
         addTrace,
+        deleteTraces,
+        clearAllTraces,
         selectedTrace,
         setSelectedTrace,
         isAlertModalOpen,
