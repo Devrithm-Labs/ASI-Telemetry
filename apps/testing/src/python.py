@@ -47,6 +47,12 @@ agent = Agent(
     resolve=local_resolver
 )
 
+# Configure agent address and handle in SDK
+monitor.agent_address = agent.address
+monitor.agent_handle = "@weather-agent-13"
+from asi_telemetry import set_agent_info
+set_agent_info(agent_name="receiver", agent_address=agent.address, agent_handle="@weather-agent-13")
+
 
 # 3. Tracked LLM Call (Captures tokens, cost, and LLM latency)
 @traceable(name="gemini_generate", run_type="llm")

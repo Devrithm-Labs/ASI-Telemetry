@@ -5,17 +5,35 @@ from datetime import datetime, timezone
 from functools import wraps
 from typing import Any, Optional
 import httpx
-import psutil
 
 
 class AgentMonitor:
     """
     Real-time Agent and Tool execution monitor.
-    Tracks latency, CPU time, memory consumption, and execution status,
-    dispatching telemetry to the ASI Telemetry backend and ClickHouse.
+    Tracks latency and execution status, dispatching telemetry
+    to the ASI Telemetry backend and ClickHouse without heavy host CPU/memory overhead.
     """
-    def __init__(self, agent_name: str = "assistant", backend_url: str = None):
+    def __init__(
+        self,
+        agent_name: str = "assistant",
+        agent_address: Optional[str] = None,
+        agent_handle: Optional[str] = None,
+        backend_url: str = None,
+    ):
         self.agent_name = agent_name
+        self.agent_address = agent_address
+        self.agent_handle = agent_handle
+
+        try:
+            from .asi_tracer import set_agent_info
+            set_agent_info(
+                agent_name=agent_name,
+                agent_address=agent_address,
+                agent_handle=agent_handle,
+            )
+        except Exception:
+            pass
+
         # Backend endpoint to receive metrics
         self.backend_url = backend_url or os.getenv(
             "TELEMETRY_BACKEND_URL", "http://127.0.0.1:8080/api/metrics"
@@ -24,22 +42,13 @@ class AgentMonitor:
         self.success = 0
         self.errors = 0
 
-        # Measure THIS process only (not the whole machine)
-        self._proc = psutil.Process()
         # Keep references to background tasks so they aren't garbage-collected
         self._tasks = set()
-
-    def _cpu_seconds(self) -> float:
-        t = self._proc.cpu_times()
-        return t.user + t.system
-
-    def _mem_mb(self) -> float:
-        return self._proc.memory_info().rss / 1e6
 
     def track(self, agentname: Any = None, agent_name: Optional[str] = None):
         """
         Decorator to track agent execution:
-        Measures response time, CPU time, and memory, then sends data to the backend.
+        Measures response time and execution status, then dispatches telemetry.
         Supports:
           @monitor.track(agentname="weather")
           @monitor.track("weather")
@@ -59,10 +68,8 @@ class AgentMonitor:
                 # 1. Increment total requests
                 self.requests += 1
 
-                # 2. Record start time & initial process resources
+                # 2. Record start time
                 start_time = time.perf_counter()
-                cpu_before = self._cpu_seconds()
-                mem_before = self._mem_mb()
 
                 status = "success"
                 try:
@@ -71,8 +78,7 @@ class AgentMonitor:
                     self.success += 1
                     return result
                 except asyncio.CancelledError:
-                    # CancelledError is not an Exception subclass, so handle it
-                    # separately or it would be reported as "success"
+                    # CancelledError is not an Exception subclass, so handle it separately
                     status = "cancelled"
                     raise
                 except Exception:
@@ -80,22 +86,17 @@ class AgentMonitor:
                     status = "error"
                     raise
                 finally:
-                    # 4. Record end time & final process resources
+                    # 4. Record execution duration
                     response_time_ms = (time.perf_counter() - start_time) * 1000
-                    cpu_ms = (self._cpu_seconds() - cpu_before) * 1000
-                    mem_after = self._mem_mb()
 
                     # 5. Print formatted CLI stats
-                    self.print_metrics(response_time_ms, cpu_ms, mem_before, mem_after)
+                    self.print_metrics(response_time_ms)
 
                     # 6. Send telemetry to backend in the background
                     task = asyncio.create_task(
                         self.send_to_backend(
                             agent_name=target_agent,
                             response_time_ms=response_time_ms,
-                            cpu_ms=cpu_ms,
-                            mem_before=mem_before,
-                            mem_after=mem_after,
                             status=status,
                             func_name=func.__name__,
                         )
@@ -112,9 +113,6 @@ class AgentMonitor:
     async def send_to_backend(
         self,
         response_time_ms: float,
-        cpu_ms: float,
-        mem_before: float,
-        mem_after: float,
         status: str,
         func_name: str,
         agent_name: Optional[str] = None,
@@ -122,14 +120,12 @@ class AgentMonitor:
         """Sends the metric record to the FastAPI backend."""
         payload = {
             "agent_name": agent_name or self.agent_name,
+            "agent_address": self.agent_address,
+            "agent_handle": self.agent_handle,
             "func_name": func_name,
             "status": status,
             "response_time_ms": round(response_time_ms, 2),
             "latency_ms": round(response_time_ms, 2),
-            "cpu_ms": round(cpu_ms, 2),
-            "cpu_after": round(cpu_ms, 2),
-            "memory_before_mb": round(mem_before, 2),
-            "memory_after_mb": round(mem_after, 2),
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         try:
@@ -139,13 +135,7 @@ class AgentMonitor:
             # If backend is not running, fail silently so agent doesn't crash
             pass
 
-    def print_metrics(
-        self,
-        response_time: float,
-        cpu_ms: float,
-        mem_before: float,
-        mem_after: float,
-    ):
+    def print_metrics(self, response_time: float):
         """Displays clear metrics in the terminal."""
         success_rate = (self.success / self.requests * 100) if self.requests > 0 else 100.0
         failure_rate = (self.errors / self.requests * 100) if self.requests > 0 else 0.0
@@ -157,7 +147,4 @@ class AgentMonitor:
         print(f"Success Rate  : {success_rate:.2f}%")
         print(f"Failure Rate  : {failure_rate:.2f}%")
         print(f"Response Time : {response_time:.2f} ms")
-        print(f"CPU Time      : {cpu_ms:.2f} ms")
-        print(f"Memory Before : {mem_before:.2f} MB")
-        print(f"Memory After  : {mem_after:.2f} MB")
         print("=================================\n")

@@ -64,8 +64,12 @@ export interface MetricSummary {
   success_rate: number;
   error_rate: number;
   avg_response_time_ms: number;
-  current_cpu: number;
-  current_memory: number;
+  uptime?: number;
+  uptime_desc?: string;
+  agent_address?: string;
+  agent_handle?: string;
+  current_cpu?: number;
+  current_memory?: number;
 }
 
 export interface ApplicationMetadata {

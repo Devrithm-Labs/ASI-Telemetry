@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Gauge, LayoutDashboard, Bell } from "lucide-react";
+import { Gauge, LayoutDashboard, Bell, Copy, Check, Pencil } from "lucide-react";
 import { useDashboard } from "@/components/dashboard/context/dashboard-context";
 import { DashboardFilters, SubTabItem } from "@/components/dashboard/layout/filters";
 import { DashboardFilterToolbar } from "@/components/dashboard/layout/dashboard-filter-toolbar";
@@ -9,13 +9,11 @@ import { OverviewMetricsStrip } from "@/components/dashboard/overview-metrics-st
 import { LatencySection } from "@/components/dashboard/sections/latency-section";
 import { RequestSection } from "@/components/dashboard/sections/request-section";
 import { ErrorSection } from "@/components/dashboard/sections/error-section";
-import { CpuSection } from "@/components/dashboard/sections/cpu-section";
 
 const TOOL_MONITORING_TABS: SubTabItem[] = [
   { id: "Request", label: "Request", targetId: "section-request" },
   { id: "Latency", label: "Response Time", targetId: "section-latency" },
   { id: "Error", label: "Error", targetId: "section-error" },
-  { id: "CPU", label: "CPU", targetId: "section-cpu" },
 ];
 
 export default function ToolMonitoringPage() {
@@ -31,7 +29,6 @@ export default function ToolMonitoringPage() {
     summary,
     requestData,
     latencyData,
-    cpuData,
     errorData,
     handleRefresh,
     isRefreshing,
@@ -41,16 +38,72 @@ export default function ToolMonitoringPage() {
 
   const [activeSubTab, setActiveSubTab] = React.useState("Request");
 
+  // Agent Identity custom handle and clipboard state
+  const [customHandles, setCustomHandles] = React.useState<Record<string, string>>({});
+  const [isEditingHandle, setIsEditingHandle] = React.useState(false);
+  const [handleInput, setHandleInput] = React.useState("");
+  const [copiedTarget, setCopiedTarget] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    try {
+      const saved = localStorage.getItem("asi_agent_handles");
+      if (saved) setCustomHandles(JSON.parse(saved));
+    } catch {}
+  }, []);
+
+  const activeAgentKey =
+    selectedProject && selectedProject !== "All Applications" && selectedProject !== "all"
+      ? selectedProject
+      : "weather-agent";
+
+  const currentHandle =
+    customHandles[activeAgentKey] ||
+    summary?.agent_handle ||
+    (selectedProject && selectedProject !== "All Applications" && selectedProject !== "all"
+      ? `@${selectedProject}`
+      : "@weather-agent-13");
+
+  const currentAddress =
+    summary?.agent_address || "agent1qfzll7xq6t8d9rx5n3cnql32me650q2sakexpc979u0luhn702jh2af5mds";
+
+  const formatAddress = (addr: string) => {
+    if (!addr) return "agent1[...]4gkq";
+    if (addr.length > 18) {
+      return `${addr.slice(0, 6)}[...]${addr.slice(-4)}`;
+    }
+    return addr;
+  };
+
+  const handleCopy = (text: string, target: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedTarget(target);
+    setTimeout(() => setCopiedTarget(null), 1800);
+  };
+
+  const handleSaveHandle = () => {
+    if (!handleInput.trim()) {
+      setIsEditingHandle(false);
+      return;
+    }
+    let formatted = handleInput.trim();
+    if (!formatted.startsWith("@")) formatted = `@${formatted}`;
+    const next = { ...customHandles, [activeAgentKey]: formatted };
+    setCustomHandles(next);
+    try {
+      localStorage.setItem("asi_agent_handles", JSON.stringify(next));
+    } catch {}
+    setIsEditingHandle(false);
+  };
+
   // Scroll spy to highlight active subtab as user scrolls through sections
   React.useEffect(() => {
     if (activeHeaderTab !== "Monitoring") return;
 
-    const sectionIds = ["section-request", "section-latency", "section-error", "section-cpu"];
+    const sectionIds = ["section-request", "section-latency", "section-error"];
     const idToTab: Record<string, string> = {
       "section-request": "Request",
       "section-latency": "Latency",
       "section-error": "Error",
-      "section-cpu": "CPU",
     };
 
     const observer = new IntersectionObserver(
@@ -93,13 +146,13 @@ export default function ToolMonitoringPage() {
         {activeHeaderTab === "Monitoring" ? (
           <div className="space-y-6">
             {/* Dashboard Title & Overview Header with Aligned Professional Filter Toolbar */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-slate-200 dark:border-[#1e293b]/70 pb-4">
+            <div className="relative z-30 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-slate-200 dark:border-[#1e293b]/70 pb-4">
               <div>
                 <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
                   Tool Monitoring
                 </h1>
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Real-time telemetry observability for agent tools, latency percentiles, and host compute.
+                  Real-time telemetry observability for agent tools, latency percentiles, and SLA tracking.
                 </p>
               </div>
 
@@ -117,13 +170,111 @@ export default function ToolMonitoringPage() {
               />
             </div>
 
-            {/* Top Overview KPI Metric Cards */}
+            {/* Agent Identity Box: Agent Handle & Agent Address */}
+            <div className="relative z-10 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border/80 bg-card/60 px-5 py-3.5 backdrop-blur-sm shadow-xs">
+              <div className="flex flex-wrap items-center gap-10">
+                {/* Agent Handle */}
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                    <span>Agent Handle</span>
+                    {!isEditingHandle && (
+                      <button
+                        onClick={() => {
+                          setHandleInput(currentHandle);
+                          setIsEditingHandle(true);
+                        }}
+                        className="text-muted-foreground hover:text-blue-500 transition-colors p-0.5 rounded"
+                        title="Edit agent handle name"
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+
+                  {isEditingHandle ? (
+                    <div className="flex items-center gap-2 pt-0.5">
+                      <input
+                        type="text"
+                        value={handleInput}
+                        onChange={(e) => setHandleInput(e.target.value)}
+                        placeholder="@agent-handle"
+                        className="h-7 w-48 rounded-md border border-border bg-background px-2 font-mono text-xs text-foreground focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleSaveHandle();
+                          if (e.key === "Escape") setIsEditingHandle(false);
+                        }}
+                      />
+                      <button
+                        onClick={handleSaveHandle}
+                        className="rounded bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-blue-500 shadow-sm"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => setIsEditingHandle(false)}
+                        className="rounded border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-muted"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-sm font-bold text-foreground">
+                        {currentHandle}
+                      </span>
+                      <button
+                        onClick={() => handleCopy(currentHandle, "handle")}
+                        className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                        title="Copy agent handle"
+                      >
+                        {copiedTarget === "handle" ? (
+                          <Check className="h-3.5 w-3.5 text-emerald-500" />
+                        ) : (
+                          <Copy className="h-3.5 w-3.5" />
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Agent Address */}
+                <div className="space-y-1">
+                  <div className="text-xs font-semibold text-foreground">
+                    Agent Address
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-sm font-bold text-foreground" title={currentAddress}>
+                      {formatAddress(currentAddress)}
+                    </span>
+                    <button
+                      onClick={() => handleCopy(currentAddress, "address")}
+                      className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                      title="Copy agent address"
+                    >
+                      {copiedTarget === "address" ? (
+                        <Check className="h-3.5 w-3.5 text-emerald-500" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="rounded bg-muted px-2.5 py-1 font-mono text-[11px] text-muted-foreground border border-border">
+                  Agent: <strong className="text-foreground">{activeAgentKey}</strong>
+                </span>
+              </div>
+            </div>
+
+            {/* Top Overview KPI Metric Cards (Simplified, with Uptime replacing CPU/Memory) */}
             <OverviewMetricsStrip
               summary={summary}
               requestData={requestData}
               latencyData={latencyData}
               errorData={errorData}
-              cpuData={cpuData}
               timeRange={timeRange}
               onCardClick={(tab) => {
                 setActiveSubTab(tab === "Response Time" ? "Latency" : tab);
@@ -132,7 +283,6 @@ export default function ToolMonitoringPage() {
                   Latency: "section-latency",
                   "Response Time": "section-latency",
                   Error: "section-error",
-                  CPU: "section-cpu",
                 };
                 const id = map[tab];
                 if (id) {
@@ -185,21 +335,6 @@ export default function ToolMonitoringPage() {
               </div>
               <ErrorSection data={errorData} summary={summary} />
             </div>
-
-            {/* 4. CPU & Compute Utilization Section */}
-            <div id="section-cpu" className="space-y-3 scroll-mt-6 transition-all duration-300">
-              <div className="flex items-center justify-between border-b border-border/80 pb-2 select-none">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-base font-bold text-foreground flex items-center gap-1.5">
-                    <span>CPU &amp; Host Compute</span>
-                  </h2>
-                </div>
-                <span className="text-[11px] text-muted-foreground font-mono">
-                  Live Telemetry Probe
-                </span>
-              </div>
-              <CpuSection data={cpuData} summary={summary} />
-            </div>
           </div>
         ) : null}
 
@@ -236,7 +371,7 @@ export default function ToolMonitoringPage() {
                 },
                 {
                   title: "Infrastructure & Host Nodes",
-                  desc: "CPU core load, memory pressure, and container thread distribution.",
+                  desc: "Error budgets, response times, and container thread distribution.",
                   widgets: 6,
                   updated: "Yesterday",
                 },
@@ -301,13 +436,6 @@ export default function ToolMonitoringPage() {
                   status: "Healthy",
                   channel: "#ops-telemetry-alerts, PagerDuty",
                   lastTriggered: "3 days ago",
-                },
-                {
-                  name: "Host Compute Saturation Warning",
-                  condition: "CPU Usage > 85% for > 10m",
-                  status: "Warning",
-                  channel: "#infra-alerts",
-                  lastTriggered: "14 hours ago",
                 },
               ].map((rule, idx) => (
                 <div

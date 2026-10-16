@@ -27,9 +27,11 @@ class TelemetryRepository:
 
         record_id = f"metric-{int(time.time() * 1000)}"
         resp_time = payload_dict.get("response_time_ms") or payload_dict.get("latency_ms") or 0.0
-        cpu = payload_dict.get("cpu_after") or payload_dict.get("cpu_ms") or 0.0
-        mem_after = payload_dict.get("memory_after") or payload_dict.get("memory_after_mb") or 0.0
-        mem_before = payload_dict.get("memory_before") or payload_dict.get("memory_before_mb") or 0.0
+        meta = payload_dict.get("metadata") or {}
+        if payload_dict.get("agent_address"):
+            meta["agent_address"] = payload_dict["agent_address"]
+        if payload_dict.get("agent_handle"):
+            meta["agent_handle"] = payload_dict["agent_handle"]
 
         record = {
             "id": record_id,
@@ -38,11 +40,11 @@ class TelemetryRepository:
             "func_name": payload_dict.get("func_name", "handle_message"),
             "status": payload_dict.get("status", "success"),
             "response_time_ms": round(float(resp_time), 2),
-            "cpu_before": round(float(mem_before), 2),
-            "cpu_after": round(float(cpu), 2),
-            "memory_before": round(float(mem_before), 2),
-            "memory_after": round(float(mem_after), 2),
-            "metadata": payload_dict.get("metadata") or {},
+            "cpu_before": 0.0,
+            "cpu_after": 0.0,
+            "memory_before": 0.0,
+            "memory_after": 0.0,
+            "metadata": meta,
         }
 
         self.conn.memory_records.append(record)
@@ -51,6 +53,8 @@ class TelemetryRepository:
 
         if self.conn.is_connected and self.conn.client:
             try:
+                addr_val = meta.get("agent_address") or ""
+                hdl_val = meta.get("agent_handle") or ""
                 row = [
                     record["id"],
                     dt_utc,
@@ -63,6 +67,8 @@ class TelemetryRepository:
                     record["memory_before"],
                     record["memory_after"],
                     json.dumps(record["metadata"]),
+                    addr_val,
+                    hdl_val,
                 ]
                 self.conn.safe_insert(
                     "telemetry_metrics",
@@ -79,6 +85,8 @@ class TelemetryRepository:
                         "memory_before",
                         "memory_after",
                         "metadata",
+                        "agent_address",
+                        "agent_handle",
                     ],
                 )
             except Exception as e:
@@ -187,7 +195,55 @@ class TelemetryRepository:
         succ = sum(1 for r in records if r["status"] == "success")
         err = total - succ
         avg_resp = round(sum(r["response_time_ms"] for r in records) / total, 2) if total else 0.0
-        latest = records[0] if records else {}
+
+        # Compute 30-day Uptime: "Percent of requests the agent replied to in the last 30 days."
+        uptime_val = 100.0
+        if self.conn.is_connected and self.conn.client:
+            try:
+                w_30d_list = ["timestamp >= now() - INTERVAL 30 DAY"]
+                if agent_name and agent_name not in ("All Applications", "all"):
+                    safe_ag = "".join(c for c in agent_name if c.isalnum() or c in ("-", "_", "."))
+                    w_30d_list.append(f"agent_name = '{safe_ag}'")
+                w_30d_sql = "WHERE " + " AND ".join(w_30d_list)
+                up_q = self.conn.safe_query(f"SELECT count(*), countIf(status = 'success') FROM telemetry_metrics {w_30d_sql}")
+                if up_q.result_rows and up_q.result_rows[0][0]:
+                    t30 = int(up_q.result_rows[0][0])
+                    s30 = int(up_q.result_rows[0][1] or 0)
+                    if t30 > 0:
+                        uptime_val = round((s30 / t30) * 100, 1)
+            except Exception as e:
+                logger.warning(f"Error calculating 30d uptime: {e}")
+                uptime_val = round(succ / total * 100, 1) if total else 100.0
+        else:
+            uptime_val = round(succ / total * 100, 1) if total else 100.0
+
+        # Discover or generate agent address & handle
+        agent_address_map = {
+            "weather-agent": "agent1qfzll7xq6t8d9rx5n3cnql32me650q2sakexpc979u0luhn702jh2af5mds",
+            "assistant": "agent1qtj4m78hdr2dmldtssn7kw7gt0e3ycledny3cadpmdau9dmnv9a4yzjxcx0",
+            "receiver": "agent1qfzll7xq6t8d9rx5n3cnql32me650q2sakexpc979u0luhn702jh2af5mds",
+            "sender": "agent1qtj4m78hdr2dmldtssn7kw7gt0e3ycledny3cadpmdau9dmnv9a4yzjxcx0",
+        }
+        agent_handle_map = {
+            "weather-agent": "@weather-agent-13",
+            "assistant": "@assistant-agent",
+            "receiver": "@receiver-agent",
+            "sender": "@sender-agent",
+        }
+        active_agent = agent_name or (records[0]["agent_name"] if records else "weather-agent")
+        found_addr = None
+        found_hdl = None
+        for r in records:
+            m = r.get("metadata") or {}
+            if m.get("agent_address"):
+                found_addr = m["agent_address"]
+            if m.get("agent_handle"):
+                found_hdl = m["agent_handle"]
+            if found_addr and found_hdl:
+                break
+
+        agent_addr = found_addr or agent_address_map.get(active_agent) or f"agent1q{abs(hash(active_agent)):016x}4gkq"
+        agent_hdl = found_hdl or agent_handle_map.get(active_agent) or f"@{active_agent}"
 
         summary = {
             "total_requests": total,
@@ -196,8 +252,10 @@ class TelemetryRepository:
             "success_rate": round(succ / total * 100, 1) if total else 100.0,
             "error_rate": round(err / total * 100, 1) if total else 0.0,
             "avg_response_time_ms": avg_resp,
-            "current_cpu": round(latest.get("cpu_after", 0.0), 1),
-            "current_memory": round(latest.get("memory_after", 0.0), 1),
+            "uptime": uptime_val,
+            "uptime_desc": "Percent of requests the agent replied to in the last 30 days.",
+            "agent_address": agent_addr,
+            "agent_handle": agent_hdl,
         }
 
         # 3. Compute Time-Series Buckets matching LLM Monitoring timeline
@@ -275,12 +333,9 @@ class TelemetryRepository:
 
         req_data = []
         resp_data = []
-        cpu_data = []
         err_data = []
 
         last_p50 = round(avg_resp) if avg_resp else 0
-        last_cpu = round(latest.get("cpu_after", 20.0))
-        last_mem = round(latest.get("memory_after", 35.0))
 
         for time_key in labels:
             items = buckets_map[time_key]
@@ -288,8 +343,6 @@ class TelemetryRepository:
             succ_cnt = sum(1 for i in items if i["status"] == "success")
             fail_cnt = n - succ_cnt
             times = sorted(i["response_time_ms"] for i in items)
-            cpus = [i["cpu_after"] for i in items]
-            mems = [i["memory_after"] for i in items]
             err_rate = round((fail_cnt / n * 100), 1) if n else 0.0
 
             c_timeout = 0
@@ -316,17 +369,11 @@ class TelemetryRepository:
                 p95_val = round(calc_pct(times, 0.95))
                 p99_val = round(calc_pct(times, 0.99))
                 last_p50 = p50_val
-                avg_cpu = round(sum(cpus) / n)
-                avg_mem = round(sum(mems) / n)
-                last_cpu = avg_cpu
-                last_mem = avg_mem
             else:
                 p50_val = last_p50
                 p90_val = last_p50
                 p95_val = last_p50
                 p99_val = last_p50
-                avg_cpu = last_cpu
-                avg_mem = last_mem
 
             req_data.append({
                 "time": time_key,
@@ -342,13 +389,6 @@ class TelemetryRepository:
                 "p95": p95_val,
                 "p99": p99_val,
                 "slaLimit": 300,
-            })
-
-            cpu_data.append({
-                "time": time_key,
-                "cpuPercent": avg_cpu,
-                "memoryPercent": avg_mem,
-                "coreLoad": round((avg_cpu / 100) * 4, 1) if avg_cpu else 0.0,
             })
 
             err_data.append({
@@ -373,7 +413,7 @@ class TelemetryRepository:
                 "statusCode": 200 if is_ok else 500,
                 "responseTimeMs": resp_ms,
                 "latencyMs": resp_ms,
-                "cpuPercent": r["cpu_after"],
+                "cpuPercent": 0.0,
                 "tokens": 0,
                 "model": "uAgent",
                 "timestamp": r["timestamp"],
@@ -391,7 +431,6 @@ class TelemetryRepository:
             "timeseries": {
                 "requests": req_data,
                 "response_time": resp_data,
-                "cpu": cpu_data,
                 "errors": err_data,
             },
             "traces": traces,

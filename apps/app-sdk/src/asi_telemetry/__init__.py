@@ -16,6 +16,7 @@ from .asi_tracer import (
     get_current_span_id,
     start_span,
     end_span,
+    set_agent_info,
 )
 
 __version__ = "0.1.0"
@@ -30,4 +31,5 @@ __all__ = [
     "get_current_span_id",
     "start_span",
     "end_span",
+    "set_agent_info",
 ]

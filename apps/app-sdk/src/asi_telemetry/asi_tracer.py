@@ -33,6 +33,21 @@ def _send_llm_trace_async(payload):
 # Global state & Context Variables
 # ---------------------------------------------------------------
 
+_CURRENT_AGENT_INFO = {
+    "agent_name": os.getenv("AGENT_NAME", "assistant"),
+    "agent_address": os.getenv("AGENT_ADDRESS", None),
+    "agent_handle": os.getenv("AGENT_HANDLE", None),
+}
+
+def set_agent_info(agent_name=None, agent_address=None, agent_handle=None):
+    """Sets process-level default agent name, address, and handle for all traces."""
+    if agent_name:
+        _CURRENT_AGENT_INFO["agent_name"] = agent_name
+    if agent_address:
+        _CURRENT_AGENT_INFO["agent_address"] = agent_address
+    if agent_handle:
+        _CURRENT_AGENT_INFO["agent_handle"] = agent_handle
+
 # The span (one traced function call) that is running right now.
 current_span = ContextVar("current_span", default=None)
 
@@ -118,7 +133,7 @@ def create_trace_context():
     return {"trace_id": new_trace_id, "parent_id": None}
 
 
-def start_span(function_name, run_type, metadata, args, kwargs):
+def start_span(function_name, run_type, metadata, args, kwargs, agent_address=None, agent_handle=None):
     """Create a new span and make it the current one, inheriting or accepting explicit trace_id."""
     parent_span = current_span.get()
 
@@ -148,6 +163,20 @@ def start_span(function_name, run_type, metadata, args, kwargs):
         trace_id = str(uuid.uuid4())
         parent_id = None
 
+    meta_dict = dict(metadata or {})
+    resolved_addr = (
+        agent_address
+        or meta_dict.get("agent_address")
+        or (parent_span.get("agent_address") if parent_span else None)
+        or _CURRENT_AGENT_INFO.get("agent_address")
+    )
+    resolved_hdl = (
+        agent_handle
+        or meta_dict.get("agent_handle")
+        or (parent_span.get("agent_handle") if parent_span else None)
+        or _CURRENT_AGENT_INFO.get("agent_handle")
+    )
+
     span_id = str(uuid.uuid4())
     span = {
         "id": span_id,
@@ -163,7 +192,9 @@ def start_span(function_name, run_type, metadata, args, kwargs):
         "error": None,
         "tokens": {"input": 0, "output": 0, "total": 0},
         "cost": 0.0,
-        "metadata": dict(metadata or {}),
+        "agent_address": resolved_addr,
+        "agent_handle": resolved_hdl,
+        "metadata": meta_dict,
     }
 
     span_reset_token = current_span.set(span)
@@ -201,6 +232,22 @@ def end_span(span, span_reset_token, trace_reset_token, is_top_level, result=Non
         out_val = span.get("outputs")
         output_str = json.dumps(out_val, default=str) if isinstance(out_val, (dict, list)) else str(out_val or "")
 
+        meta_dict = dict(span.get("metadata") or {})
+        addr = (
+            span.get("agent_address")
+            or meta_dict.get("agent_address")
+            or _CURRENT_AGENT_INFO.get("agent_address")
+            or "agent1qfzll7xq6t8d9rx5n3cnql32me650q2sakexpc979u0luhn702jh2af5mds"
+        )
+        hdl = (
+            span.get("agent_handle")
+            or meta_dict.get("agent_handle")
+            or _CURRENT_AGENT_INFO.get("agent_handle")
+            or "@weather-agent-13"
+        )
+        meta_dict["agent_address"] = addr
+        meta_dict["agent_handle"] = hdl
+
         current_id = span.get("id") or span.get("span_id") or str(uuid.uuid4())
         span_payload = {
             "id": current_id,
@@ -219,7 +266,9 @@ def end_span(span, span_reset_token, trace_reset_token, is_top_level, result=Non
             "completion_tokens": span.get("tokens", {}).get("output", 0),
             "total_tokens": span.get("tokens", {}).get("total", 0),
             "cost_usd": span.get("cost", 0.0),
-            "metadata": span.get("metadata", {}),
+            "agent_address": addr,
+            "agent_handle": hdl,
+            "metadata": meta_dict,
         }
         # Send each individual span with the shared trace_id
         _send_llm_trace_async(span_payload)
@@ -243,7 +292,7 @@ def end_span(span, span_reset_token, trace_reset_token, is_top_level, result=Non
 # The @traceable decorator
 # ---------------------------------------------------------------
 
-def traceable(name=None, run_type="chain", metadata=None):
+def traceable(name=None, run_type="chain", metadata=None, agent_address=None, agent_handle=None):
     """Decorator: record timing, inputs, outputs, tokens and cost of a function."""
 
     def decorator(function):
@@ -252,7 +301,15 @@ def traceable(name=None, run_type="chain", metadata=None):
         if inspect.iscoroutinefunction(function):
             @functools.wraps(function)
             async def async_wrapper(*args, **kwargs):
-                span_info = start_span(function_name, run_type, metadata, args, kwargs)
+                span_info = start_span(
+                    function_name,
+                    run_type,
+                    metadata,
+                    args,
+                    kwargs,
+                    agent_address=agent_address,
+                    agent_handle=agent_handle,
+                )
                 result, error = None, None
                 try:
                     result = await function(*args, **kwargs)
@@ -267,7 +324,15 @@ def traceable(name=None, run_type="chain", metadata=None):
 
         @functools.wraps(function)
         def sync_wrapper(*args, **kwargs):
-            span_info = start_span(function_name, run_type, metadata, args, kwargs)
+            span_info = start_span(
+                function_name,
+                run_type,
+                metadata,
+                args,
+                kwargs,
+                agent_address=agent_address,
+                agent_handle=agent_handle,
+            )
             result, error = None, None
             try:
                 result = function(*args, **kwargs)

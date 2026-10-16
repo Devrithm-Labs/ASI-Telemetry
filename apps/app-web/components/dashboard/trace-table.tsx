@@ -245,7 +245,6 @@ export function TraceTable({ traces, onSelectTrace }: TraceTableProps) {
                   <th className="py-3 px-4 font-semibold">Service</th>
                   <th className="py-3 px-4 font-semibold">Status</th>
                   <th className="py-3 px-4 font-semibold">Response Time</th>
-                  <th className="py-3 px-4 font-semibold">CPU %</th>
                   <th className="py-3 px-4 font-semibold">Model / Provider</th>
                   <th className="py-3 px-4 font-semibold">Timestamp</th>
                   <th className="py-3 px-4 font-semibold text-right w-16">Action</th>
@@ -254,7 +253,7 @@ export function TraceTable({ traces, onSelectTrace }: TraceTableProps) {
               <tbody className="divide-y divide-slate-200/80 dark:divide-[#111e38]/70">
                 {filteredTraces.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="py-8 text-center text-slate-400">
+                    <td colSpan={9} className="py-8 text-center text-slate-400">
                       No matching traces found.
                     </td>
                   </tr>
@@ -329,9 +328,6 @@ export function TraceTable({ traces, onSelectTrace }: TraceTableProps) {
                           >
                             {trace.latencyMs} ms
                           </span>
-                        </td>
-                        <td className="py-3 px-4 font-mono text-slate-700 dark:text-blue-300">
-                          {trace.cpuPercent}%
                         </td>
                         <td className="py-3 px-4 text-slate-600 dark:text-slate-300">
                           {trace.model}

@@ -8,7 +8,6 @@ setup(
     packages=find_packages(where="src"),
     install_requires=[
         "httpx>=0.24.0",
-        "psutil>=5.9.0",
     ],
     python_requires=">=3.9",
 )

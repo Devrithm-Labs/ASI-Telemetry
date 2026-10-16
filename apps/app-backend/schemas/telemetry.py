@@ -6,17 +6,19 @@ from schemas.llm import LLMTracePayload
 class MetricPayload(BaseModel):
     """Schema for telemetry data sent from Python SDK (observ.py)"""
     agent_name: str = Field(default="assistant", description="Name of the agent")
+    agent_address: Optional[str] = Field(default=None, description="Fetch.ai / uAgent address")
+    agent_handle: Optional[str] = Field(default=None, description="Agent handle identifier")
     func_name: Optional[str] = Field(default="handle_message", description="Function name tracked")
     status: str = Field(default="success", description="Status (success, error, or cancelled)")
     response_time_ms: float = Field(default=0.0, description="Response time in milliseconds")
     latency_ms: Optional[float] = Field(default=None, description="Legacy latency alias")
-    cpu_before: float = Field(default=0.0)
-    cpu_after: float = Field(default=0.0)
-    cpu_ms: Optional[float] = Field(default=None, description="CPU time in ms alias")
-    memory_before: float = Field(default=0.0)
-    memory_after: float = Field(default=0.0)
-    memory_before_mb: Optional[float] = Field(default=None, description="Memory before in MB")
-    memory_after_mb: Optional[float] = Field(default=None, description="Memory after in MB")
+    cpu_before: Optional[float] = Field(default=0.0)
+    cpu_after: Optional[float] = Field(default=0.0)
+    cpu_ms: Optional[float] = Field(default=None)
+    memory_before: Optional[float] = Field(default=0.0)
+    memory_after: Optional[float] = Field(default=0.0)
+    memory_before_mb: Optional[float] = Field(default=None)
+    memory_after_mb: Optional[float] = Field(default=None)
     timestamp: Optional[str] = Field(default=None, description="ISO timestamp string")
     metadata: Optional[Dict[str, Any]] = Field(default=None, description="Extra metadata")
 
@@ -26,14 +28,6 @@ class MetricPayload(BaseModel):
             self.response_time_ms = self.latency_ms
         elif self.response_time_ms != 0.0 and self.latency_ms is None:
             self.latency_ms = self.response_time_ms
-
-        if self.cpu_ms is not None and self.cpu_after == 0.0:
-            self.cpu_after = self.cpu_ms
-
-        if self.memory_before_mb is not None and self.memory_before == 0.0:
-            self.memory_before = self.memory_before_mb
-        if self.memory_after_mb is not None and self.memory_after == 0.0:
-            self.memory_after = self.memory_after_mb
         return self
 
 
@@ -45,8 +39,10 @@ class MetricSummary(BaseModel):
     success_rate: float
     error_rate: float
     avg_response_time_ms: float
-    current_cpu: float
-    current_memory: float
+    uptime: float = 100.0
+    uptime_desc: str = "Percent of requests the agent replied to in the last 30 days."
+    agent_address: Optional[str] = None
+    agent_handle: Optional[str] = None
 
 
 class AnalyticsBucket(BaseModel):

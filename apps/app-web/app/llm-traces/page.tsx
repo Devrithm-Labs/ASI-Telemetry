@@ -40,6 +40,8 @@ export interface LLMTraceItem {
   completion_tokens: number;
   total_tokens: number;
   cost_usd: number;
+  agent_address?: string;
+  agent_handle?: string;
   metadata?: Record<string, any>;
 }
 

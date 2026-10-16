@@ -24,7 +24,7 @@ export default function TracingPage() {
   return (
     <main className="flex-1 overflow-y-auto px-6 py-5 space-y-6 scroll-smooth">
       {/* Dashboard Title & Overview Header with Route Breadcrumb and Filter Toolbar */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-slate-200 dark:border-[#1e293b]/70 pb-4">
+      <div className="relative z-30 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-slate-200 dark:border-[#1e293b]/70 pb-4">
         <div>
           <div className="flex flex-wrap items-center gap-2.5">
             <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">

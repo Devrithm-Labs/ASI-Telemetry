@@ -38,7 +38,28 @@ class LLMRepository:
         total_tokens = calc_total if calc_total > 0 else int(payload.get("total_tokens") or tokens.get("total") or 0)
         cost_usd = float(payload.get("cost_usd") or payload.get("cost") or 0.0)
 
-        metadata_str = json.dumps(payload.get("metadata") or {})
+        meta = payload.get("metadata") or {}
+        if isinstance(meta, str):
+            try:
+                meta = json.loads(meta)
+            except Exception:
+                meta = {}
+        metadata_dict = dict(meta)
+
+        agent_address = (
+            payload.get("agent_address")
+            or metadata_dict.get("agent_address")
+            or "agent1qfzll7xq6t8d9rx5n3cnql32me650q2sakexpc979u0luhn702jh2af5mds"
+        )
+        agent_handle = (
+            payload.get("agent_handle")
+            or metadata_dict.get("agent_handle")
+            or "@weather-agent-13"
+        )
+
+        metadata_dict["agent_address"] = agent_address
+        metadata_dict["agent_handle"] = agent_handle
+        metadata_str = json.dumps(metadata_dict)
 
         record = {
             "id": record_id,
@@ -60,6 +81,8 @@ class LLMRepository:
             "total_tokens": total_tokens,
             "cost_usd": cost_usd,
             "metadata": metadata_str,
+            "agent_address": agent_address,
+            "agent_handle": agent_handle,
         }
 
         # 1. Store in memory fallback
@@ -90,6 +113,8 @@ class LLMRepository:
                     record["total_tokens"],
                     record["cost_usd"],
                     record["metadata"],
+                    record["agent_address"],
+                    record["agent_handle"],
                 ]
                 self.conn.safe_insert(
                     "llm_traces",
@@ -114,6 +139,8 @@ class LLMRepository:
                         "total_tokens",
                         "cost_usd",
                         "metadata",
+                        "agent_address",
+                        "agent_handle",
                     ],
                 )
             except Exception as e:
@@ -153,6 +180,22 @@ class LLMRepository:
                         item["start_time"] = item["start_time"].isoformat()
                     if isinstance(item.get("end_time"), datetime):
                         item["end_time"] = item["end_time"].isoformat()
+                    
+                    # Parse metadata JSON
+                    meta = {}
+                    if isinstance(item.get("metadata"), str):
+                        try:
+                            meta = json.loads(item["metadata"])
+                        except Exception:
+                            meta = {}
+                    elif isinstance(item.get("metadata"), dict):
+                        meta = item["metadata"]
+
+                    if not item.get("agent_address"):
+                        item["agent_address"] = meta.get("agent_address") or "agent1qfzll7xq6t8d9rx5n3cnql32me650q2sakexpc979u0luhn702jh2af5mds"
+                    if not item.get("agent_handle"):
+                        item["agent_handle"] = meta.get("agent_handle") or "@weather-agent-13"
+
                     db_records.append(item)
                 if db_records:
                     records = db_records

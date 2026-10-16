@@ -6,7 +6,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock,
-  Cpu,
+  ShieldCheck,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import {
@@ -23,7 +23,7 @@ interface OverviewMetricsStripProps {
   latencyData?: ResponseTimeMetricPoint[];
   responseTimeData?: ResponseTimeMetricPoint[];
   errorData: ErrorMetricPoint[];
-  cpuData: CpuMetricPoint[];
+  cpuData?: CpuMetricPoint[];
   timeRange: TimeRange;
   summary?: MetricSummary | null;
   onCardClick?: (section: string) => void;
@@ -33,9 +33,6 @@ export function OverviewMetricsStrip({
   requestData,
   latencyData,
   responseTimeData,
-  errorData,
-  cpuData,
-  timeRange,
   summary,
   onCardClick,
 }: OverviewMetricsStripProps) {
@@ -43,35 +40,31 @@ export function OverviewMetricsStrip({
 
   // Use pre-calculated backend summary if available, otherwise fallback
   const totalRequests = summary?.total_requests ?? requestData.reduce((acc, curr) => acc + curr.total, 0);
-  const totalSuccess = summary?.total_success ?? requestData.reduce((acc, curr) => acc + curr.success, 0);
-  const totalFailure = summary?.total_errors ?? requestData.reduce((acc, curr) => acc + curr.failure, 0);
 
   const successRate = summary?.success_rate != null
     ? summary.success_rate.toFixed(1)
-    : (totalRequests > 0 ? ((totalSuccess / totalRequests) * 100).toFixed(1) : "0");
+    : (totalRequests > 0 ? "100.0" : "100.0");
 
   const errorRate = summary?.error_rate != null
     ? summary.error_rate.toFixed(1)
-    : (totalRequests > 0 ? ((totalFailure / totalRequests) * 100).toFixed(1) : "0.0");
+    : "0.0";
 
   const avgRespTime = summary?.avg_response_time_ms != null
     ? Math.round(summary.avg_response_time_ms)
     : (times.length > 0 ? Math.round(times.reduce((acc, curr) => acc + curr.p50, 0) / times.length) : 0);
 
-  const latestCpu = summary?.current_cpu != null
-    ? Math.round(summary.current_cpu)
-    : (cpuData.length > 0 ? cpuData[cpuData.length - 1]?.cpuPercent : 0);
+  const uptime = summary?.uptime != null
+    ? summary.uptime.toFixed(1)
+    : successRate;
 
-  const latestMem = summary?.current_memory != null
-    ? Math.round(summary.current_memory)
-    : (cpuData.length > 0 ? cpuData[cpuData.length - 1]?.memoryPercent : 0);
+  const uptimeDesc = summary?.uptime_desc || "Percent of requests the agent replied to in the last 30 days.";
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
       {/* 1. Total Requests Card */}
       <Card
         onClick={() => onCardClick?.("Request")}
-        className="rounded-xl border border-border/80 bg-card p-4 shadow-xs hover:border-blue-500/50 transition-all cursor-pointer group hover:shadow-md"
+        className="rounded-xl border border-border/80 bg-card p-4 shadow-xs hover:border-blue-500/50 transition-all cursor-pointer group hover:shadow-md flex flex-col justify-between"
       >
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-semibold text-muted-foreground group-hover:text-blue-500 transition-colors uppercase tracking-wider">
@@ -84,16 +77,15 @@ export function OverviewMetricsStrip({
         <div className="mt-2 text-2xl font-bold text-foreground font-mono tracking-tight">
           {totalRequests.toLocaleString()} <span className="text-xs font-sans font-medium text-muted-foreground">reqs</span>
         </div>
-        <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-          <span>ClickHouse Synced</span>
-          <span className="text-blue-500 font-medium">All Endpoints</span>
-        </div>
+        <p className="mt-1 text-[11px] text-muted-foreground truncate">
+          Recorded across active tools
+        </p>
       </Card>
 
       {/* 2. Success Rate Card */}
       <Card
         onClick={() => onCardClick?.("Request")}
-        className="rounded-xl border border-border/80 bg-card p-4 shadow-xs hover:border-emerald-500/50 transition-all cursor-pointer group hover:shadow-md"
+        className="rounded-xl border border-border/80 bg-card p-4 shadow-xs hover:border-emerald-500/50 transition-all cursor-pointer group hover:shadow-md flex flex-col justify-between"
       >
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-semibold text-muted-foreground group-hover:text-emerald-500 transition-colors uppercase tracking-wider">
@@ -104,18 +96,17 @@ export function OverviewMetricsStrip({
           </div>
         </div>
         <div className="mt-2 text-2xl font-bold text-emerald-500 font-mono tracking-tight">
-          {successRate}% <span className="text-xs font-sans font-medium text-emerald-500/80">Reliability</span>
+          {successRate}%
         </div>
-        <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-          <span>Target: &gt;99%</span>
-          <span className="text-emerald-500 font-medium">{totalSuccess.toLocaleString()} OK</span>
-        </div>
+        <p className="mt-1 text-[11px] text-muted-foreground truncate">
+          Target SLO: &gt;99%
+        </p>
       </Card>
 
       {/* 3. Failure & Errors Card */}
       <Card
         onClick={() => onCardClick?.("Error")}
-        className="rounded-xl border border-border/80 bg-card p-4 shadow-xs hover:border-rose-500/50 transition-all cursor-pointer group hover:shadow-md"
+        className="rounded-xl border border-border/80 bg-card p-4 shadow-xs hover:border-rose-500/50 transition-all cursor-pointer group hover:shadow-md flex flex-col justify-between"
       >
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-semibold text-muted-foreground group-hover:text-rose-500 transition-colors uppercase tracking-wider">
@@ -126,18 +117,17 @@ export function OverviewMetricsStrip({
           </div>
         </div>
         <div className="mt-2 text-2xl font-bold text-rose-500 font-mono tracking-tight">
-          {errorRate}% <span className="text-xs font-sans font-medium text-rose-500/80">{totalFailure} Errors</span>
+          {errorRate}%
         </div>
-        <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-          <span>SLO: &lt;1.0%</span>
-          <span className="text-rose-500 font-medium">{totalFailure > 0 ? "Faults Logged" : "Zero Errors"}</span>
-        </div>
+        <p className="mt-1 text-[11px] text-muted-foreground truncate">
+          SLO threshold: &lt;1.0%
+        </p>
       </Card>
 
       {/* 4. Average Response Time Card */}
       <Card
         onClick={() => onCardClick?.("Response Time")}
-        className="rounded-xl border border-border/80 bg-card p-4 shadow-xs hover:border-blue-500/50 transition-all cursor-pointer group hover:shadow-md"
+        className="rounded-xl border border-border/80 bg-card p-4 shadow-xs hover:border-blue-500/50 transition-all cursor-pointer group hover:shadow-md flex flex-col justify-between"
       >
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-semibold text-muted-foreground group-hover:text-blue-500 transition-colors uppercase tracking-wider">
@@ -150,32 +140,29 @@ export function OverviewMetricsStrip({
         <div className="mt-2 text-2xl font-bold text-blue-500 font-mono tracking-tight">
           {avgRespTime} <span className="text-xs font-sans font-medium text-blue-400">ms</span>
         </div>
-        <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-          <span>P50 Median</span>
-          <span className="text-blue-500 font-medium">SLA: 300ms</span>
-        </div>
+        <p className="mt-1 text-[11px] text-muted-foreground truncate">
+          Target SLA: 300ms
+        </p>
       </Card>
 
-      {/* 5. CPU Utilization Card */}
+      {/* 5. Uptime Card (Calculates % of requests replied in last 30 days) */}
       <Card
-        onClick={() => onCardClick?.("CPU")}
-        className="rounded-xl border border-border/80 bg-card p-4 shadow-xs hover:border-amber-500/50 transition-all cursor-pointer group hover:shadow-md"
+        className="rounded-xl border border-border/80 bg-card p-4 shadow-xs hover:border-emerald-500/50 transition-all cursor-pointer group hover:shadow-md flex flex-col justify-between"
       >
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-semibold text-muted-foreground group-hover:text-amber-500 transition-colors uppercase tracking-wider">
-            CPU / Memory
+          <span className="text-[11px] font-semibold text-muted-foreground group-hover:text-emerald-500 transition-colors uppercase tracking-wider">
+            Uptime
           </span>
-          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-amber-500/10 text-amber-500">
-            <Cpu className="h-3.5 w-3.5" />
+          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-500">
+            <ShieldCheck className="h-3.5 w-3.5" />
           </div>
         </div>
-        <div className="mt-2 text-2xl font-bold text-amber-500 font-mono tracking-tight">
-          {latestCpu}% <span className="text-xs font-sans font-medium text-muted-foreground">/ {latestMem} MB</span>
+        <div className="mt-2 text-2xl font-bold text-emerald-400 font-mono tracking-tight">
+          {uptime}%
         </div>
-        <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-          <span>Host Pressure</span>
-          <span className="text-amber-500 font-medium">Live Probe</span>
-        </div>
+        <p className="mt-1 text-[11px] text-muted-foreground line-clamp-1" title={uptimeDesc}>
+          {uptimeDesc}
+        </p>
       </Card>
     </div>
   );

@@ -38,6 +38,11 @@ sender = Agent(
     resolve=local_resolver
 )
 
+monitor.agent_address = sender.address
+monitor.agent_handle = "@sender-agent"
+from asi_telemetry import set_agent_info
+set_agent_info(agent_name="sender", agent_address=sender.address, agent_handle="@sender-agent")
+
 @monitor.track(agentname="sender")
 async def send_greeting(ctx: Context, text: str):
     """Tracked dispatch of messages to the receiver agent."""
@@ -74,6 +79,7 @@ async def handle_reply(ctx: Context, sender_address: str, msg: Greeting):
     print(f"\n==========================================")
     print(f"[Received Gemini Reply from Assistant]:")
     print(msg.text)
+    print(f"from sender address {sender_address}")
     print(f"==========================================\n")
 
 if __name__ == "__main__":

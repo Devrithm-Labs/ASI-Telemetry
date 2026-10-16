@@ -56,18 +56,22 @@ def create_llm_table(conn: ClickHouseConnection):
         completion_tokens UInt32,
         total_tokens UInt32,
         cost_usd Float64,
-        metadata String
+        metadata String,
+        agent_address LowCardinality(String),
+        agent_handle LowCardinality(String)
     ) ENGINE = MergeTree()
     ORDER BY (trace_id, start_time);
     """
     try:
         conn.safe_command(query)
+        conn.safe_command("ALTER TABLE llm_traces ADD COLUMN IF NOT EXISTS agent_address LowCardinality(String)")
+        conn.safe_command("ALTER TABLE llm_traces ADD COLUMN IF NOT EXISTS agent_handle LowCardinality(String)")
     except Exception as e:
         logger.warning(f"Error creating llm_traces table: {e}")
 
 
 def migrate_telemetry_table(conn: ClickHouseConnection):
-    """Ensures telemetry_metrics schema has response_time_ms and drops legacy columns."""
+    """Ensures telemetry_metrics schema has response_time_ms, agent_address, agent_handle and drops legacy columns."""
     if not conn.is_connected or not conn.client:
         return
 
@@ -84,6 +88,15 @@ def migrate_telemetry_table(conn: ClickHouseConnection):
                 conn.safe_command(
                     "ALTER TABLE telemetry_metrics UPDATE response_time_ms = latency_ms WHERE response_time_ms = 0"
                 )
+
+        if "agent_address" not in cols:
+            conn.safe_command(
+                "ALTER TABLE telemetry_metrics ADD COLUMN IF NOT EXISTS agent_address LowCardinality(String)"
+            )
+        if "agent_handle" not in cols:
+            conn.safe_command(
+                "ALTER TABLE telemetry_metrics ADD COLUMN IF NOT EXISTS agent_handle LowCardinality(String)"
+            )
 
         # 2. Drop legacy columns
         for old_col in ["latency_ms", "request_count", "success_count", "error_count"]:
