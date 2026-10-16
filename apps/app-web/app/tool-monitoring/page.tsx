@@ -96,10 +96,10 @@ export default function ToolMonitoringPage() {
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-slate-200 dark:border-[#1e293b]/70 pb-4">
               <div>
                 <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-                  Agent Tool Monitoring Dashboard
+                  Tool Monitoring
                 </h1>
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Live ClickHouse telemetry observability for distributed agent executions, response times, host resource pressure, and trace spans.
+                  Real-time telemetry observability for agent tools, latency percentiles, and host compute.
                 </p>
               </div>
 
@@ -141,23 +141,63 @@ export default function ToolMonitoringPage() {
               }}
             />
 
-            {/* 1. Request Volume & Throughput Horizontal Section */}
-            <div id="section-request" className="scroll-mt-6 transition-all duration-300">
+            {/* 1. Request Volume & Throughput Section */}
+            <div id="section-request" className="space-y-3 scroll-mt-6 transition-all duration-300">
+              <div className="flex items-center justify-between border-b border-border/80 pb-2 select-none">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-bold text-foreground flex items-center gap-1.5">
+                    <span>Request Volume &amp; Throughput</span>
+                  </h2>
+                </div>
+                <span className="text-[11px] text-muted-foreground font-mono">
+                  {(summary?.total_requests ?? requestData.reduce((acc, curr) => acc + curr.total, 0)).toLocaleString()} requests recorded
+                </span>
+              </div>
               <RequestSection data={requestData} timeRange={timeRange} summary={summary} />
             </div>
 
-            {/* 2. Latency Horizontal Section (Number + Bar Graph) */}
-            <div id="section-latency" className="scroll-mt-6 transition-all duration-300">
+            {/* 2. Latency Section */}
+            <div id="section-latency" className="space-y-3 scroll-mt-6 transition-all duration-300">
+              <div className="flex items-center justify-between border-b border-border/80 pb-2 select-none">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-bold text-foreground flex items-center gap-1.5">
+                    <span>Response Time &amp; Percentiles</span>
+                  </h2>
+                </div>
+                <span className="text-[11px] text-muted-foreground font-mono">
+                  Target SLA: 300ms
+                </span>
+              </div>
               <LatencySection data={latencyData} summary={summary} />
             </div>
 
-            {/* 3. Success, Failure & Error Horizontal Section */}
-            <div id="section-error" className="scroll-mt-6 transition-all duration-300">
+            {/* 3. Success, Failure & Error Section */}
+            <div id="section-error" className="space-y-3 scroll-mt-6 transition-all duration-300">
+              <div className="flex items-center justify-between border-b border-border/80 pb-2 select-none">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-bold text-foreground flex items-center gap-1.5">
+                    <span>Failures &amp; Error Incidents</span>
+                  </h2>
+                </div>
+                <span className="text-[11px] text-muted-foreground font-mono">
+                  {(summary?.total_errors ?? errorData.reduce((acc, curr) => acc + curr.timeout + curr.rateLimit + curr.serverError + curr.validationError, 0)).toLocaleString()} failed invocations
+                </span>
+              </div>
               <ErrorSection data={errorData} summary={summary} />
             </div>
 
-            {/* 4. CPU & Compute Utilization Horizontal Section */}
-            <div id="section-cpu" className="scroll-mt-6 transition-all duration-300">
+            {/* 4. CPU & Compute Utilization Section */}
+            <div id="section-cpu" className="space-y-3 scroll-mt-6 transition-all duration-300">
+              <div className="flex items-center justify-between border-b border-border/80 pb-2 select-none">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-bold text-foreground flex items-center gap-1.5">
+                    <span>CPU &amp; Host Compute</span>
+                  </h2>
+                </div>
+                <span className="text-[11px] text-muted-foreground font-mono">
+                  Live Telemetry Probe
+                </span>
+              </div>
               <CpuSection data={cpuData} summary={summary} />
             </div>
           </div>

@@ -3,7 +3,7 @@ import logging
 import math
 import time
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 from config.database import ClickHouseConnection, db_connection
 
@@ -182,33 +182,11 @@ class TelemetryRepository:
             for k, v in sorted(apps_map.items())
         ]
 
-        # 2. Compute Summary KPIs
+        # 2. Compute Lightweight Summary KPIs from filtered records
         total = len(records)
         succ = sum(1 for r in records if r["status"] == "success")
         err = total - succ
         avg_resp = round(sum(r["response_time_ms"] for r in records) / total, 2) if total else 0.0
-
-        if self.conn.is_connected and self.conn.client:
-            try:
-                kpi_res = self.conn.safe_query(f"""
-                    SELECT
-                        count(*),
-                        countIf(status = 'success'),
-                        avg(response_time_ms)
-                    FROM telemetry_metrics
-                    {where_clause}
-                """)
-                if kpi_res.result_rows and kpi_res.result_rows[0][0] is not None:
-                    row = kpi_res.result_rows[0]
-                    db_total = int(row[0] or 0)
-                    if db_total > 0:
-                        total = db_total
-                        succ = int(row[1] or 0)
-                        err = total - succ
-                        avg_resp = round(float(row[2] or 0.0), 2)
-            except Exception as e:
-                logger.warning(f"Error querying exact ClickHouse KPIs: {e}")
-
         latest = records[0] if records else {}
 
         summary = {
@@ -222,22 +200,71 @@ class TelemetryRepository:
             "current_memory": round(latest.get("memory_after", 0.0), 1),
         }
 
-        # 3. Compute Time-Series Buckets
-        bucket_groups: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
-        chrono_records = sorted(records, key=lambda r: r["timestamp"])
-        for r in chrono_records:
-            ts = r["timestamp"]
-            if time_range == "1h":
-                time_key = ts[11:16] if len(ts) >= 16 else "now"
-            elif time_range == "24h":
-                time_key = (ts[11:13] + ":00") if len(ts) >= 13 else "now"
-            elif time_range == "7d":
-                time_key = (ts[5:13] + ":00") if len(ts) >= 13 else "now"
-            elif time_range == "30d":
-                time_key = ts[5:10] if len(ts) >= 10 else "now"
-            else:
-                time_key = ts[5:16] if len(ts) >= 16 else "now"
-            bucket_groups[time_key].append(r)
+        # 3. Compute Time-Series Buckets matching LLM Monitoring timeline
+        now_dt = datetime.now().astimezone()
+        time_range_norm = (time_range or "7d").lower()
+
+        # Generate Timeline Ticks & Labels according to requested time_range
+        if time_range_norm == "1h":
+            # 6 ticks over 1 hour (every 12 mins)
+            start_tick = now_dt - timedelta(hours=1)
+            ticks = [start_tick + timedelta(minutes=12 * i) for i in range(6)]
+            labels = []
+            for i, dt in enumerate(ticks):
+                if i == 0 or dt.date() != ticks[max(0, i - 1)].date():
+                    labels.append(f"{dt.month}/{dt.day}/{str(dt.year)[-2:]}")
+                else:
+                    labels.append(dt.strftime("%I:%M %p").lstrip("0"))
+
+        elif time_range_norm in ("24h", "1d"):
+            # 6 ticks over 24 hours (every 4.8 hours)
+            start_tick = now_dt - timedelta(hours=24)
+            step = timedelta(hours=24) / 5
+            ticks = [start_tick + step * i for i in range(6)]
+            labels = []
+            for i, dt in enumerate(ticks):
+                if i == 0 or (i == len(ticks) - 1 and dt.date() != ticks[0].date()):
+                    labels.append(f"{dt.month}/{dt.day}/{str(dt.year)[-2:]}")
+                else:
+                    labels.append(dt.strftime("%I %p").lstrip("0"))
+
+        elif time_range_norm == "7d":
+            # 7 daily ticks over 7 days (e.g. 10/11/26, 10/12/26, ...)
+            start_tick = now_dt - timedelta(days=6)
+            ticks = [start_tick + timedelta(days=i) for i in range(7)]
+            labels = [f"{dt.month}/{dt.day}/{str(dt.year)[-2:]}" for dt in ticks]
+
+        elif time_range_norm == "30d":
+            # 6 ticks over 30 days (every 6 days)
+            start_tick = now_dt - timedelta(days=30)
+            ticks = [start_tick + timedelta(days=6 * i) for i in range(6)]
+            labels = [f"{dt.month}/{dt.day}/{str(dt.year)[-2:]}" for dt in ticks]
+
+        else:
+            start_tick = now_dt - timedelta(days=30)
+            ticks = [start_tick + timedelta(days=6 * i) for i in range(6)]
+            labels = [f"{dt.month}/{dt.day}/{str(dt.year)[-2:]}" for dt in ticks]
+
+        def get_record_local_dt(ts_val) -> Optional[datetime]:
+            if not ts_val:
+                return None
+            if isinstance(ts_val, datetime):
+                return ts_val.astimezone() if ts_val.tzinfo else ts_val.replace(tzinfo=timezone.utc).astimezone()
+            try:
+                cleaned = str(ts_val).replace("Z", "+00:00").replace(" ", "T")
+                dt = datetime.fromisoformat(cleaned)
+                return dt.astimezone() if dt.tzinfo else dt.replace(tzinfo=timezone.utc).astimezone()
+            except Exception:
+                return None
+
+        # Group records into nearest tick bucket
+        buckets_map: Dict[str, List[Dict[str, Any]]] = {lbl: [] for lbl in labels}
+        for r in records:
+            r_dt = get_record_local_dt(r.get("timestamp"))
+            if not r_dt:
+                continue
+            closest_idx = min(range(len(ticks)), key=lambda idx: abs((r_dt - ticks[idx]).total_seconds()))
+            buckets_map[labels[closest_idx]].append(r)
 
         def calc_pct(arr: List[float], p: float) -> float:
             if not arr:
@@ -251,7 +278,12 @@ class TelemetryRepository:
         cpu_data = []
         err_data = []
 
-        for time_key, items in bucket_groups.items():
+        last_p50 = round(avg_resp) if avg_resp else 0
+        last_cpu = round(latest.get("cpu_after", 20.0))
+        last_mem = round(latest.get("memory_after", 35.0))
+
+        for time_key in labels:
+            items = buckets_map[time_key]
             n = len(items)
             succ_cnt = sum(1 for i in items if i["status"] == "success")
             fail_cnt = n - succ_cnt
@@ -278,6 +310,24 @@ class TelemetryRepository:
                     else:
                         c_server += 1
 
+            if n > 0:
+                p50_val = round(calc_pct(times, 0.50))
+                p90_val = round(calc_pct(times, 0.90))
+                p95_val = round(calc_pct(times, 0.95))
+                p99_val = round(calc_pct(times, 0.99))
+                last_p50 = p50_val
+                avg_cpu = round(sum(cpus) / n)
+                avg_mem = round(sum(mems) / n)
+                last_cpu = avg_cpu
+                last_mem = avg_mem
+            else:
+                p50_val = last_p50
+                p90_val = last_p50
+                p95_val = last_p50
+                p99_val = last_p50
+                avg_cpu = last_cpu
+                avg_mem = last_mem
+
             req_data.append({
                 "time": time_key,
                 "total": n,
@@ -287,20 +337,18 @@ class TelemetryRepository:
 
             resp_data.append({
                 "time": time_key,
-                "p50": round(calc_pct(times, 0.50)),
-                "p90": round(calc_pct(times, 0.90)),
-                "p95": round(calc_pct(times, 0.95)),
-                "p99": round(calc_pct(times, 0.99)),
+                "p50": p50_val,
+                "p90": p90_val,
+                "p95": p95_val,
+                "p99": p99_val,
                 "slaLimit": 300,
             })
 
-            avg_cpu = sum(cpus) / n if n else 0.0
-            avg_mem = sum(mems) / n if n else 0.0
             cpu_data.append({
                 "time": time_key,
-                "cpuPercent": round(avg_cpu),
-                "memoryPercent": round(avg_mem),
-                "coreLoad": round((avg_cpu / 100) * 4, 1),
+                "cpuPercent": avg_cpu,
+                "memoryPercent": avg_mem,
+                "coreLoad": round((avg_cpu / 100) * 4, 1) if avg_cpu else 0.0,
             })
 
             err_data.append({

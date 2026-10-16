@@ -2,9 +2,10 @@
 
 import * as React from "react";
 import {
-  Bar,
-  BarChart,
+  Line,
+  LineChart,
   CartesianGrid,
+  ReferenceLine,
   XAxis,
   YAxis,
 } from "recharts";
@@ -16,29 +17,36 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { ErrorMetricPoint, MetricSummary } from "../context/dashboard-types";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, AlertTriangle, Search } from "lucide-react";
 
 interface ErrorSectionProps {
   data: ErrorMetricPoint[];
   summary?: MetricSummary | null;
 }
 
-const chartConfig = {
+const errorRateChartConfig = {
+  errorRate: {
+    label: "Error Rate %",
+    color: "#ef4444",
+  },
+} satisfies ChartConfig;
+
+const statusBreakdownConfig = {
+  serverError: {
+    label: "500 Server",
+    color: "#ef4444",
+  },
   rateLimit: {
-    label: "429 Rate Limits",
-    color: "#3b82f6",
+    label: "429 Rate Limit",
+    color: "#f59e0b",
   },
   timeout: {
-    label: "504 Gateway Timeouts",
-    color: "#60a5fa",
-  },
-  serverError: {
-    label: "500 Agent Errors",
-    color: "#93c5fd",
+    label: "504 Timeout",
+    color: "#3b82f6",
   },
   validationError: {
-    label: "400 Schema Failures",
-    color: "#1d4ed8",
+    label: "400 Client",
+    color: "#a855f7",
   },
 } satisfies ChartConfig;
 
@@ -60,122 +68,214 @@ export function ErrorSection({ data, summary }: ErrorSectionProps) {
 
   const faultsCount = summary?.total_errors ?? totalErrors;
 
+  const count500 = React.useMemo(() => data.reduce((a, c) => a + c.serverError, 0), [data]);
+  const count429 = React.useMemo(() => data.reduce((a, c) => a + c.rateLimit, 0), [data]);
+  const count504 = React.useMemo(() => data.reduce((a, c) => a + c.timeout, 0), [data]);
+  const count400 = React.useMemo(() => data.reduce((a, c) => a + c.validationError, 0), [data]);
+
+  const hasData = data && data.length > 0;
+
   return (
-    <Card className="overflow-hidden rounded-xl border border-slate-200/90 dark:border-[#1e293b] bg-white dark:bg-black shadow-[0_1px_3px_0_rgba(0,0,0,0.04)] dark:shadow-xl">
-      <div className="flex flex-col lg:flex-row">
-        {/* Left Column: Metric Numbers & Stats */}
-        <div className="flex w-full flex-col justify-between border-b border-slate-200 dark:border-[#1e293b] p-6 lg:w-80 lg:border-b-0 lg:border-r bg-slate-50/70 dark:bg-black shrink-0">
-          <div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 dark:border-[#1e293b] bg-white dark:bg-black text-blue-600 dark:text-blue-400 shadow-xs">
-                  <AlertCircle className="h-4 w-4" />
-                </div>
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                  Failure & Errors
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      {/* Component 1: Trace Error Rate % */}
+      <Card className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border/80 bg-card shadow-xs transition-all duration-200 hover:border-rose-500/30 hover:shadow-md">
+        {/* Simplified Header */}
+        <div className="flex items-center justify-between border-b border-border/70 px-5 py-3.5 bg-card/50">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-border/80 bg-background text-rose-500 shadow-xs">
+              <AlertCircle className="h-4 w-4" />
+            </div>
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Trace Error Rate %
+              </h3>
+              <div className="flex items-baseline gap-1.5 mt-0.5">
+                <span className="text-xl font-bold font-mono text-rose-500">{errorRateDisplay}%</span>
+                <span className="text-xs text-muted-foreground font-mono ml-1">
+                  ({faultsCount.toLocaleString()} faults)
                 </span>
               </div>
             </div>
-
-            {/* Big Primary Metric Number */}
-            <div className="mt-4">
-              <div className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white font-mono">
-                {errorRateDisplay} <span className="text-xl text-blue-600 dark:text-blue-400 font-sans font-medium">%</span>
-              </div>
-              <div className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-mono">
-                <span className="text-red-500 dark:text-red-400 font-semibold">{faultsCount.toLocaleString()}</span>
-                <span>failed invocations</span>
-              </div>
-            </div>
-
-            <p className="mt-3 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              HTTP error codes and agent execution faults recorded by telemetry probes.
-            </p>
           </div>
 
-          {/* Breakdown Badges */}
-          <div className="mt-6 grid grid-cols-3 gap-2 border-t border-slate-200 dark:border-[#1e293b] pt-4">
-            <div className="rounded-lg border border-slate-200/90 dark:border-[#1e293b] bg-white dark:bg-black p-2.5 text-center shadow-xs">
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">500 Errors</div>
-              <div className="mt-1 font-mono text-xs font-bold text-blue-600 dark:text-[#93c5fd]">
-                {data.reduce((a, c) => a + c.serverError, 0).toLocaleString()}
-              </div>
+          <div className="flex items-center gap-3 text-xs">
+            <div className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-[#ef4444]" />
+              <span className="text-[11px] text-muted-foreground font-medium">Error Rate</span>
             </div>
-            <div className="rounded-lg border border-slate-200/90 dark:border-[#1e293b] bg-white dark:bg-black p-2.5 text-center shadow-xs">
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">429 Limits</div>
-              <div className="mt-1 font-mono text-xs font-bold text-blue-700 dark:text-[#3b82f6]">
-                {data.reduce((a, c) => a + c.rateLimit, 0).toLocaleString()}
-              </div>
-            </div>
-            <div className="rounded-lg border border-slate-200/90 dark:border-[#1e293b] bg-white dark:bg-black p-2.5 text-center shadow-xs">
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">504 Timeouts</div>
-              <div className="mt-1 font-mono text-xs font-bold text-sky-600 dark:text-[#60a5fa]">
-                {data.reduce((a, c) => a + c.timeout, 0).toLocaleString()}
-              </div>
+            <div className="flex items-center gap-1.5">
+              <span className="h-1.5 w-3 rounded-xs bg-[#3b82f6]" />
+              <span className="text-[11px] text-muted-foreground font-medium">SLO &lt;1%</span>
             </div>
           </div>
         </div>
 
-        {/* Right Column: Error Bar Graph */}
-        <div className="flex flex-1 flex-col p-6">
-          <div className="flex items-center justify-between pb-3">
-            <div className="text-xs font-medium text-slate-700 dark:text-slate-300">
-              Error Incident Breakdown By Category (Bar Graph)
+        {/* Chart Canvas */}
+        <div className="p-5 flex-1 flex flex-col justify-end">
+          {!hasData ? (
+            <div className="flex h-52 flex-col items-center justify-center text-center p-4 select-none">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted border border-border/60 text-muted-foreground mb-2">
+                <Search className="h-4 w-4" />
+              </div>
+              <p className="text-xs font-semibold text-foreground">No error records</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">All invocations completed successfully.</p>
             </div>
-            <div className="flex items-center gap-4 text-xs">
-              <div className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-sm bg-[#3b82f6]" />
-                <span className="text-slate-500 dark:text-slate-400">429</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-sm bg-[#60a5fa]" />
-                <span className="text-slate-500 dark:text-slate-400">504</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-sm bg-[#93c5fd]" />
-                <span className="text-slate-500 dark:text-slate-400">500</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-sm bg-[#1d4ed8]" />
-                <span className="text-slate-500 dark:text-slate-400">400</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex-1 min-h-[220px]">
-            <ChartContainer config={chartConfig} className="aspect-auto h-[220px] w-full">
-              <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.5} vertical={false} />
+          ) : (
+            <ChartContainer config={errorRateChartConfig} className="h-56 w-full">
+              <LineChart data={data} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={true} />
                 <XAxis
                   dataKey="time"
                   stroke="#64748b"
-                  fontSize={11}
                   tickLine={false}
                   axisLine={false}
+                  fontSize={11}
                 />
                 <YAxis
                   stroke="#64748b"
-                  fontSize={11}
                   tickLine={false}
                   axisLine={false}
-                  tickFormatter={(val) => {
-                    if (val >= 1000) return `${(val / 1000).toFixed(1)}k`;
-                    return val;
+                  fontSize={11}
+                  unit="%"
+                  domain={[0, (dataMax: number) => Math.max(dataMax ? Math.ceil(dataMax * 1.25) : 10, 10)]}
+                  tickCount={5}
+                />
+                <ReferenceLine
+                  y={1}
+                  stroke="#3b82f6"
+                  strokeDasharray="4 4"
+                  strokeWidth={1.5}
+                  label={{
+                    value: "SLO 1%",
+                    fill: "#3b82f6",
+                    fontSize: 10,
+                    position: "insideTopRight",
                   }}
                 />
-                <ChartTooltip
-                  cursor={{ fill: "rgba(59, 130, 246, 0.05)" }}
-                  content={<ChartTooltipContent indicator="dot" />}
+                <ChartTooltip content={<ChartTooltipContent indicator="dot" />} />
+                <Line
+                  type="monotone"
+                  dataKey="errorRate"
+                  stroke="#ef4444"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
                 />
-                <Bar dataKey="rateLimit" stackId="a" fill="#3b82f6" />
-                <Bar dataKey="timeout" stackId="a" fill="#60a5fa" />
-                <Bar dataKey="serverError" stackId="a" fill="#93c5fd" />
-                <Bar dataKey="validationError" stackId="a" fill="#1d4ed8" radius={[2, 2, 0, 0]} />
-              </BarChart>
+              </LineChart>
             </ChartContainer>
+          )}
+        </div>
+      </Card>
+
+      {/* Component 2: Error Status Breakdown */}
+      <Card className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border/80 bg-card shadow-xs transition-all duration-200 hover:border-amber-500/30 hover:shadow-md">
+        {/* Simplified Header */}
+        <div className="flex items-center justify-between border-b border-border/70 px-5 py-3.5 bg-card/50">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-border/80 bg-background text-amber-500 shadow-xs">
+              <AlertTriangle className="h-4 w-4" />
+            </div>
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Error Code Breakdown
+              </h3>
+              <div className="flex items-baseline gap-1.5 mt-0.5">
+                <span className="text-xl font-bold font-mono text-foreground">{faultsCount}</span>
+                <span className="text-xs text-muted-foreground font-mono">incidents</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 text-xs">
+            <div className="flex items-center gap-1">
+              <span className="h-2 w-2 rounded-full bg-[#ef4444]" />
+              <span className="text-[11px] text-muted-foreground font-medium">500 ({count500})</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="h-2 w-2 rounded-full bg-[#f59e0b]" />
+              <span className="text-[11px] text-muted-foreground font-medium">429 ({count429})</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="h-2 w-2 rounded-full bg-[#3b82f6]" />
+              <span className="text-[11px] text-muted-foreground font-medium">504 ({count504})</span>
+            </div>
+            {count400 > 0 && (
+              <div className="flex items-center gap-1">
+                <span className="h-2 w-2 rounded-full bg-[#a855f7]" />
+                <span className="text-[11px] text-muted-foreground font-medium">400 ({count400})</span>
+              </div>
+            )}
           </div>
         </div>
-      </div>
-    </Card>
+
+        {/* Chart Canvas */}
+        <div className="p-5 flex-1 flex flex-col justify-end">
+          {!hasData ? (
+            <div className="flex h-52 flex-col items-center justify-center text-center p-4 select-none">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted border border-border/60 text-muted-foreground mb-2">
+                <Search className="h-4 w-4" />
+              </div>
+              <p className="text-xs font-semibold text-foreground">No incident records</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">No status code breaches in this range.</p>
+            </div>
+          ) : (
+            <ChartContainer config={statusBreakdownConfig} className="h-56 w-full">
+              <LineChart data={data} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={true} />
+                <XAxis
+                  dataKey="time"
+                  stroke="#64748b"
+                  tickLine={false}
+                  axisLine={false}
+                  fontSize={11}
+                />
+                <YAxis
+                  stroke="#64748b"
+                  tickLine={false}
+                  axisLine={false}
+                  fontSize={11}
+                  allowDecimals={false}
+                  domain={[0, (dataMax: number) => Math.max(dataMax ? Math.ceil(dataMax * 1.25) : 5, 5)]}
+                  tickCount={5}
+                />
+                <ChartTooltip content={<ChartTooltipContent indicator="dot" />} />
+                <Line
+                  type="monotone"
+                  dataKey="serverError"
+                  stroke="#ef4444"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="rateLimit"
+                  stroke="#f59e0b"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="timeout"
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="validationError"
+                  stroke="#a855f7"
+                  strokeWidth={1.5}
+                  dot={{ r: 2.5 }}
+                  activeDot={{ r: 4 }}
+                />
+              </LineChart>
+            </ChartContainer>
+          )}
+        </div>
+      </Card>
+    </div>
   );
 }

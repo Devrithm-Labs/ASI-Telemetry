@@ -50,6 +50,7 @@ export default function LLMTracingPage() {
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState<"all" | "success" | "error">("all");
+  const [runTypeFilter, setRunTypeFilter] = React.useState<"all" | "llm" | "tool">("all");
   const [traceTypeFilter, setTraceTypeFilter] = React.useState<"all" | "collective" | "standalone">("all");
   const [hoveredTraceId, setHoveredTraceId] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -116,9 +117,10 @@ export default function LLMTracingPage() {
         t.trace_id?.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchStatus = statusFilter === "all" || t.status === statusFilter;
-      return matchSearch && matchStatus;
+      const matchRunType = runTypeFilter === "all" || (t.run_type || "llm").toLowerCase() === runTypeFilter;
+      return matchSearch && matchStatus && matchRunType;
     });
-  }, [allTraces, searchQuery, statusFilter]);
+  }, [allTraces, searchQuery, statusFilter, runTypeFilter]);
 
   // Group traces by trace_id to identify collective multi-agent calls
   const traceGroups = React.useMemo(() => {
@@ -273,6 +275,25 @@ export default function LLMTracingPage() {
             ))}
           </div>
 
+          {/* Run Type filter: All / LLM / Tool */}
+          <div className="flex items-center rounded-md border border-border bg-background p-0.5 text-xs">
+            {(["all", "llm", "tool"] as const).map((rt) => (
+              <button
+                key={rt}
+                onClick={() => setRunTypeFilter(rt)}
+                className={`rounded px-2.5 py-0.5 text-[11px] uppercase transition-all flex items-center gap-1 ${
+                  runTypeFilter === rt
+                    ? "bg-blue-600 text-white font-medium shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {rt === "llm" && <Sparkles className="h-2.5 w-2.5" />}
+                {rt === "tool" && <Terminal className="h-2.5 w-2.5" />}
+                <span>{rt === "all" ? "All Runs" : rt}</span>
+              </button>
+            ))}
+          </div>
+
           {/* Collective / Standalone filter */}
           <div className="flex items-center rounded-md border border-border bg-background p-0.5 text-xs">
             <button
@@ -331,6 +352,7 @@ export default function LLMTracingPage() {
                   />
                 </th>
                 <th className="w-16 px-2 py-2 text-center font-medium">Status</th>
+                <th className="w-20 px-2 py-2 text-center font-medium">Run Type</th>
                 <th className="px-3 py-2 font-medium">Name</th>
                 <th className="px-3 py-2 font-medium">Input</th>
                 <th className="px-3 py-2 font-medium">Output</th>
@@ -438,6 +460,21 @@ export default function LLMTracingPage() {
                       )}
                     </td>
 
+                    {/* Run Type Badge (Distinguish LLM vs Tool calling) */}
+                    <td className="px-2 py-2.5 text-center font-mono text-[11px] whitespace-nowrap">
+                      {trace.run_type === "tool" ? (
+                        <span className="inline-flex items-center gap-1 rounded bg-amber-500/10 px-2 py-0.5 text-amber-500 border border-amber-500/20 font-semibold text-[10px] uppercase">
+                          <Terminal className="h-3 w-3" />
+                          <span>tool</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded bg-purple-500/10 px-2 py-0.5 text-purple-400 border border-purple-500/20 font-semibold text-[10px] uppercase">
+                          <Sparkles className="h-3 w-3" />
+                          <span>llm</span>
+                        </span>
+                      )}
+                    </td>
+
                     <td className="px-3 py-2.5 font-mono font-medium text-slate-100 whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
                         {isCollective && (
@@ -497,7 +534,7 @@ export default function LLMTracingPage() {
 
               {clusteredTraces.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="py-16 text-center text-slate-500">
+                  <td colSpan={10} className="py-16 text-center text-slate-500">
                     <Bot className="h-10 w-10 mx-auto mb-3 text-slate-600 opacity-60" />
                     <p className="font-medium text-slate-300 text-sm">No ClickHouse LLM Traces Found</p>
                     <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
@@ -517,6 +554,16 @@ export default function LLMTracingPage() {
               <div className="flex items-center gap-2 overflow-hidden">
                 <span className="font-mono font-semibold text-sm text-foreground truncate">
                   {selectedTrace.name}
+                </span>
+                <span
+                  className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                    selectedTrace.run_type === "tool"
+                      ? "bg-amber-500/10 text-amber-500 border border-amber-500/20"
+                      : "bg-purple-500/10 text-purple-400 border border-purple-500/20"
+                  }`}
+                >
+                  {selectedTrace.run_type === "tool" ? <Terminal className="h-2.5 w-2.5" /> : <Sparkles className="h-2.5 w-2.5" />}
+                  <span>{selectedTrace.run_type || "llm"}</span>
                 </span>
                 <span
                   className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${

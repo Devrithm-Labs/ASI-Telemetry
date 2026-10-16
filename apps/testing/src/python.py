@@ -18,7 +18,7 @@ from asi_telemetry import AgentMonitor, traceable, instrument_gemini
 from google import genai
 
 # 1. Initialize Telemetry Monitors
-monitor = AgentMonitor(agent_name="assistant")
+monitor = AgentMonitor(agent_name="receiver")
 
 # 2. Initialize and Instrument Gemini Client
 gemini_client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
@@ -74,7 +74,8 @@ async def startup(ctx: Context):
 
 # 4. Agent Handler (Tracks Daemon CPU, RAM, and end-to-end response time)
 @agent.on_message(model=Greeting)
-@monitor.track(agentname="assistant")
+@monitor.track(agentname="receiver")
+@traceable(name="handle_message_uk", run_type="tool")
 async def handle_message(ctx: Context, sender: str, msg: Greeting):
     print(f"\n[Received Prompt from {sender[:16]}...]: {msg.text}")
 

@@ -2,9 +2,10 @@
 
 import * as React from "react";
 import {
-  Bar,
-  BarChart,
+  Line,
+  LineChart,
   CartesianGrid,
+  ReferenceLine,
   XAxis,
   YAxis,
 } from "recharts";
@@ -16,7 +17,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { RequestMetricPoint, TimeRange, MetricSummary } from "../context/dashboard-types";
-import { Activity } from "lucide-react";
+import { Activity, CheckCircle2, Search } from "lucide-react";
 
 interface RequestSectionProps {
   data: RequestMetricPoint[];
@@ -24,14 +25,21 @@ interface RequestSectionProps {
   summary?: MetricSummary | null;
 }
 
-const chartConfig = {
+const throughputChartConfig = {
   success: {
-    label: "Successful Requests",
-    color: "#3b82f6",
+    label: "Success",
+    color: "#10b981",
   },
   failure: {
-    label: "Failed Requests",
-    color: "#93c5fd",
+    label: "Failure",
+    color: "#f87171",
+  },
+} satisfies ChartConfig;
+
+const reliabilityChartConfig = {
+  successRate: {
+    label: "Success Rate",
+    color: "#10b981",
   },
 } satisfies ChartConfig;
 
@@ -61,7 +69,10 @@ export function RequestSection({ data, timeRange = "24h", summary }: RequestSect
   );
   const totalRequests = summary?.total_requests ?? (totalSuccess + totalFailure);
 
-  // Requests per second calculation
+  const successRate = summary?.success_rate != null
+    ? summary.success_rate.toFixed(1)
+    : (totalRequests > 0 ? ((totalSuccess / totalRequests) * 100).toFixed(1) : "100.0");
+
   const rps = React.useMemo(() => {
     if (totalRequests === 0) return 0;
     return totalRequests / windowSeconds;
@@ -76,123 +87,198 @@ export function RequestSection({ data, timeRange = "24h", summary }: RequestSect
     return "< 0.01";
   }, [rps, totalRequests]);
 
+  const rateData = React.useMemo(() => {
+    return data.map((d) => {
+      const tot = d.total || (d.success + d.failure) || 0;
+      const rate = tot > 0 ? Number(((d.success / tot) * 100).toFixed(1)) : 100.0;
+      return {
+        time: d.time,
+        successRate: rate,
+        total: tot,
+      };
+    });
+  }, [data]);
+
+  const hasData = data && data.length > 0;
+
   return (
-    <Card className="overflow-hidden rounded-xl border border-slate-200/90 dark:border-[#1e293b] bg-white dark:bg-black shadow-[0_1px_3px_0_rgba(0,0,0,0.04)] dark:shadow-xl">
-      <div className="flex flex-col lg:flex-row">
-        {/* Left Column: Metric Numbers & Stats */}
-        <div className="flex w-full flex-col justify-between border-b border-slate-200 dark:border-[#1e293b] p-6 lg:w-80 lg:border-b-0 lg:border-r bg-slate-50/70 dark:bg-black shrink-0">
-          <div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 dark:border-[#1e293b] bg-white dark:bg-black text-blue-600 dark:text-blue-400 shadow-xs">
-                  <Activity className="h-4 w-4" />
-                </div>
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                  Requests Per Sec
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      {/* Component 1: Request Throughput */}
+      <Card className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border/80 bg-card shadow-xs transition-all duration-200 hover:border-blue-500/30 hover:shadow-md">
+        {/* Simplified Header */}
+        <div className="flex items-center justify-between border-b border-border/70 px-5 py-3.5 bg-card/50">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-border/80 bg-background text-blue-500 shadow-xs">
+              <Activity className="h-4 w-4" />
+            </div>
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Request Throughput
+              </h3>
+              <div className="flex items-baseline gap-1.5 mt-0.5">
+                <span className="text-xl font-bold font-mono text-foreground">{rpsFormatted}</span>
+                <span className="text-xs font-semibold text-blue-500 font-mono">req/s</span>
+                <span className="text-xs text-muted-foreground font-mono ml-1">
+                  ({totalRequests.toLocaleString()} total)
                 </span>
               </div>
             </div>
-
-            {/* Big Primary Metric Number */}
-            <div className="mt-4">
-              <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white font-mono">
-                  {rpsFormatted}
-                </span>
-                <span className="text-sm font-semibold text-blue-600 dark:text-blue-400 font-mono">
-                  req/s
-                </span>
-              </div>
-              <div className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-mono">
-                <span className="text-slate-900 dark:text-slate-200 font-semibold">{totalRequests.toLocaleString()}</span>
-                <span>total requests</span>
-              </div>
-            </div>
-
-            <p className="mt-3 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              Rate of incoming traces and execution invocations per second across all telemetry endpoints.
-            </p>
           </div>
 
-          {/* Breakdown Badges */}
-          <div className="mt-6 grid grid-cols-2 gap-2 border-t border-slate-200 dark:border-[#1e293b] pt-4">
-            <div className="rounded-lg border border-slate-200/90 dark:border-[#1e293b] bg-white dark:bg-black p-2.5 text-center shadow-xs">
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Successful</div>
-              <div className="mt-1 font-mono text-xs font-bold text-blue-600 dark:text-[#3b82f6]">
-                {totalSuccess.toLocaleString()}
-              </div>
+          <div className="flex items-center gap-3 text-xs">
+            <div className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-[#10b981]" />
+              <span className="text-[11px] text-muted-foreground font-medium">Success</span>
             </div>
-            <div className="rounded-lg border border-slate-200/90 dark:border-[#1e293b] bg-white dark:bg-black p-2.5 text-center shadow-xs">
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Failed</div>
-              <div className="mt-1 font-mono text-xs font-bold text-rose-600 dark:text-[#93c5fd]">
-                {totalFailure.toLocaleString()}
-              </div>
+            <div className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-[#f87171]" />
+              <span className="text-[11px] text-muted-foreground font-medium">Failure</span>
             </div>
           </div>
         </div>
 
-        {/* Right Column: Request Bar Graph */}
-        <div className="flex flex-1 flex-col p-6">
-          <div className="flex items-center justify-between pb-3">
-            <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-              Request Throughput Over Time (Bar Graph)
-            </div>
-            <div className="flex items-center gap-4 text-xs">
-              <div className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-sm bg-[#3b82f6]" />
-                <span className="text-slate-600 dark:text-slate-400 font-medium">Success</span>
+        {/* Chart Canvas */}
+        <div className="p-5 flex-1 flex flex-col justify-end">
+          {!hasData ? (
+            <div className="flex h-52 flex-col items-center justify-center text-center p-4 select-none">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted border border-border/60 text-muted-foreground mb-2">
+                <Search className="h-4 w-4" />
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-sm bg-[#93c5fd]" />
-                <span className="text-slate-600 dark:text-slate-400 font-medium">Failure</span>
-              </div>
+              <p className="text-xs font-semibold text-foreground">No throughput records</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">No requests received in this time range.</p>
             </div>
-          </div>
-
-          <div className="flex-1 min-h-[220px]">
-            <ChartContainer config={chartConfig} className="aspect-auto h-[220px] w-full">
-              <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.5} vertical={false} />
+          ) : (
+            <ChartContainer config={throughputChartConfig} className="h-56 w-full">
+              <LineChart data={data} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={true} />
                 <XAxis
                   dataKey="time"
                   stroke="#64748b"
-                  fontSize={11}
                   tickLine={false}
                   axisLine={false}
+                  fontSize={11}
                 />
                 <YAxis
                   stroke="#64748b"
-                  fontSize={11}
                   tickLine={false}
                   axisLine={false}
+                  fontSize={11}
                   allowDecimals={false}
-                  tickFormatter={(val) => {
-                    if (val >= 1000000) return `${(val / 1000000).toFixed(1)}M`;
-                    if (val >= 1000) return `${(val / 1000).toFixed(0)}k`;
-                    return val;
-                  }}
+                  domain={[0, (dataMax: number) => Math.max(dataMax ? Math.ceil(dataMax * 1.25) : 5, 5)]}
+                  tickCount={5}
                 />
-                <ChartTooltip
-                  cursor={{ fill: "rgba(59, 130, 246, 0.08)" }}
-                  content={<ChartTooltipContent indicator="dot" />}
-                />
-                <Bar
+                <ChartTooltip content={<ChartTooltipContent indicator="dot" />} />
+                <Line
+                  type="monotone"
                   dataKey="success"
-                  fill="#3b82f6"
-                  stackId="a"
-                  radius={[2, 2, 0, 0]}
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
                 />
-                <Bar
+                <Line
+                  type="monotone"
                   dataKey="failure"
-                  fill="#93c5fd"
-                  stackId="a"
-                  radius={[2, 2, 0, 0]}
+                  stroke="#f87171"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
                 />
-              </BarChart>
+              </LineChart>
             </ChartContainer>
+          )}
+        </div>
+      </Card>
+
+      {/* Component 2: Success Rate */}
+      <Card className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border/80 bg-card shadow-xs transition-all duration-200 hover:border-emerald-500/30 hover:shadow-md">
+        {/* Simplified Header */}
+        <div className="flex items-center justify-between border-b border-border/70 px-5 py-3.5 bg-card/50">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-border/80 bg-background text-emerald-500 shadow-xs">
+              <CheckCircle2 className="h-4 w-4" />
+            </div>
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Success Rate
+              </h3>
+              <div className="flex items-baseline gap-1.5 mt-0.5">
+                <span className="text-xl font-bold font-mono text-emerald-500">{successRate}%</span>
+                <span className="text-xs text-muted-foreground font-mono ml-1">
+                  ({totalFailure.toLocaleString()} errors)
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 text-xs">
+            <div className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-[#10b981]" />
+              <span className="text-[11px] text-muted-foreground font-medium">Rate %</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="h-1.5 w-3 rounded-xs bg-[#3b82f6]" />
+              <span className="text-[11px] text-muted-foreground font-medium">SLO 99%</span>
+            </div>
           </div>
         </div>
-      </div>
-    </Card>
+
+        {/* Chart Canvas */}
+        <div className="p-5 flex-1 flex flex-col justify-end">
+          {!hasData ? (
+            <div className="flex h-52 flex-col items-center justify-center text-center p-4 select-none">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted border border-border/60 text-muted-foreground mb-2">
+                <Search className="h-4 w-4" />
+              </div>
+              <p className="text-xs font-semibold text-foreground">No reliability metrics</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">No executions recorded in this window.</p>
+            </div>
+          ) : (
+            <ChartContainer config={reliabilityChartConfig} className="h-56 w-full">
+              <LineChart data={rateData} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={true} />
+                <XAxis
+                  dataKey="time"
+                  stroke="#64748b"
+                  tickLine={false}
+                  axisLine={false}
+                  fontSize={11}
+                />
+                <YAxis
+                  stroke="#64748b"
+                  tickLine={false}
+                  axisLine={false}
+                  fontSize={11}
+                  domain={[0, 100]}
+                  ticks={[0, 25, 50, 75, 100]}
+                  unit="%"
+                />
+                <ReferenceLine
+                  y={99}
+                  stroke="#3b82f6"
+                  strokeDasharray="4 4"
+                  strokeWidth={1.5}
+                  label={{
+                    value: "SLO 99%",
+                    fill: "#3b82f6",
+                    fontSize: 10,
+                    position: "insideTopRight",
+                  }}
+                />
+                <ChartTooltip content={<ChartTooltipContent indicator="dot" />} />
+                <Line
+                  type="monotone"
+                  dataKey="successRate"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
+                />
+              </LineChart>
+            </ChartContainer>
+          )}
+        </div>
+      </Card>
+    </div>
   );
 }

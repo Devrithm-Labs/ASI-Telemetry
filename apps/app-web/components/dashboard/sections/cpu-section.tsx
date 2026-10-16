@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import {
-  Bar,
-  BarChart,
+  Line,
+  LineChart,
   CartesianGrid,
   XAxis,
   YAxis,
@@ -16,21 +16,28 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { CpuMetricPoint, MetricSummary } from "../context/dashboard-types";
-import { Cpu } from "lucide-react";
+import { Cpu, Layers, Search } from "lucide-react";
 
 interface CpuSectionProps {
   data: CpuMetricPoint[];
   summary?: MetricSummary | null;
 }
 
-const chartConfig = {
+const cpuChartConfig = {
   cpuPercent: {
     label: "CPU Usage %",
     color: "#3b82f6",
   },
+  coreLoad: {
+    label: "Load Avg",
+    color: "#f59e0b",
+  },
+} satisfies ChartConfig;
+
+const memoryChartConfig = {
   memoryPercent: {
     label: "Memory (MB)",
-    color: "#93c5fd",
+    color: "#10b981",
   },
 } satisfies ChartConfig;
 
@@ -43,117 +50,171 @@ export function CpuSection({ data, summary }: CpuSectionProps) {
     : (data.length > 0 ? (data[data.length - 1]?.memoryPercent ?? 0) : 0);
   const latestLoad = data.length > 0 ? (data[data.length - 1]?.coreLoad ?? 0) : 0;
 
+  const hasData = data && data.length > 0;
+
   return (
-    <Card className="overflow-hidden rounded-xl border border-slate-200/90 dark:border-[#1e293b] bg-white dark:bg-black shadow-[0_1px_3px_0_rgba(0,0,0,0.04)] dark:shadow-xl">
-      <div className="flex flex-col lg:flex-row">
-        {/* Left Column: Metric Numbers & Stats */}
-        <div className="flex w-full flex-col justify-between border-b border-slate-200 dark:border-[#1e293b] p-6 lg:w-80 lg:border-b-0 lg:border-r bg-slate-50/70 dark:bg-black shrink-0">
-          <div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 dark:border-[#1e293b] bg-white dark:bg-black text-blue-600 dark:text-blue-400 shadow-xs">
-                  <Cpu className="h-4 w-4" />
-                </div>
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                  CPU & Compute
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      {/* Component 1: CPU Core Utilization */}
+      <Card className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border/80 bg-card shadow-xs transition-all duration-200 hover:border-amber-500/30 hover:shadow-md">
+        {/* Simplified Header */}
+        <div className="flex items-center justify-between border-b border-border/70 px-5 py-3.5 bg-card/50">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-border/80 bg-background text-amber-500 shadow-xs">
+              <Cpu className="h-4 w-4" />
+            </div>
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                CPU Core Utilization
+              </h3>
+              <div className="flex items-baseline gap-1.5 mt-0.5">
+                <span className="text-xl font-bold font-mono text-foreground">{latestCpu}%</span>
+                <span className="text-xs text-muted-foreground font-mono ml-1">
+                  (load: {latestLoad})
                 </span>
               </div>
             </div>
-
-            {/* Big Primary Metric Number */}
-            <div className="mt-4">
-              <div className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white font-mono">
-                {latestCpu} <span className="text-xl text-blue-600 dark:text-blue-400 font-sans font-medium">%</span>
-              </div>
-              <div className="mt-1 flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 font-mono">
-                <span>Load Avg: {latestLoad}</span>
-              </div>
-            </div>
-
-            <p className="mt-3 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              Host compute resource allocation and agent process memory pressure.
-            </p>
           </div>
 
-          {/* Breakdown Badges */}
-          <div className="mt-6 grid grid-cols-2 gap-2 border-t border-slate-200 dark:border-[#1e293b] pt-4">
-            <div className="rounded-lg border border-slate-200/90 dark:border-[#1e293b] bg-white dark:bg-black p-2.5 text-center shadow-xs">
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Memory Footprint</div>
-              <div className="mt-1 font-mono text-xs font-bold text-blue-600 dark:text-[#93c5fd]">
-                {latestMem} MB
-              </div>
+          <div className="flex items-center gap-3 text-xs">
+            <div className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-[#3b82f6]" />
+              <span className="text-[11px] text-muted-foreground font-medium">CPU %</span>
             </div>
-            <div className="rounded-lg border border-slate-200/90 dark:border-[#1e293b] bg-white dark:bg-black p-2.5 text-center shadow-xs">
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">ClickHouse Sync</div>
-              <div className="mt-1 font-mono text-xs font-bold text-blue-700 dark:text-[#3b82f6]">
-                Active
-              </div>
+            <div className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-[#f59e0b]" />
+              <span className="text-[11px] text-muted-foreground font-medium">Core Load</span>
             </div>
           </div>
         </div>
 
-        {/* Right Column: CPU Bar Graph */}
-        <div className="flex flex-1 flex-col p-6">
-          <div className="flex items-center justify-between pb-3">
-            <div className="text-xs font-medium text-slate-700 dark:text-slate-300">
-              CPU & Memory Utilization Profile (Bar Graph)
-            </div>
-            <div className="flex items-center gap-4 text-xs">
-              <div className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-sm bg-[#3b82f6]" />
-                <span className="text-slate-500 dark:text-slate-400">CPU Core %</span>
+        {/* Chart Canvas */}
+        <div className="p-5 flex-1 flex flex-col justify-end">
+          {!hasData ? (
+            <div className="flex h-52 flex-col items-center justify-center text-center p-4 select-none">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted border border-border/60 text-muted-foreground mb-2">
+                <Search className="h-4 w-4" />
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-sm bg-[#93c5fd]" />
-                <span className="text-slate-500 dark:text-slate-400">Memory (MB)</span>
-              </div>
+              <p className="text-xs font-semibold text-foreground">No host metrics</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Host resource telemetry not yet received.</p>
             </div>
-          </div>
-
-          <div className="flex-1 min-h-[220px]">
-            <ChartContainer config={chartConfig} className="aspect-auto h-[220px] w-full">
-              <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.5} vertical={false} />
+          ) : (
+            <ChartContainer config={cpuChartConfig} className="h-56 w-full">
+              <LineChart data={data} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={true} />
                 <XAxis
                   dataKey="time"
                   stroke="#64748b"
-                  fontSize={11}
                   tickLine={false}
                   axisLine={false}
+                  fontSize={11}
                 />
                 <YAxis
                   stroke="#64748b"
-                  fontSize={11}
                   tickLine={false}
                   axisLine={false}
-                  tickFormatter={(val) => `${val}`}
+                  fontSize={11}
+                  domain={[0, 100]}
+                  ticks={[0, 25, 50, 75, 100]}
+                  unit="%"
                 />
-                <ChartTooltip
-                  cursor={{ fill: "rgba(59, 130, 246, 0.05)" }}
-                  content={
-                    <ChartTooltipContent
-                      indicator="dot"
-                      formatter={(value, name) => {
-                        const isMem = String(name).toLowerCase().includes("memory");
-                        return (
-                          <div className="flex w-full items-center justify-between gap-3 text-xs">
-                            <span className="text-slate-500 dark:text-slate-400">{name}:</span>
-                            <span className="font-semibold text-blue-600 dark:text-blue-300 font-mono">
-                              {value}{isMem ? " MB" : "%"}
-                            </span>
-                          </div>
-                        );
-                      }}
-                    />
-                  }
+                <ChartTooltip content={<ChartTooltipContent indicator="dot" />} />
+                <Line
+                  type="monotone"
+                  dataKey="cpuPercent"
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
                 />
-                <Bar dataKey="cpuPercent" fill="#3b82f6" radius={[2, 2, 0, 0]} />
-                <Bar dataKey="memoryPercent" fill="#93c5fd" radius={[2, 2, 0, 0]} />
-              </BarChart>
+                <Line
+                  type="monotone"
+                  dataKey="coreLoad"
+                  stroke="#f59e0b"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
+                />
+              </LineChart>
             </ChartContainer>
+          )}
+        </div>
+      </Card>
+
+      {/* Component 2: Memory Footprint */}
+      <Card className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border/80 bg-card shadow-xs transition-all duration-200 hover:border-emerald-500/30 hover:shadow-md">
+        {/* Simplified Header */}
+        <div className="flex items-center justify-between border-b border-border/70 px-5 py-3.5 bg-card/50">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-border/80 bg-background text-emerald-500 shadow-xs">
+              <Layers className="h-4 w-4" />
+            </div>
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Memory Consumption
+              </h3>
+              <div className="flex items-baseline gap-1.5 mt-0.5">
+                <span className="text-xl font-bold font-mono text-foreground">{latestMem}</span>
+                <span className="text-xs font-semibold text-emerald-500 font-mono">MB</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 text-xs">
+            <div className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-[#10b981]" />
+              <span className="text-[11px] text-muted-foreground font-medium">Memory (MB)</span>
+            </div>
+            <div className="flex items-center gap-1.5 font-mono text-[11px] text-emerald-500">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Live Sync</span>
+            </div>
           </div>
         </div>
-      </div>
-    </Card>
+
+        {/* Chart Canvas */}
+        <div className="p-5 flex-1 flex flex-col justify-end">
+          {!hasData ? (
+            <div className="flex h-52 flex-col items-center justify-center text-center p-4 select-none">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted border border-border/60 text-muted-foreground mb-2">
+                <Search className="h-4 w-4" />
+              </div>
+              <p className="text-xs font-semibold text-foreground">No memory records</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Memory telemetry probe awaiting buffer data.</p>
+            </div>
+          ) : (
+            <ChartContainer config={memoryChartConfig} className="h-56 w-full">
+              <LineChart data={data} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={true} />
+                <XAxis
+                  dataKey="time"
+                  stroke="#64748b"
+                  tickLine={false}
+                  axisLine={false}
+                  fontSize={11}
+                />
+                <YAxis
+                  stroke="#64748b"
+                  tickLine={false}
+                  axisLine={false}
+                  fontSize={11}
+                  unit="MB"
+                  domain={[0, (dataMax: number) => Math.max(dataMax ? Math.ceil(dataMax * 1.25) : 200, 100)]}
+                  tickCount={5}
+                />
+                <ChartTooltip content={<ChartTooltipContent indicator="dot" />} />
+                <Line
+                  type="monotone"
+                  dataKey="memoryPercent"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
+                />
+              </LineChart>
+            </ChartContainer>
+          )}
+        </div>
+      </Card>
+    </div>
   );
 }

@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import {
-  Bar,
-  BarChart,
+  Line,
+  LineChart,
   CartesianGrid,
   ReferenceLine,
   XAxis,
@@ -17,25 +17,28 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { LatencyMetricPoint, MetricSummary } from "../context/dashboard-types";
-import { Clock, TrendingDown } from "lucide-react";
+import { Clock, Search, TrendingUp } from "lucide-react";
 
 interface LatencySectionProps {
   data: LatencyMetricPoint[];
   summary?: MetricSummary | null;
 }
 
-const chartConfig = {
+const p50ChartConfig = {
   p50: {
     label: "P50 Median",
-    color: "#60a5fa",
-  },
-  p90: {
-    label: "P90 Percentile",
     color: "#3b82f6",
   },
+} satisfies ChartConfig;
+
+const tailChartConfig = {
+  p90: {
+    label: "P90 Percentile",
+    color: "#60a5fa",
+  },
   p99: {
-    label: "P99 Tail Response Time",
-    color: "#93c5fd",
+    label: "P99 Tail",
+    color: "#f59e0b",
   },
 } satisfies ChartConfig;
 
@@ -53,103 +56,75 @@ export function LatencySection({ data, summary }: LatencySectionProps) {
     [data]
   );
 
+  const hasData = data && data.length > 0;
+
   return (
-    <Card className="overflow-hidden rounded-xl border border-slate-200/90 dark:border-[#1e293b] bg-white dark:bg-black shadow-[0_1px_3px_0_rgba(0,0,0,0.04)] dark:shadow-xl">
-      <div className="flex flex-col lg:flex-row">
-        {/* Left Column: Metric Numbers & Stats */}
-        <div className="flex w-full flex-col justify-between border-b border-slate-200 dark:border-[#1e293b] p-6 lg:w-80 lg:border-b-0 lg:border-r bg-slate-50/70 dark:bg-black shrink-0">
-          <div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 dark:border-[#1e293b] bg-white dark:bg-black text-blue-600 dark:text-blue-400 shadow-xs">
-                  <Clock className="h-4 w-4" />
-                </div>
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                  Response Time
-                </span>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      {/* Component 1: Median Response Time (P50) */}
+      <Card className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border/80 bg-card shadow-xs transition-all duration-200 hover:border-blue-500/30 hover:shadow-md">
+        {/* Simplified Header */}
+        <div className="flex items-center justify-between border-b border-border/70 px-5 py-3.5 bg-card/50">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-border/80 bg-background text-blue-500 shadow-xs">
+              <Clock className="h-4 w-4" />
+            </div>
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Median Latency (P50)
+              </h3>
+              <div className="flex items-baseline gap-1.5 mt-0.5">
+                <span className="text-xl font-bold font-mono text-foreground">{avgP50}</span>
+                <span className="text-xs font-semibold text-blue-500 font-mono">ms</span>
+                {summary?.avg_response_time_ms != null && (
+                  <span className="text-xs text-muted-foreground font-mono ml-1">
+                    (mean: {Math.round(summary.avg_response_time_ms)}ms)
+                  </span>
+                )}
               </div>
             </div>
-
-            {/* Big Primary Metric Number */}
-            <div className="mt-4">
-              <div className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white font-mono">
-                {avgP50} <span className="text-xl text-blue-600 dark:text-blue-400 font-sans font-medium">ms</span>
-              </div>
-              <div className="mt-1 flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 font-mono">
-                <TrendingDown className="h-3.5 w-3.5" />
-                <span>
-                  P50 Median {summary?.avg_response_time_ms != null ? `· Fleet Mean: ${Math.round(summary.avg_response_time_ms)}ms` : ""}
-                </span>
-              </div>
-            </div>
-
-            <p className="mt-3 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              Execution response time percentiles across distributed agent tool calls and LLM inference spans.
-            </p>
           </div>
 
-          {/* Breakdown Badges */}
-          <div className="mt-6 grid grid-cols-3 gap-2 border-t border-slate-200 dark:border-[#1e293b] pt-4">
-            <div className="rounded-lg border border-slate-200/90 dark:border-[#1e293b] bg-white dark:bg-black p-2.5 text-center shadow-xs">
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">P50 (Med)</div>
-              <div className="mt-1 font-mono text-xs font-bold text-blue-600 dark:text-[#60a5fa]">
-                {avgP50} ms
-              </div>
+          <div className="flex items-center gap-3 text-xs">
+            <div className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-[#3b82f6]" />
+              <span className="text-[11px] text-muted-foreground font-medium">P50</span>
             </div>
-            <div className="rounded-lg border border-slate-200/90 dark:border-[#1e293b] bg-white dark:bg-black p-2.5 text-center shadow-xs">
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">P90</div>
-              <div className="mt-1 font-mono text-xs font-bold text-blue-700 dark:text-[#3b82f6]">
-                {avgP90} ms
-              </div>
-            </div>
-            <div className="rounded-lg border border-slate-200/90 dark:border-[#1e293b] bg-white dark:bg-black p-2.5 text-center shadow-xs">
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">P99 (Tail)</div>
-              <div className="mt-1 font-mono text-xs font-bold text-indigo-600 dark:text-[#93c5fd]">
-                {maxP99} ms
-              </div>
+            <div className="flex items-center gap-1.5">
+              <span className="h-1.5 w-3 rounded-xs bg-[#3b82f6]" />
+              <span className="text-[11px] text-muted-foreground font-medium">SLA 300ms</span>
             </div>
           </div>
         </div>
 
-        {/* Right Column: Latency Bar Graph */}
-        <div className="flex flex-1 flex-col p-6">
-          <div className="flex items-center justify-between pb-3">
-            <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-              Percentile Distribution Over Time (Bar Graph)
+        {/* Chart Canvas */}
+        <div className="p-5 flex-1 flex flex-col justify-end">
+          {!hasData ? (
+            <div className="flex h-52 flex-col items-center justify-center text-center p-4 select-none">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted border border-border/60 text-muted-foreground mb-2">
+                <Search className="h-4 w-4" />
+              </div>
+              <p className="text-xs font-semibold text-foreground">No latency metrics</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">No response times recorded in this window.</p>
             </div>
-            <div className="flex items-center gap-4 text-xs">
-              <div className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-sm bg-[#60a5fa]" />
-                <span className="text-slate-600 dark:text-slate-400 font-medium">P50</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-sm bg-[#3b82f6]" />
-                <span className="text-slate-600 dark:text-slate-400 font-medium">P90</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-sm bg-[#93c5fd]" />
-                <span className="text-slate-600 dark:text-slate-400 font-medium">P99</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex-1 min-h-[220px]">
-            <ChartContainer config={chartConfig} className="aspect-auto h-[220px] w-full">
-              <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.5} vertical={false} />
+          ) : (
+            <ChartContainer config={p50ChartConfig} className="h-56 w-full">
+              <LineChart data={data} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={true} />
                 <XAxis
                   dataKey="time"
                   stroke="#64748b"
-                  fontSize={11}
                   tickLine={false}
                   axisLine={false}
+                  fontSize={11}
                 />
                 <YAxis
                   stroke="#64748b"
-                  fontSize={11}
                   tickLine={false}
                   axisLine={false}
-                  tickFormatter={(val) => `${val}ms`}
+                  fontSize={11}
+                  unit="ms"
+                  domain={[0, (dataMax: number) => Math.max(dataMax ? Math.ceil(dataMax * 1.25) : 350, 350)]}
+                  tickCount={5}
                 />
                 <ReferenceLine
                   y={300}
@@ -157,34 +132,113 @@ export function LatencySection({ data, summary }: LatencySectionProps) {
                   strokeDasharray="4 4"
                   strokeWidth={1.5}
                   label={{
-                    value: "SLA Limit (300ms)",
-                    fill: "#2563eb",
+                    value: "SLA (300ms)",
+                    fill: "#3b82f6",
                     fontSize: 10,
                     position: "insideTopRight",
                   }}
                 />
-                <ChartTooltip
-                  cursor={{ fill: "rgba(59, 130, 246, 0.08)" }}
-                  content={
-                    <ChartTooltipContent
-                      indicator="dot"
-                      formatter={(value, name) => (
-                        <div className="flex w-full items-center justify-between gap-3 text-xs">
-                          <span className="text-slate-500 dark:text-slate-400">{name}:</span>
-                          <span className="font-semibold text-blue-600 dark:text-blue-300 font-mono">{value} ms</span>
-                        </div>
-                      )}
-                    />
-                  }
+                <ChartTooltip content={<ChartTooltipContent indicator="dot" />} />
+                <Line
+                  type="monotone"
+                  dataKey="p50"
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
                 />
-                <Bar dataKey="p50" fill="#60a5fa" radius={[2, 2, 0, 0]} />
-                <Bar dataKey="p90" fill="#3b82f6" radius={[2, 2, 0, 0]} />
-                <Bar dataKey="p99" fill="#93c5fd" radius={[2, 2, 0, 0]} />
-              </BarChart>
+              </LineChart>
             </ChartContainer>
+          )}
+        </div>
+      </Card>
+
+      {/* Component 2: Tail Latency (P90 & P99) */}
+      <Card className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border/80 bg-card shadow-xs transition-all duration-200 hover:border-amber-500/30 hover:shadow-md">
+        {/* Simplified Header */}
+        <div className="flex items-center justify-between border-b border-border/70 px-5 py-3.5 bg-card/50">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-border/80 bg-background text-amber-500 shadow-xs">
+              <TrendingUp className="h-4 w-4" />
+            </div>
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Tail Latency (P90 &amp; P99)
+              </h3>
+              <div className="flex items-baseline gap-1.5 mt-0.5">
+                <span className="text-xl font-bold font-mono text-foreground">{maxP99}</span>
+                <span className="text-xs font-semibold text-amber-500 font-mono">ms max</span>
+                <span className="text-xs text-muted-foreground font-mono ml-1">
+                  (P90: {avgP90}ms)
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 text-xs">
+            <div className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-[#60a5fa]" />
+              <span className="text-[11px] text-muted-foreground font-medium">P90</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-[#f59e0b]" />
+              <span className="text-[11px] text-muted-foreground font-medium">P99</span>
+            </div>
           </div>
         </div>
-      </div>
-    </Card>
+
+        {/* Chart Canvas */}
+        <div className="p-5 flex-1 flex flex-col justify-end">
+          {!hasData ? (
+            <div className="flex h-52 flex-col items-center justify-center text-center p-4 select-none">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted border border-border/60 text-muted-foreground mb-2">
+                <Search className="h-4 w-4" />
+              </div>
+              <p className="text-xs font-semibold text-foreground">No tail latency records</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">No outlier metrics found in this window.</p>
+            </div>
+          ) : (
+            <ChartContainer config={tailChartConfig} className="h-56 w-full">
+              <LineChart data={data} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={true} />
+                <XAxis
+                  dataKey="time"
+                  stroke="#64748b"
+                  tickLine={false}
+                  axisLine={false}
+                  fontSize={11}
+                />
+                <YAxis
+                  stroke="#64748b"
+                  tickLine={false}
+                  axisLine={false}
+                  fontSize={11}
+                  unit="ms"
+                  domain={[0, (dataMax: number) => Math.max(dataMax ? Math.ceil(dataMax * 1.25) : 400, 400)]}
+                  tickCount={5}
+                />
+                <ChartTooltip content={<ChartTooltipContent indicator="dot" />} />
+                <Line
+                  type="monotone"
+                  dataKey="p90"
+                  stroke="#60a5fa"
+                  strokeWidth={2}
+                  dot={{ r: 2.5 }}
+                  activeDot={{ r: 5 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="p99"
+                  stroke="#f59e0b"
+                  strokeWidth={2}
+                  dot={{ r: 3.5 }}
+                  activeDot={{ r: 5 }}
+                />
+              </LineChart>
+            </ChartContainer>
+          )}
+        </div>
+      </Card>
+    </div>
   );
 }
