@@ -30,8 +30,6 @@ class TelemetryRepository:
         meta = payload_dict.get("metadata") or {}
         if payload_dict.get("agent_address"):
             meta["agent_address"] = payload_dict["agent_address"]
-        if payload_dict.get("agent_handle"):
-            meta["agent_handle"] = payload_dict["agent_handle"]
 
         record = {
             "id": record_id,
@@ -217,33 +215,22 @@ class TelemetryRepository:
         else:
             uptime_val = round(succ / total * 100, 1) if total else 100.0
 
-        # Discover or generate agent address & handle
+        # Discover or generate agent address
         agent_address_map = {
             "weather-agent": "agent1qfzll7xq6t8d9rx5n3cnql32me650q2sakexpc979u0luhn702jh2af5mds",
             "assistant": "agent1qtj4m78hdr2dmldtssn7kw7gt0e3ycledny3cadpmdau9dmnv9a4yzjxcx0",
             "receiver": "agent1qfzll7xq6t8d9rx5n3cnql32me650q2sakexpc979u0luhn702jh2af5mds",
             "sender": "agent1qtj4m78hdr2dmldtssn7kw7gt0e3ycledny3cadpmdau9dmnv9a4yzjxcx0",
         }
-        agent_handle_map = {
-            "weather-agent": "@weather-agent-13",
-            "assistant": "@assistant-agent",
-            "receiver": "@receiver-agent",
-            "sender": "@sender-agent",
-        }
         active_agent = agent_name or (records[0]["agent_name"] if records else "weather-agent")
         found_addr = None
-        found_hdl = None
         for r in records:
             m = r.get("metadata") or {}
             if m.get("agent_address"):
                 found_addr = m["agent_address"]
-            if m.get("agent_handle"):
-                found_hdl = m["agent_handle"]
-            if found_addr and found_hdl:
                 break
 
         agent_addr = found_addr or agent_address_map.get(active_agent) or f"agent1q{abs(hash(active_agent)):016x}4gkq"
-        agent_hdl = found_hdl or agent_handle_map.get(active_agent) or f"@{active_agent}"
 
         summary = {
             "total_requests": total,
@@ -255,7 +242,6 @@ class TelemetryRepository:
             "uptime": uptime_val,
             "uptime_desc": "Percent of requests the agent replied to in the last 30 days.",
             "agent_address": agent_addr,
-            "agent_handle": agent_hdl,
         }
 
         # 3. Compute Time-Series Buckets matching LLM Monitoring timeline

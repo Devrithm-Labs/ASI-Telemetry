@@ -49,9 +49,8 @@ agent = Agent(
 
 # Configure agent address and handle in SDK
 monitor.agent_address = agent.address
-monitor.agent_handle = "@weather-agent-13"
 from asi_telemetry import set_agent_info
-set_agent_info(agent_name="receiver", agent_address=agent.address, agent_handle="@weather-agent-13")
+set_agent_info(agent_name="receiver", agent_address=agent.address)
 
 
 # 3. Tracked LLM Call (Captures tokens, cost, and LLM latency)
@@ -80,7 +79,7 @@ async def startup(ctx: Context):
 
 # 4. Agent Handler (Tracks Daemon CPU, RAM, and end-to-end response time)
 @agent.on_message(model=Greeting)
-@monitor.track(agent_name="receiver")
+@monitor.track()
 @traceable(name="handle_message_uk", run_type="tool")
 async def handle_message(ctx: Context, sender: str, msg: Greeting):
     print(f"\n[Received Prompt from {sender[:16]}...]: {msg.text}")

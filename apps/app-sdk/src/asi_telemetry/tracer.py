@@ -44,22 +44,18 @@ def _send_trace_async(payload: Dict[str, Any]) -> None:
 _CURRENT_AGENT_INFO: Dict[str, Optional[str]] = {
     "agent_name": os.getenv("AGENT_NAME", "assistant"),
     "agent_address": os.getenv("AGENT_ADDRESS", None),
-    "agent_handle": os.getenv("AGENT_HANDLE", None),
 }
 
 
 def set_agent_info(
     agent_name: Optional[str] = None,
     agent_address: Optional[str] = None,
-    agent_handle: Optional[str] = None,
 ) -> None:
     """Sets process-level default agent credentials attached to all traces."""
     if agent_name:
         _CURRENT_AGENT_INFO["agent_name"] = agent_name
     if agent_address:
         _CURRENT_AGENT_INFO["agent_address"] = agent_address
-    if agent_handle:
-        _CURRENT_AGENT_INFO["agent_handle"] = agent_handle
 
 
 def get_agent_info() -> Dict[str, Optional[str]]:
@@ -111,7 +107,6 @@ def start_span(
     args: tuple,
     kwargs: dict,
     agent_address: Optional[str] = None,
-    agent_handle: Optional[str] = None,
 ) -> Tuple[Dict[str, Any], Any, Any, bool]:
     """Initializes a span, establishes parent-child hierarchy, and binds context variables."""
     parent_span = current_span.get()
@@ -149,12 +144,6 @@ def start_span(
         or (parent_span.get("agent_address") if parent_span else None)
         or _CURRENT_AGENT_INFO.get("agent_address")
     )
-    resolved_hdl = (
-        agent_handle
-        or meta_dict.get("agent_handle")
-        or (parent_span.get("agent_handle") if parent_span else None)
-        or _CURRENT_AGENT_INFO.get("agent_handle")
-    )
 
     span_id = str(uuid.uuid4())
     span: Dict[str, Any] = {
@@ -172,7 +161,6 @@ def start_span(
         "tokens": {"input": 0, "output": 0, "total": 0},
         "cost": 0.0,
         "agent_address": resolved_addr,
-        "agent_handle": resolved_hdl,
         "metadata": meta_dict,
     }
 
@@ -225,14 +213,7 @@ def end_span(
             or _CURRENT_AGENT_INFO.get("agent_address")
             or "agent1qfzll7xq6t8d9rx5n3cnql32me650q2sakexpc979u0luhn702jh2af5mds"
         )
-        hdl = (
-            span.get("agent_handle")
-            or meta_dict.get("agent_handle")
-            or _CURRENT_AGENT_INFO.get("agent_handle")
-            or "@weather-agent-13"
-        )
         meta_dict["agent_address"] = addr
-        meta_dict["agent_handle"] = hdl
 
         current_id = span.get("id") or span.get("span_id") or str(uuid.uuid4())
         span_payload = {
@@ -253,7 +234,6 @@ def end_span(
             "total_tokens": span.get("tokens", {}).get("total", 0),
             "cost_usd": span.get("cost", 0.0),
             "agent_address": addr,
-            "agent_handle": hdl,
             "metadata": meta_dict,
         }
 
@@ -281,7 +261,6 @@ def traceable(
     run_type: str = "chain",
     metadata: Optional[Dict[str, Any]] = None,
     agent_address: Optional[str] = None,
-    agent_handle: Optional[str] = None,
 ) -> Callable:
     """
     Distributed tracing decorator: tracks execution duration, inputs, outputs,
@@ -307,7 +286,6 @@ def traceable(
                     args,
                     kwargs,
                     agent_address=agent_address,
-                    agent_handle=agent_handle,
                 )
                 result, error = None, None
                 try:
@@ -330,7 +308,6 @@ def traceable(
                 args,
                 kwargs,
                 agent_address=agent_address,
-                agent_handle=agent_handle,
             )
             result, error = None, None
             try:

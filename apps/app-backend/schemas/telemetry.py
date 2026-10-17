@@ -4,10 +4,9 @@ from schemas.llm import LLMTracePayload
 
 
 class MetricPayload(BaseModel):
-    """Schema for telemetry data sent from Python SDK (observ.py)"""
+    """Schema for telemetry data sent from Python SDK (metrics.py)"""
     agent_name: str = Field(default="assistant", description="Name of the agent")
     agent_address: Optional[str] = Field(default=None, description="Fetch.ai / uAgent address")
-    agent_handle: Optional[str] = Field(default=None, description="Agent handle identifier")
     func_name: Optional[str] = Field(default="handle_message", description="Function name tracked")
     status: str = Field(default="success", description="Status (success, error, or cancelled)")
     response_time_ms: float = Field(default=0.0, description="Response time in milliseconds")
@@ -42,7 +41,6 @@ class MetricSummary(BaseModel):
     uptime: float = 100.0
     uptime_desc: str = "Percent of requests the agent replied to in the last 30 days."
     agent_address: Optional[str] = None
-    agent_handle: Optional[str] = None
 
 
 class AnalyticsBucket(BaseModel):

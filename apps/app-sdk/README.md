@@ -38,7 +38,7 @@ from asi_telemetry import MetricsTracker
 
 tracker = MetricsTracker(agent_name="assistant")
 
-@tracker.track(agent_name="weather_tool")
+@tracker.track(tool_name="weather_tool")
 async def get_weather(city: str):
     return f"Weather in {city}: 72°F Sunny"
 ```

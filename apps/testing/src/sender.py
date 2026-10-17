@@ -39,11 +39,10 @@ sender = Agent(
 )
 
 monitor.agent_address = sender.address
-monitor.agent_handle = "@sender-agent"
 from asi_telemetry import set_agent_info
-set_agent_info(agent_name="sender", agent_address=sender.address, agent_handle="@sender-agent")
+set_agent_info(agent_name="sender", agent_address=sender.address)
 
-@monitor.track(agent_name="sender")
+@monitor.track()
 async def send_greeting(ctx: Context, text: str):
     """Tracked dispatch of messages to the receiver agent."""
     print(f"\n[Sending to Assistant]: {text}")
@@ -73,7 +72,7 @@ async def startup(ctx: Context):
     asyncio.create_task(console_listener())
 
 @sender.on_message(model=Greeting)
-@monitor.track(agent_name="sender")
+@monitor.track()
 async def handle_reply(ctx: Context, sender_address: str, msg: Greeting):
     """Tracked handling of replies coming back to sender."""
     print(f"\n==========================================")

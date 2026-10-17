@@ -23,7 +23,6 @@ class LLMTracePayload(BaseModel):
     total_tokens: int = Field(default=0, description="Total tokens used")
     cost_usd: float = Field(default=0.0, description="Calculated cost in USD")
     agent_address: Optional[str] = Field(default=None, description="uAgent or wallet address")
-    agent_handle: Optional[str] = Field(default=None, description="Agent handle (@agent)")
     metadata: Optional[Dict[str, Any]] = Field(default=None, description="Arbitrary metadata dictionary")
 
     @model_validator(mode="after")

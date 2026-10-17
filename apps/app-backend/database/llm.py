@@ -49,16 +49,9 @@ class LLMRepository:
         agent_address = (
             payload.get("agent_address")
             or metadata_dict.get("agent_address")
-            or "agent1qfzll7xq6t8d9rx5n3cnql32me650q2sakexpc979u0luhn702jh2af5mds"
+            or ""
         )
-        agent_handle = (
-            payload.get("agent_handle")
-            or metadata_dict.get("agent_handle")
-            or "@weather-agent-13"
-        )
-
         metadata_dict["agent_address"] = agent_address
-        metadata_dict["agent_handle"] = agent_handle
         metadata_str = json.dumps(metadata_dict)
 
         record = {
@@ -82,7 +75,7 @@ class LLMRepository:
             "cost_usd": cost_usd,
             "metadata": metadata_str,
             "agent_address": agent_address,
-            "agent_handle": agent_handle,
+            "agent_handle": "",
         }
 
         # 1. Store in memory fallback
@@ -192,9 +185,9 @@ class LLMRepository:
                         meta = item["metadata"]
 
                     if not item.get("agent_address"):
-                        item["agent_address"] = meta.get("agent_address") or "agent1qfzll7xq6t8d9rx5n3cnql32me650q2sakexpc979u0luhn702jh2af5mds"
+                        item["agent_address"] = meta.get("agent_address") or ""
                     if not item.get("agent_handle"):
-                        item["agent_handle"] = meta.get("agent_handle") or "@weather-agent-13"
+                        item["agent_handle"] = meta.get("agent_handle") or ""
 
                     db_records.append(item)
                 if db_records:
