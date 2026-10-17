@@ -12,8 +12,33 @@ from contextvars import ContextVar
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+import threading
+import urllib.request
 from .instrumentation import save_token_usage
-from .transport import send_span_async
+
+
+def _send_trace_async(payload: Dict[str, Any]) -> None:
+    """Dispatches trace span directly to the backend asynchronously."""
+    def _worker():
+        try:
+            backend_url = os.getenv("TELEMETRY_TRACES_URL") or os.getenv(
+                "TELEMETRY_BACKEND_URL", "http://127.0.0.1:8080/api/llm/traces"
+            )
+            if "/api/metrics" in backend_url:
+                backend_url = backend_url.replace("/api/metrics", "/api/llm/traces")
+            data = json.dumps(payload, default=str).encode("utf-8")
+            req = urllib.request.Request(
+                backend_url,
+                data=data,
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=2.0):
+                pass
+        except Exception:
+            pass
+
+    threading.Thread(target=_worker, daemon=True).start()
 
 # Process-level default agent identity
 _CURRENT_AGENT_INFO: Dict[str, Optional[str]] = {
@@ -233,7 +258,7 @@ def end_span(
         }
 
         # Asynchronously send individual span with shared trace_id
-        send_span_async(span_payload)
+        _send_trace_async(span_payload)
 
         # If root span finished, aggregate session metrics
         if is_top_level and trace_reset_token:

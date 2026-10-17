@@ -1,1 +1,1 @@
-httpx>=0.24.0
+# asi-telemetry has zero external dependencies (pure Python standard library)

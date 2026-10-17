@@ -3,20 +3,21 @@ Metrics tracking and runtime performance monitoring for AI agents and tools.
 """
 
 import asyncio
+import json
 import os
+import threading
 import time
+import urllib.request
 from datetime import datetime, timezone
 from functools import wraps
-from typing import Any, Callable, Optional, Set
-
-from .transport import send_metric_async
+from typing import Any, Callable, Optional
 
 
 class MetricsTracker:
     """
     Real-time Agent and Tool execution metrics tracker.
     Monitors execution latency, success/failure counts, and SLA metrics,
-    dispatching telemetry to the backend asynchronously.
+    dispatching telemetry directly to the backend.
     """
 
     def __init__(
@@ -47,6 +48,25 @@ class MetricsTracker:
             )
         except Exception:
             pass
+
+    def _dispatch_payload(self, payload: dict) -> None:
+        """Dispatches metric payload to the backend on a daemon thread without blocking."""
+        def _worker():
+            try:
+                data = json.dumps(payload, default=str).encode("utf-8")
+                req = urllib.request.Request(
+                    self.backend_url,
+                    data=data,
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                )
+                with urllib.request.urlopen(req, timeout=2.0):
+                    pass
+            except Exception:
+                # Backend unreachable; fail silently so agent is not affected
+                pass
+
+        threading.Thread(target=_worker, daemon=True).start()
 
     def track(
         self,
@@ -95,7 +115,7 @@ class MetricsTracker:
                     # 1. Print formatted terminal telemetry
                     self.print_metrics(duration_ms, func_name=func.__name__, agent=resolved_agent)
 
-                    # 2. Asynchronously dispatch metrics to backend
+                    # 2. Build payload and dispatch directly to backend in background
                     payload = {
                         "agent_name": resolved_agent or self.agent_name,
                         "agent_address": self.agent_address,
@@ -106,7 +126,7 @@ class MetricsTracker:
                         "latency_ms": round(duration_ms, 2),
                         "timestamp": datetime.now(timezone.utc).isoformat(),
                     }
-                    send_metric_async(payload, endpoint=self.backend_url)
+                    self._dispatch_payload(payload)
 
             return wrapper
 
@@ -114,51 +134,30 @@ class MetricsTracker:
             return decorator(actual_func)
         return decorator
 
-    def print_metrics(
-        self,
-        response_time: float,
-        func_name: Optional[str] = None,
-        agent: Optional[str] = None,
-    ) -> None:
-        """Outputs formatted real-time metrics summary to the terminal."""
-        success_rate = (self.success / self.requests * 100) if self.requests > 0 else 100.0
-        failure_rate = (self.errors / self.requests * 100) if self.requests > 0 else 0.0
-
-        header = "========== ASI AGENT METRICS =========="
-        footer = "=" * len(header)
-
-        print(f"\n{header}")
-        if agent:
-            print(f"Agent         : {agent}")
-        if func_name:
-            print(f"Function      : {func_name}")
-        print(f"Requests      : {self.requests}")
-        print(f"Success       : {self.success}")
-        print(f"Errors        : {self.errors}")
-        print(f"Success Rate  : {success_rate:.2f}%")
-        print(f"Failure Rate  : {failure_rate:.2f}%")
-        print(f"Duration      : {response_time:.2f} ms")
-        print(f"{footer}\n")
-
     async def send_to_backend(
         self,
-        response_time_ms: float,
-        status: str,
-        func_name: str,
+        payload_or_time: Any,
+        status: Optional[str] = None,
+        func_name: Optional[str] = None,
         agent_name: Optional[str] = None,
     ) -> None:
-        """Backward-compatible async helper for dispatching metrics."""
-        payload = {
-            "agent_name": agent_name or self.agent_name,
-            "agent_address": self.agent_address,
-            "agent_handle": self.agent_handle,
-            "func_name": func_name,
-            "status": status,
-            "response_time_ms": round(response_time_ms, 2),
-            "latency_ms": round(response_time_ms, 2),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        }
-        send_metric_async(payload, endpoint=self.backend_url)
+        """Sends metric record directly to the backend endpoint."""
+        if isinstance(payload_or_time, dict):
+            payload = payload_or_time
+        else:
+            response_time_ms = float(payload_or_time)
+            payload = {
+                "agent_name": agent_name or self.agent_name,
+                "agent_address": self.agent_address,
+                "agent_handle": self.agent_handle,
+                "func_name": func_name or "unknown",
+                "status": status or "success",
+                "response_time_ms": round(response_time_ms, 2),
+                "latency_ms": round(response_time_ms, 2),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+
+        self._dispatch_payload(payload)
 
 
 # Backward compatibility alias
