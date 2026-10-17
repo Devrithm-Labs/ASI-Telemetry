@@ -9,10 +9,10 @@ if SDK_PATH not in sys.path:
 
 from uagents import Agent, Context, Model
 from uagents.resolver import RulesBasedResolver
-from asi_telemetry import AgentMonitor
+from asi_telemetry import MetricsTracker
 
 # Initialize telemetry monitor for the sender agent
-monitor = AgentMonitor(agent_name="sender")
+monitor = MetricsTracker(agent_name="sender")
 
 try:
     loop = asyncio.get_event_loop()
@@ -43,7 +43,7 @@ monitor.agent_handle = "@sender-agent"
 from asi_telemetry import set_agent_info
 set_agent_info(agent_name="sender", agent_address=sender.address, agent_handle="@sender-agent")
 
-@monitor.track(agentname="sender")
+@monitor.track(agent_name="sender")
 async def send_greeting(ctx: Context, text: str):
     """Tracked dispatch of messages to the receiver agent."""
     print(f"\n[Sending to Assistant]: {text}")
@@ -73,7 +73,7 @@ async def startup(ctx: Context):
     asyncio.create_task(console_listener())
 
 @sender.on_message(model=Greeting)
-@monitor.track(agentname="sender")
+@monitor.track(agent_name="sender")
 async def handle_reply(ctx: Context, sender_address: str, msg: Greeting):
     """Tracked handling of replies coming back to sender."""
     print(f"\n==========================================")

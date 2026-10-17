@@ -1,46 +1,34 @@
+"""
+Distributed tracing engine and context propagation for AI agents and LLM pipelines.
+"""
+
 import functools
 import inspect
 import json
 import os
-import threading
 import time
-import urllib.request
 import uuid
 from contextvars import ContextVar
 from datetime import datetime
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
+from .instrumentation import save_token_usage
+from .transport import send_span_async
 
-def _send_llm_trace_async(payload):
-    """Sends trace record to FastAPI/ClickHouse backend asynchronously."""
-    def _worker():
-        try:
-            backend_url = os.getenv("TELEMETRY_BACKEND_URL", "http://127.0.0.1:8080/api/llm/traces")
-            data = json.dumps(payload, default=str).encode("utf-8")
-            req = urllib.request.Request(
-                backend_url,
-                data=data,
-                headers={"Content-Type": "application/json"},
-                method="POST"
-            )
-            with urllib.request.urlopen(req, timeout=2.0):
-                pass
-        except Exception:
-            pass
-    threading.Thread(target=_worker, daemon=True).start()
-
-
-# ---------------------------------------------------------------
-# Global state & Context Variables
-# ---------------------------------------------------------------
-
-_CURRENT_AGENT_INFO = {
+# Process-level default agent identity
+_CURRENT_AGENT_INFO: Dict[str, Optional[str]] = {
     "agent_name": os.getenv("AGENT_NAME", "assistant"),
     "agent_address": os.getenv("AGENT_ADDRESS", None),
     "agent_handle": os.getenv("AGENT_HANDLE", None),
 }
 
-def set_agent_info(agent_name=None, agent_address=None, agent_handle=None):
-    """Sets process-level default agent name, address, and handle for all traces."""
+
+def set_agent_info(
+    agent_name: Optional[str] = None,
+    agent_address: Optional[str] = None,
+    agent_handle: Optional[str] = None,
+) -> None:
+    """Sets process-level default agent credentials attached to all traces."""
     if agent_name:
         _CURRENT_AGENT_INFO["agent_name"] = agent_name
     if agent_address:
@@ -48,96 +36,62 @@ def set_agent_info(agent_name=None, agent_address=None, agent_handle=None):
     if agent_handle:
         _CURRENT_AGENT_INFO["agent_handle"] = agent_handle
 
-# The span (one traced function call) that is running right now.
-current_span = ContextVar("current_span", default=None)
 
-# All spans collected so far for the current trace (parent + children).
-spans_in_trace = ContextVar("spans_in_trace", default=None)
-
-# The finished trace of the most recent top-level call (handy for debugging).
-LAST_TRACE = None
-
-# Price in USD per 1 million tokens.
-PRICE_PER_MILLION = {
-    "asi1-mini": {"input": 0.10, "output": 0.40},
-    "asi-mini": {"input": 0.10, "output": 0.40},
-    "asi1": {"input": 0.50, "output": 1.50},
-    "gemini-3.8-flash": {"input": 0.075, "output": 0.30},
-    "deepseek-chat": {"input": 0.14, "output": 0.28},
-}
-DEFAULT_PRICE = {"input": 0.10, "output": 0.40}
+def get_agent_info() -> Dict[str, Optional[str]]:
+    """Returns current process-level agent identity dictionary."""
+    return dict(_CURRENT_AGENT_INFO)
 
 
-# ---------------------------------------------------------------
-# Cost and token helpers
-# ---------------------------------------------------------------
+# Execution Context Variables
+current_span: ContextVar[Optional[Dict[str, Any]]] = ContextVar("current_span", default=None)
+spans_in_trace: ContextVar[Optional[List[Dict[str, Any]]]] = ContextVar("spans_in_trace", default=None)
 
-def calculate_cost(model, input_tokens, output_tokens):
-    """Return the approximate cost in USD for one LLM call."""
-    model = model.replace("models/", "").lower()
-    price = PRICE_PER_MILLION.get(model, DEFAULT_PRICE)
-
-    input_cost = input_tokens * price["input"] / 1_000_000
-    output_cost = output_tokens * price["output"] / 1_000_000
-    return round(input_cost + output_cost, 6)
+# Cache of most recent completed top-level trace
+LAST_TRACE: Optional[Dict[str, Any]] = None
 
 
-def save_token_usage(response, span, model=None):
-    """Read token counts from a Gemini or OpenAI/ASI response and store them in the span."""
-
-    # Gemini style: response.usage_metadata
-    usage = getattr(response, "usage_metadata", None)
-    if usage:
-        input_tokens = getattr(usage, "prompt_token_count", 0) or 0
-        output_tokens = getattr(usage, "candidates_token_count", 0) or 0
-        total_tokens = getattr(usage, "total_token_count", 0) or (input_tokens + output_tokens)
-        model = model or span["metadata"].get("model", "gemini-3.8-flash")
-
-    else:
-        # OpenAI / ASI-1 style: response.usage
-        usage = getattr(response, "usage", None)
-        if not usage:
-            return  # not an LLM response, nothing to record
-        input_tokens = getattr(usage, "prompt_tokens", 0) or 0
-        output_tokens = getattr(usage, "completion_tokens", 0) or 0
-        total_tokens = getattr(usage, "total_tokens", 0) or (input_tokens + output_tokens)
-        model = model or getattr(response, "model", span["metadata"].get("model", "asi1-mini"))
-
-    span["metadata"]["model"] = model
-    span["tokens"] = {"input": input_tokens, "output": output_tokens, "total": total_tokens}
-    span["cost"] = calculate_cost(model, input_tokens, output_tokens)
-
-
-# ---------------------------------------------------------------
-# Start / end a span & Context Propagation
-# ---------------------------------------------------------------
-
-def get_current_trace_id():
-    """Returns current trace_id if inside a traced context, else None."""
+def get_current_trace_id() -> Optional[str]:
+    """Returns the trace_id of the active span context, or None if outside a trace."""
     span = current_span.get()
     return span["trace_id"] if span else None
 
 
-def get_current_span_id():
-    """Returns current span_id if inside a traced context, else None."""
+def get_current_span_id() -> Optional[str]:
+    """Returns the span_id of the active span context, or None if outside a trace."""
     span = current_span.get()
     return span.get("span_id") or span.get("id") if span else None
 
 
-def create_trace_context():
-    """Generates trace context dictionary to pass in inter-agent messages."""
+def create_trace_context() -> Dict[str, Optional[str]]:
+    """
+    Generates a distributed trace context dictionary to propagate across inter-agent messages.
+    Returns: {"trace_id": ..., "parent_id": ...}
+    """
     span = current_span.get()
     if span:
-        return {"trace_id": span["trace_id"], "parent_id": span.get("span_id") or span.get("id")}
-    new_trace_id = str(uuid.uuid4())
-    return {"trace_id": new_trace_id, "parent_id": None}
+        return {
+            "trace_id": span["trace_id"],
+            "parent_id": span.get("span_id") or span.get("id"),
+        }
+    return {
+        "trace_id": str(uuid.uuid4()),
+        "parent_id": None,
+    }
 
 
-def start_span(function_name, run_type, metadata, args, kwargs, agent_address=None, agent_handle=None):
-    """Create a new span and make it the current one, inheriting or accepting explicit trace_id."""
+def start_span(
+    function_name: str,
+    run_type: str,
+    metadata: Optional[Dict[str, Any]],
+    args: tuple,
+    kwargs: dict,
+    agent_address: Optional[str] = None,
+    agent_handle: Optional[str] = None,
+) -> Tuple[Dict[str, Any], Any, Any, bool]:
+    """Initializes a span, establishes parent-child hierarchy, and binds context variables."""
     parent_span = current_span.get()
 
-    # Check for explicit trace propagation in kwargs or context payload
+    # Detect distributed trace headers passed via kwargs or metadata
     explicit_trace_id = None
     explicit_parent_id = None
     if isinstance(kwargs, dict):
@@ -178,7 +132,7 @@ def start_span(function_name, run_type, metadata, args, kwargs, agent_address=No
     )
 
     span_id = str(uuid.uuid4())
-    span = {
+    span: Dict[str, Any] = {
         "id": span_id,
         "span_id": span_id,
         "trace_id": trace_id,
@@ -210,8 +164,15 @@ def start_span(function_name, run_type, metadata, args, kwargs, agent_address=No
     return span, span_reset_token, trace_reset_token, is_top_level
 
 
-def end_span(span, span_reset_token, trace_reset_token, is_top_level, result=None, error=None):
-    """Finish the span and dispatch trace telemetry to backend."""
+def end_span(
+    span: Dict[str, Any],
+    span_reset_token: Any,
+    trace_reset_token: Any,
+    is_top_level: bool,
+    result: Any = None,
+    error: Optional[Exception] = None,
+) -> None:
+    """Closes the span, computes duration and tokens, and dispatches trace telemetry."""
     global LAST_TRACE
 
     try:
@@ -226,7 +187,7 @@ def end_span(span, span_reset_token, trace_reset_token, is_top_level, result=Non
     finally:
         current_span.reset(span_reset_token)
 
-        # Prepare span payload to ingest into ClickHouse
+        # Build schema-compliant payload for backend ingestion
         in_val = span.get("inputs")
         input_str = json.dumps(in_val, default=str) if isinstance(in_val, (dict, list)) else str(in_val or "")
         out_val = span.get("outputs")
@@ -270,9 +231,11 @@ def end_span(span, span_reset_token, trace_reset_token, is_top_level, result=Non
             "agent_handle": hdl,
             "metadata": meta_dict,
         }
-        # Send each individual span with the shared trace_id
-        _send_llm_trace_async(span_payload)
 
+        # Asynchronously send individual span with shared trace_id
+        send_span_async(span_payload)
+
+        # If root span finished, aggregate session metrics
         if is_top_level and trace_reset_token:
             all_spans = spans_in_trace.get() or []
             spans_in_trace.reset(trace_reset_token)
@@ -288,14 +251,25 @@ def end_span(span, span_reset_token, trace_reset_token, is_top_level, result=Non
             print(json.dumps(LAST_TRACE, indent=2, default=str))
 
 
-# ---------------------------------------------------------------
-# The @traceable decorator
-# ---------------------------------------------------------------
+def traceable(
+    name: Optional[str] = None,
+    run_type: str = "chain",
+    metadata: Optional[Dict[str, Any]] = None,
+    agent_address: Optional[str] = None,
+    agent_handle: Optional[str] = None,
+) -> Callable:
+    """
+    Distributed tracing decorator: tracks execution duration, inputs, outputs,
+    model tokens, and financial cost for synchronous and asynchronous functions.
 
-def traceable(name=None, run_type="chain", metadata=None, agent_address=None, agent_handle=None):
-    """Decorator: record timing, inputs, outputs, tokens and cost of a function."""
+    Usage:
+        @traceable(name="execute_tool", run_type="tool")
+        def my_tool(): ...
 
-    def decorator(function):
+        @traceable(name="agent_workflow", run_type="chain")
+        async def my_flow(): ...
+    """
+    def decorator(function: Callable) -> Callable:
         function_name = name or function.__name__
 
         if inspect.iscoroutinefunction(function):
@@ -346,50 +320,3 @@ def traceable(name=None, run_type="chain", metadata=None, agent_address=None, ag
         return sync_wrapper
 
     return decorator
-
-
-# ---------------------------------------------------------------
-# Auto-instrument LLM clients
-# ---------------------------------------------------------------
-
-def instrument_gemini(client):
-    """Wrap client.models.generate_content so token usage is recorded automatically."""
-    original_function = client.models.generate_content
-
-    @functools.wraps(original_function)
-    def wrapped_function(*args, **kwargs):
-        span = current_span.get()
-        model_name = kwargs.get("model", args[0] if args else "gemini-3.8-flash")
-
-        response = original_function(*args, **kwargs)
-
-        if span is not None:
-            save_token_usage(response, span, model=model_name)
-        return response
-
-    client.models.generate_content = wrapped_function
-
-
-def instrument_llm_provider(client):
-    """Wrap either a Gemini client or an OpenAI/ASI client."""
-
-    # Gemini client
-    if hasattr(client, "models") and hasattr(client.models, "generate_content"):
-        instrument_gemini(client)
-
-    # OpenAI / ASI-1 client
-    elif hasattr(client, "chat") and hasattr(client.chat, "completions"):
-        original_function = client.chat.completions.create
-
-        @functools.wraps(original_function)
-        def wrapped_function(*args, **kwargs):
-            span = current_span.get()
-            model_name = kwargs.get("model", "asi1-mini")
-
-            response = original_function(*args, **kwargs)
-
-            if span is not None:
-                save_token_usage(response, span, model=model_name)
-            return response
-
-        client.chat.completions.create = wrapped_function

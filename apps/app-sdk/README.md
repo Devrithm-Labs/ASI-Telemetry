@@ -1,42 +1,49 @@
 # ASI Telemetry SDK
 
-The official lightweight observability, metrics, and distributed tracing SDK for AI agents, LLM providers (Google Gemini, OpenAI, ASI-1, DeepSeek), and tool execution pipelines.
+The official lightweight observability, runtime metrics, and distributed tracing SDK for AI agents, LLMs (Google Gemini, OpenAI, ASI-1, DeepSeek), and tool execution pipelines.
 
 ## Installation
 
 ```bash
 pip install -e .
 ```
-Or with dependencies:
+
+Or install core dependencies directly:
 ```bash
-pip install httpx psutil
+pip install httpx
 ```
 
-## Features
+## Architecture & Features
 
-- **Agent & Tool Resource Monitoring (`AgentMonitor`)**:
-  - Automatically captures process CPU time, memory usage, latency, error/success status.
-  - Asynchronously streams metrics to the ASI Telemetry backend and ClickHouse.
-  - Zero performance overhead; non-blocking background network tasks.
+- **Agent & Tool Performance Tracking (`MetricsTracker`)**:
+  - Measures execution latency, request counts, and success/error status.
+  - Asynchronously dispatches metrics to the ASI Telemetry backend and ClickHouse.
+  - Zero performance overhead; non-blocking background workers.
+  - Clean real-time terminal telemetry reporting.
 
 - **Distributed LLM Tracing (`@traceable`)**:
-  - Trace multi-hop agent swarms and chains with distributed trace propagation (`trace_id`, `span_id`, `parent_id`).
-  - Auto-instrumentation for Google Gemini (`instrument_gemini`) and OpenAI/ASI providers (`instrument_llm_provider`).
-  - Real-time token usage calculation (input, output, total) and cost estimation per model.
+  - Trace multi-hop agent swarms and workflow chains with distributed context propagation (`trace_id`, `span_id`, `parent_id`).
+  - Supports both synchronous and asynchronous coroutine functions.
+  - Native auto-instrumentation for Google Gemini (`instrument_gemini`) and OpenAI/ASI (`instrument_openai` / `instrument_client`).
+  - Real-time token usage calculation and cost estimation per model.
+
+---
 
 ## Quick Start
 
 ### 1. Monitoring Agent Tools & Functions
 
 ```python
-from asi_telemetry import AgentMonitor
+from asi_telemetry import MetricsTracker
 
-monitor = AgentMonitor(agent_name="assistant")
+tracker = MetricsTracker(agent_name="assistant")
 
-@monitor.track(agentname="weather_tool")
+@tracker.track(agent_name="weather_tool")
 async def get_weather(city: str):
     return f"Weather in {city}: 72°F Sunny"
 ```
+
+*(Note: `AgentMonitor` is retained as a backward-compatible alias for `MetricsTracker`)*
 
 ### 2. Tracing LLMs and Multi-Agent Workflows
 
@@ -66,4 +73,14 @@ async def orchestrate():
     # Generate trace context to pass across network boundaries
     context = create_trace_context()
     # Pass context={"trace_id": ..., "parent_id": ...} to sub-agents
+```
+
+### 4. Direct Cost Estimation
+
+```python
+from asi_telemetry import calculate_cost
+
+# Approximate cost in USD for a model call
+cost = calculate_cost(model="gemini-3.8-flash", input_tokens=1200, output_tokens=350)
+print(f"Cost: ${cost}")
 ```

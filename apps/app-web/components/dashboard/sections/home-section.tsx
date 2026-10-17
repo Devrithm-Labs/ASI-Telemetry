@@ -63,7 +63,7 @@ OPENAI_API_KEY=<your-openai-api-key>`;
 
   const envCode = envFormat === "Shell" ? envCodeShell : envCodeDotEnv;
 
-  const quickstartCode = `from asi_tracer import traceable
+  const quickstartCode = `from asi_telemetry import traceable
 
 @traceable(name="agent_decision_step")
 def run_agent(task_prompt: str):

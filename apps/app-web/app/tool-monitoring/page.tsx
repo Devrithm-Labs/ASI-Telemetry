@@ -51,28 +51,21 @@ export default function ToolMonitoringPage() {
     } catch {}
   }, []);
 
-  const activeAgentKey =
-    selectedProject && selectedProject !== "All Applications" && selectedProject !== "all"
-      ? selectedProject
-      : "weather-agent";
+  const isAllAgents =
+    !selectedProject ||
+    selectedProject === "all-applications" ||
+    selectedProject === "All Applications" ||
+    selectedProject === "all" ||
+    selectedProject === "All Agents";
+
+  const activeAgentKey = !isAllAgents ? selectedProject : "";
 
   const currentHandle =
-    customHandles[activeAgentKey] ||
+    (activeAgentKey && customHandles[activeAgentKey]) ||
     summary?.agent_handle ||
-    (selectedProject && selectedProject !== "All Applications" && selectedProject !== "all"
-      ? `@${selectedProject}`
-      : "@weather-agent-13");
+    (activeAgentKey ? `@${activeAgentKey}` : "");
 
-  const currentAddress =
-    summary?.agent_address || "agent1qfzll7xq6t8d9rx5n3cnql32me650q2sakexpc979u0luhn702jh2af5mds";
-
-  const formatAddress = (addr: string) => {
-    if (!addr) return "agent1[...]4gkq";
-    if (addr.length > 18) {
-      return `${addr.slice(0, 6)}[...]${addr.slice(-4)}`;
-    }
-    return addr;
-  };
+  const currentAddress = summary?.agent_address || "";
 
   const handleCopy = (text: string, target: string) => {
     navigator.clipboard.writeText(text);
@@ -81,7 +74,7 @@ export default function ToolMonitoringPage() {
   };
 
   const handleSaveHandle = () => {
-    if (!handleInput.trim()) {
+    if (!handleInput.trim() || !activeAgentKey) {
       setIsEditingHandle(false);
       return;
     }
@@ -170,104 +163,106 @@ export default function ToolMonitoringPage() {
               />
             </div>
 
-            {/* Agent Identity Box: Agent Handle & Agent Address */}
-            <div className="relative z-10 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border/80 bg-card/60 px-5 py-3.5 backdrop-blur-sm shadow-xs">
-              <div className="flex flex-wrap items-center gap-10">
-                {/* Agent Handle */}
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
-                    <span>Agent Handle</span>
-                    {!isEditingHandle && (
-                      <button
-                        onClick={() => {
-                          setHandleInput(currentHandle);
-                          setIsEditingHandle(true);
-                        }}
-                        className="text-muted-foreground hover:text-blue-500 transition-colors p-0.5 rounded"
-                        title="Edit agent handle name"
-                      >
-                        <Pencil className="h-3 w-3" />
-                      </button>
+            {/* Agent Identity Box: Agent Handle & Agent Address (visible only when an individual agent is selected) */}
+            {!isAllAgents && (
+              <div className="relative z-10 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border/80 bg-card/60 px-5 py-3.5 backdrop-blur-sm shadow-xs">
+                <div className="flex flex-wrap items-center gap-10">
+                  {/* Agent Handle */}
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                      <span>Agent Handle</span>
+                      {!isEditingHandle && (
+                        <button
+                          onClick={() => {
+                            setHandleInput(currentHandle);
+                            setIsEditingHandle(true);
+                          }}
+                          className="text-muted-foreground hover:text-blue-500 transition-colors p-0.5 rounded"
+                          title="Edit agent handle name"
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+
+                    {isEditingHandle ? (
+                      <div className="flex items-center gap-2 pt-0.5">
+                        <input
+                          type="text"
+                          value={handleInput}
+                          onChange={(e) => setHandleInput(e.target.value)}
+                          placeholder="@agent-handle"
+                          className="h-7 w-48 rounded-md border border-border bg-background px-2 font-mono text-xs text-foreground focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleSaveHandle();
+                            if (e.key === "Escape") setIsEditingHandle(false);
+                          }}
+                        />
+                        <button
+                          onClick={handleSaveHandle}
+                          className="rounded bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-blue-500 shadow-sm"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => setIsEditingHandle(false)}
+                          className="rounded border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-muted"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-sm font-bold text-foreground">
+                          {currentHandle}
+                        </span>
+                        <button
+                          onClick={() => handleCopy(currentHandle, "handle")}
+                          className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                          title="Copy agent handle"
+                        >
+                          {copiedTarget === "handle" ? (
+                            <Check className="h-3.5 w-3.5 text-emerald-500" />
+                          ) : (
+                            <Copy className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      </div>
                     )}
                   </div>
 
-                  {isEditingHandle ? (
-                    <div className="flex items-center gap-2 pt-0.5">
-                      <input
-                        type="text"
-                        value={handleInput}
-                        onChange={(e) => setHandleInput(e.target.value)}
-                        placeholder="@agent-handle"
-                        className="h-7 w-48 rounded-md border border-border bg-background px-2 font-mono text-xs text-foreground focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        autoFocus
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") handleSaveHandle();
-                          if (e.key === "Escape") setIsEditingHandle(false);
-                        }}
-                      />
-                      <button
-                        onClick={handleSaveHandle}
-                        className="rounded bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-blue-500 shadow-sm"
-                      >
-                        Save
-                      </button>
-                      <button
-                        onClick={() => setIsEditingHandle(false)}
-                        className="rounded border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-muted"
-                      >
-                        Cancel
-                      </button>
+                  {/* Agent Address */}
+                  <div className="space-y-1">
+                    <div className="text-xs font-semibold text-foreground">
+                      Agent Address
                     </div>
-                  ) : (
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm font-bold text-foreground">
-                        {currentHandle}
+                      <span className="font-mono text-sm font-bold text-foreground" title={currentAddress}>
+                        {currentAddress}
                       </span>
                       <button
-                        onClick={() => handleCopy(currentHandle, "handle")}
+                        onClick={() => handleCopy(currentAddress, "address")}
                         className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                        title="Copy agent handle"
+                        title="Copy agent address"
                       >
-                        {copiedTarget === "handle" ? (
+                        {copiedTarget === "address" ? (
                           <Check className="h-3.5 w-3.5 text-emerald-500" />
                         ) : (
                           <Copy className="h-3.5 w-3.5" />
                         )}
                       </button>
                     </div>
-                  )}
-                </div>
-
-                {/* Agent Address */}
-                <div className="space-y-1">
-                  <div className="text-xs font-semibold text-foreground">
-                    Agent Address
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm font-bold text-foreground" title={currentAddress}>
-                      {formatAddress(currentAddress)}
-                    </span>
-                    <button
-                      onClick={() => handleCopy(currentAddress, "address")}
-                      className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                      title="Copy agent address"
-                    >
-                      {copiedTarget === "address" ? (
-                        <Check className="h-3.5 w-3.5 text-emerald-500" />
-                      ) : (
-                        <Copy className="h-3.5 w-3.5" />
-                      )}
-                    </button>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex items-center gap-2">
-                <span className="rounded bg-muted px-2.5 py-1 font-mono text-[11px] text-muted-foreground border border-border">
-                  Agent: <strong className="text-foreground">{activeAgentKey}</strong>
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="rounded bg-muted px-2.5 py-1 font-mono text-[11px] text-muted-foreground border border-border">
+                    Agent: <strong className="text-foreground">{activeAgentKey}</strong>
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Top Overview KPI Metric Cards (Simplified, with Uptime replacing CPU/Memory) */}
             <OverviewMetricsStrip
