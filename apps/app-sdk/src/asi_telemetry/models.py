@@ -12,8 +12,7 @@ PRICE_PER_MILLION: Dict[str, Dict[str, float]] = {
     "gemini-3.8-flash": {"input": 0.075, "output": 0.30},
     "gemini-2.5-flash": {"input": 0.075, "output": 0.30},
     "gemini-3.5-flash": {"input": 0.075, "output": 0.30},
-    "gemini-3.5-flash-lite": {"input": 0.0375, "output": 0.15},
-    "deepseek-chat": {"input": 0.14, "output": 0.28},
+    "gemini-3.5-flash-lite": {"input": 0.0375, "output": 0.15}
 }
 
 DEFAULT_PRICE: Dict[str, float] = {"input": 0.10, "output": 0.40}
