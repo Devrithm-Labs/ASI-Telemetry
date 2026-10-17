@@ -22,7 +22,10 @@ class MetricsTracker:
     ):
         self.agent_name = agent_name
         self.agent_address = agent_address
-        self.backend_url = os.getenv("TELEMETRY_BACKEND_URL")
+        url = os.getenv("TELEMETRY_BACKEND_URL") or "http://127.0.0.1:8080/api/metrics"
+        if not url.endswith("/api/metrics"):
+            url = url.rstrip("/") + "/api/metrics"
+        self.backend_url = url
 
         # Sync process-level agent identity with tracer
         try:
@@ -35,9 +38,6 @@ class MetricsTracker:
             pass
 
     def _dispatch_payload(self, payload: dict) -> None:
-        #for my understanding i created here a thread to send the payload to the backend, that will run in background
-        #so that the agent will not be blocked
-        #the payload will be sent to the backend and the agent will continue its execution
         def _worker():
             try:
                 data = json.dumps(payload, default=str).encode("utf-8")

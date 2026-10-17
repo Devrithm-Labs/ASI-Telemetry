@@ -1,3 +1,4 @@
+from traceback import print_tb
 import asyncio
 import os
 import sys
@@ -11,8 +12,7 @@ from uagents import Agent, Context, Model
 from uagents.resolver import RulesBasedResolver
 from asi_telemetry import MetricsTracker
 
-# Initialize telemetry monitor for the sender agent
-monitor = MetricsTracker(agent_name="sender")
+
 
 try:
     loop = asyncio.get_event_loop()
@@ -38,9 +38,8 @@ sender = Agent(
     resolve=local_resolver
 )
 
-monitor.agent_address = sender.address
-from asi_telemetry import set_agent_info
-set_agent_info(agent_name="sender", agent_address=sender.address)
+# Initialize telemetry monitor for the sender agent
+monitor = MetricsTracker(agent_name="sender",agent_address=sender.address)
 
 @monitor.track()
 async def send_greeting(ctx: Context, text: str):

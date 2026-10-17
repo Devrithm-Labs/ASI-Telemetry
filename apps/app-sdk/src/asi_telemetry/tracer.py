@@ -253,7 +253,7 @@ def end_span(
                 "total_cost_usd": round(sum(s.get("cost", 0.0) for s in all_spans), 6),
                 "spans": all_spans,
             }
-            print(json.dumps(LAST_TRACE, indent=2, default=str))
+            # print(json.dumps(LAST_TRACE, indent=2, default=str))
 
 
 def traceable(

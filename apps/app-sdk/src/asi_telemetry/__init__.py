@@ -5,7 +5,7 @@ Lightweight, high-performance telemetry and distributed tracing SDK for AI agent
 LLMs, multi-agent systems, and tool monitoring.
 """
 
-from .metrics import MetricsTracker, AgentMonitor
+from .metrics import MetricsTracker
 from .tracer import (
     traceable,
     create_trace_context,
@@ -37,7 +37,6 @@ __version__ = "0.2.0"
 __all__ = [
     # Metrics
     "MetricsTracker",
-    "AgentMonitor",
     # Tracing
     "traceable",
     "create_trace_context",

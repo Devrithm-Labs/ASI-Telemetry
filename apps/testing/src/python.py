@@ -17,12 +17,6 @@ from uagents.resolver import RulesBasedResolver
 from asi_telemetry import MetricsTracker, traceable, instrument_gemini
 from google import genai
 
-# 1. Initialize Telemetry Monitors
-monitor = MetricsTracker(agent_name="receiver")
-
-# 2. Initialize and Instrument Gemini Client
-gemini_client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
-instrument_gemini(gemini_client)
 
 try:
     loop = asyncio.get_event_loop()
@@ -48,12 +42,11 @@ agent = Agent(
 )
 
 # Configure agent address and handle in SDK
-monitor.agent_address = agent.address
-from asi_telemetry import set_agent_info
-set_agent_info(agent_name="receiver", agent_address=agent.address)
+monitor = MetricsTracker(agent_name="python-task", agent_address=agent.address)
 
+gemini_client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
+instrument_gemini(gemini_client)
 
-# 3. Tracked LLM Call (Captures tokens, cost, and LLM latency)
 @traceable(name="gemini_generate", run_type="llm")
 def call_gemini(prompt: str) -> str:
     """Invokes Google Gemini model with high-availability fallback."""
@@ -79,7 +72,7 @@ async def startup(ctx: Context):
 
 # 4. Agent Handler (Tracks Daemon CPU, RAM, and end-to-end response time)
 @agent.on_message(model=Greeting)
-@monitor.track()
+@monitor.track("greeting")
 @traceable(name="handle_message_uk", run_type="tool")
 async def handle_message(ctx: Context, sender: str, msg: Greeting):
     print(f"\n[Received Prompt from {sender[:16]}...]: {msg.text}")
