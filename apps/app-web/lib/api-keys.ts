@@ -24,47 +24,7 @@ export interface ApiKeyItem {
 
 const STORAGE_KEY = "asi_telemetry_api_keys";
 
-const INITIAL_KEYS: ApiKeyItem[] = [
-  {
-    id: "key_prod_default",
-    name: "Production Telemetry Agent",
-    keyPrefix: "asi_live_7c82••••••••4f91",
-    fullKey: "asi_live_7c82e5b4a9f14309a93f124801e9bb82",
-    environment: "production",
-    permissions: ["telemetry:write", "telemetry:read"],
-    createdAt: "2026-09-12",
-    lastUsedAt: "2 mins ago",
-    status: "active",
-    rateLimit: "50,000 req/min",
-    expiresAt: "Never",
-  },
-  {
-    id: "key_stage_worker",
-    name: "Staging SDK Collector",
-    keyPrefix: "asi_stage_3b11••••••••99a0",
-    fullKey: "asi_stage_3b11294fd9a4411fb20a48b1081a99a0",
-    environment: "staging",
-    permissions: ["telemetry:write"],
-    createdAt: "2026-10-01",
-    lastUsedAt: "1 hour ago",
-    status: "active",
-    rateLimit: "10,000 req/min",
-    expiresAt: "90 days",
-  },
-  {
-    id: "key_dev_local",
-    name: "Local Dev CLI & Tracing",
-    keyPrefix: "asi_dev_88fa••••••••12c4",
-    fullKey: "asi_dev_88fa5389ce214a1db89cf009210e12c4",
-    environment: "development",
-    permissions: ["telemetry:write", "telemetry:read", "alerts:manage"],
-    createdAt: "2026-10-14",
-    lastUsedAt: "Yesterday",
-    status: "active",
-    rateLimit: "5,000 req/min",
-    expiresAt: "30 days",
-  },
-];
+const INITIAL_KEYS: ApiKeyItem[] = [];
 
 export function getStoredApiKeys(): ApiKeyItem[] {
   if (typeof window === "undefined") return INITIAL_KEYS;

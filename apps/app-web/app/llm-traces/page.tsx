@@ -60,10 +60,6 @@ export default function LLMTracingPage() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [copiedId, setCopiedId] = React.useState<string | null>(null);
 
-  // Live ClickHouse traces only
-  const allTraces = traces;
-
-  // Fetch traces from ClickHouse API
   const fetchTraces = React.useCallback(async () => {
     setIsLoading(true);
     try {
@@ -77,7 +73,6 @@ export default function LLMTracingPage() {
         const data = await res.json();
         const realTraces: LLMTraceItem[] = data.traces || [];
         setTraces(realTraces);
-        // Keep sidebar closed by default
         setSelectedTrace((current) => {
           if (!current) return null;
           return realTraces.find((t) => t.id === current.id) || null;
@@ -90,7 +85,6 @@ export default function LLMTracingPage() {
     }
   }, [searchQuery, statusFilter]);
 
-  // Fetch traces on mount and when filters change
   React.useEffect(() => {
     fetchTraces();
   }, [fetchTraces]);
@@ -111,7 +105,7 @@ export default function LLMTracingPage() {
 
   // Filter traces
   const filteredTraces = React.useMemo(() => {
-    return allTraces.filter((t) => {
+    return traces.filter((t) => {
       const matchSearch =
         !searchQuery ||
         t.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -124,7 +118,7 @@ export default function LLMTracingPage() {
       const matchRunType = runTypeFilter === "all" || (t.run_type || "llm").toLowerCase() === runTypeFilter;
       return matchSearch && matchStatus && matchRunType;
     });
-  }, [allTraces, searchQuery, statusFilter, runTypeFilter]);
+  }, [traces, searchQuery, statusFilter, runTypeFilter]);
 
   // Group traces by trace_id to identify collective multi-agent calls
   const traceGroups = React.useMemo(() => {
