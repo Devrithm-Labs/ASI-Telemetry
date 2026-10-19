@@ -13,7 +13,6 @@ import {
   RequestMetricPoint,
   ResponseTimeMetricPoint,
   ErrorMetricPoint,
-  CpuMetricPoint,
   TimeRange,
   MetricSummary,
 } from "./context/dashboard-types";
@@ -23,7 +22,6 @@ interface OverviewMetricsStripProps {
   latencyData?: ResponseTimeMetricPoint[];
   responseTimeData?: ResponseTimeMetricPoint[];
   errorData: ErrorMetricPoint[];
-  cpuData?: CpuMetricPoint[];
   timeRange: TimeRange;
   summary?: MetricSummary | null;
   onCardClick?: (section: string) => void;

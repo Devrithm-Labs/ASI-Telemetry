@@ -7,11 +7,11 @@ import {
   RequestMetricPoint,
   ResponseTimeMetricPoint,
   LatencyMetricPoint,
-  CpuMetricPoint,
   ErrorMetricPoint,
   MetricSummary,
   ApplicationMetadata,
 } from "./dashboard-types";
+import { getAuthHeaders } from "@/lib/auth";
 
 interface DashboardContextType {
   selectedProject: string;
@@ -31,7 +31,6 @@ interface DashboardContextType {
   requestData: RequestMetricPoint[];
   responseTimeData: ResponseTimeMetricPoint[];
   latencyData: LatencyMetricPoint[]; // Backwards-compatible alias
-  cpuData: CpuMetricPoint[];
   errorData: ErrorMetricPoint[];
   handleRefresh: () => Promise<void> | void;
   traces: TraceRecord[];
@@ -74,7 +73,6 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [summary, setSummary] = React.useState<MetricSummary | null>(null);
   const [requestData, setRequestData] = React.useState<RequestMetricPoint[]>([]);
   const [responseTimeData, setResponseTimeData] = React.useState<ResponseTimeMetricPoint[]>([]);
-  const [cpuData, setCpuData] = React.useState<CpuMetricPoint[]>([]);
   const [errorData, setErrorData] = React.useState<ErrorMetricPoint[]>([]);
   const [traces, setTraces] = React.useState<TraceRecord[]>([]);
 
@@ -102,7 +100,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         params.set("func_name", selectedFunction);
       }
 
-      const res = await fetch(`http://localhost:8080/api/dashboard?${params.toString()}`);
+      const res = await fetch(`http://localhost:8080/api/dashboard?${params.toString()}`, {
+        headers: getAuthHeaders(),
+      });
       if (res.ok) {
         const payload = await res.json();
 
@@ -115,7 +115,6 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         if (payload.timeseries) {
           setRequestData(payload.timeseries.requests || []);
           setResponseTimeData(payload.timeseries.response_time || []);
-          setCpuData(payload.timeseries.cpu || []);
           setErrorData(payload.timeseries.errors || []);
         }
 
@@ -150,6 +149,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch("http://localhost:8080/api/traces", {
         method: "DELETE",
+        headers: getAuthHeaders(),
       });
       if (res.ok) {
         setTraces([]);
@@ -175,6 +175,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         const params = new URLSearchParams({ ids: traceIds.join(",") });
         const res = await fetch(`http://localhost:8080/api/traces?${params.toString()}`, {
           method: "DELETE",
+          headers: getAuthHeaders(),
         });
         if (res.ok) {
           setTraces((prev) => prev.filter((t) => !traceIds.includes(t.id)));
@@ -213,7 +214,6 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         requestData,
         responseTimeData,
         latencyData: responseTimeData, // alias
-        cpuData,
         errorData,
         handleRefresh,
         traces,

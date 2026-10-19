@@ -41,9 +41,7 @@ CREATE TABLE IF NOT EXISTS telemetry_metrics (
     agent_name LowCardinality(String),
     func_name LowCardinality(String),
     status LowCardinality(String),
-    latency_ms Float64,
-    cpu_before Float64,
-    cpu_after Float64,
+    response_time_ms Float64,
     memory_before Float64,
     memory_after Float64,
     metadata String

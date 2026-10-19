@@ -11,14 +11,13 @@ class MetricPayload(BaseModel):
     status: str = Field(default="success", description="Status (success, error, or cancelled)")
     response_time_ms: float = Field(default=0.0, description="Response time in milliseconds")
     latency_ms: Optional[float] = Field(default=None, description="Legacy latency alias")
-    cpu_before: Optional[float] = Field(default=0.0)
-    cpu_after: Optional[float] = Field(default=0.0)
-    cpu_ms: Optional[float] = Field(default=None)
     memory_before: Optional[float] = Field(default=0.0)
     memory_after: Optional[float] = Field(default=0.0)
     memory_before_mb: Optional[float] = Field(default=None)
     memory_after_mb: Optional[float] = Field(default=None)
     timestamp: Optional[str] = Field(default=None, description="ISO timestamp string")
+    user_id: Optional[str] = Field(default=None, description="Owner user ID if known")
+    api_key: Optional[str] = Field(default=None, description="API Key for user authentication")
     metadata: Optional[Dict[str, Any]] = Field(default=None, description="Extra metadata")
 
     @model_validator(mode="after")
@@ -53,7 +52,6 @@ class AnalyticsBucket(BaseModel):
     p90: float
     p95: float
     p99: float
-    avg_cpu: float
     avg_memory: float
     error_rate: float
 

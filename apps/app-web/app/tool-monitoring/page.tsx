@@ -9,6 +9,7 @@ import { OverviewMetricsStrip } from "@/components/dashboard/overview-metrics-st
 import { LatencySection } from "@/components/dashboard/sections/latency-section";
 import { RequestSection } from "@/components/dashboard/sections/request-section";
 import { ErrorSection } from "@/components/dashboard/sections/error-section";
+import { getCookie, setCookie } from "@/lib/auth";
 
 const TOOL_MONITORING_TABS: SubTabItem[] = [
   { id: "Request", label: "Request", targetId: "section-request" },
@@ -46,7 +47,7 @@ export default function ToolMonitoringPage() {
 
   React.useEffect(() => {
     try {
-      const saved = localStorage.getItem("asi_agent_handles");
+      const saved = getCookie("asi_agent_handles");
       if (saved) setCustomHandles(JSON.parse(saved));
     } catch {}
   }, []);
@@ -83,7 +84,7 @@ export default function ToolMonitoringPage() {
     const next = { ...customHandles, [activeAgentKey]: formatted };
     setCustomHandles(next);
     try {
-      localStorage.setItem("asi_agent_handles", JSON.stringify(next));
+      setCookie("asi_agent_handles", JSON.stringify(next));
     } catch {}
     setIsEditingHandle(false);
   };
@@ -264,7 +265,7 @@ export default function ToolMonitoringPage() {
               </div>
             )}
 
-            {/* Top Overview KPI Metric Cards (Simplified, with Uptime replacing CPU/Memory) */}
+            {/* Top Overview KPI Metric Cards */}
             <OverviewMetricsStrip
               summary={summary}
               requestData={requestData}

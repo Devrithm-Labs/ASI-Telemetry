@@ -30,6 +30,7 @@ class TelemetryRepository:
         meta = payload_dict.get("metadata") or {}
         if payload_dict.get("agent_address"):
             meta["agent_address"] = payload_dict["agent_address"]
+        user_id = str(payload_dict.get("user_id") or "")
 
         record = {
             "id": record_id,
@@ -38,11 +39,10 @@ class TelemetryRepository:
             "func_name": payload_dict.get("func_name", "handle_message"),
             "status": payload_dict.get("status", "success"),
             "response_time_ms": round(float(resp_time), 2),
-            "cpu_before": 0.0,
-            "cpu_after": 0.0,
             "memory_before": 0.0,
             "memory_after": 0.0,
             "metadata": meta,
+            "user_id": user_id,
         }
 
         self.conn.memory_records.append(record)
@@ -60,13 +60,12 @@ class TelemetryRepository:
                     record["func_name"],
                     record["status"],
                     record["response_time_ms"],
-                    record["cpu_before"],
-                    record["cpu_after"],
                     record["memory_before"],
                     record["memory_after"],
                     json.dumps(record["metadata"]),
                     addr_val,
                     hdl_val,
+                    user_id,
                 ]
                 self.conn.safe_insert(
                     "telemetry_metrics",
@@ -78,13 +77,12 @@ class TelemetryRepository:
                         "func_name",
                         "status",
                         "response_time_ms",
-                        "cpu_before",
-                        "cpu_after",
                         "memory_before",
                         "memory_after",
                         "metadata",
                         "agent_address",
                         "agent_handle",
+                        "user_id",
                     ],
                 )
             except Exception as e:
@@ -97,8 +95,12 @@ class TelemetryRepository:
         agent_name: Optional[str] = None,
         func_name: Optional[str] = None,
         time_range: Optional[str] = None,
+        user_id: Optional[str] = None,
     ) -> str:
         clauses = []
+        if user_id:
+            safe_uid = "".join(c for c in user_id if c.isalnum() or c in ("-", "_", "."))
+            clauses.append(f"user_id = '{safe_uid}'")
         if agent_name and agent_name not in ("all-applications", "All Applications", "all"):
             safe_agent = "".join(c for c in agent_name if c.isalnum() or c in ("-", "_", "."))
             clauses.append(f"agent_name = '{safe_agent}'")
@@ -125,9 +127,11 @@ class TelemetryRepository:
         limit: int = 500,
         agent_name: Optional[str] = None,
         func_name: Optional[str] = None,
+        user_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Retrieves and computes unified dashboard telemetry data."""
-        where_clause = self._build_where_clause(agent_name, func_name, time_range)
+        where_clause = self._build_where_clause(agent_name, func_name, time_range, user_id=user_id)
+        safe_uid = "".join(c for c in user_id if c.isalnum() or c in ("-", "_", ".")) if user_id else None
         records: List[Dict[str, Any]] = []
 
         if self.conn.is_connected and self.conn.client:
@@ -136,7 +140,7 @@ class TelemetryRepository:
                 res = self.conn.safe_query(f"""
                     SELECT
                         id, toString(timestamp), agent_name, func_name,
-                        status, response_time_ms, cpu_before, cpu_after,
+                        status, response_time_ms,
                         memory_before, memory_after, metadata
                     FROM telemetry_metrics
                     {where_clause}
@@ -147,7 +151,7 @@ class TelemetryRepository:
                 for row in res.result_rows:
                     meta = {}
                     try:
-                        meta = json.loads(row[10]) if row[10] else {}
+                        meta = json.loads(row[8]) if row[8] else {}
                     except Exception:
                         meta = {}
 
@@ -158,10 +162,8 @@ class TelemetryRepository:
                         "func_name": row[3] or "handle_message",
                         "status": row[4] or "success",
                         "response_time_ms": float(row[5] or 0.0),
-                        "cpu_before": float(row[6] or 0.0),
-                        "cpu_after": float(row[7] or 0.0),
-                        "memory_before": float(row[8] or 0.0),
-                        "memory_after": float(row[9] or 0.0),
+                        "memory_before": float(row[6] or 0.0),
+                        "memory_after": float(row[7] or 0.0),
                         "metadata": meta,
                     })
             except Exception as e:
@@ -171,7 +173,8 @@ class TelemetryRepository:
         apps_map: Dict[str, set] = defaultdict(set)
         if self.conn.is_connected and self.conn.client:
             try:
-                all_apps_res = self.conn.safe_query("SELECT DISTINCT agent_name, func_name FROM telemetry_metrics")
+                user_filter = f"WHERE user_id = '{safe_uid}'" if user_id else ""
+                all_apps_res = self.conn.safe_query(f"SELECT DISTINCT agent_name, func_name FROM telemetry_metrics {user_filter}")
                 for row in all_apps_res.result_rows:
                     if row[0]:
                         apps_map[row[0]].add(row[1] or "default")
@@ -179,7 +182,8 @@ class TelemetryRepository:
                 logger.warning(f"Error discovering all applications: {e}")
 
         if not self.conn.is_connected:
-            for r in self.conn.memory_records:
+            mem_src = [r for r in self.conn.memory_records if r.get("user_id") == user_id] if user_id else self.conn.memory_records
+            for r in mem_src:
                 if r.get("agent_name"):
                     apps_map[r["agent_name"]].add(r.get("func_name", "default"))
 
@@ -199,6 +203,8 @@ class TelemetryRepository:
         if self.conn.is_connected and self.conn.client:
             try:
                 w_30d_list = ["timestamp >= now() - INTERVAL 30 DAY"]
+                if user_id:
+                    w_30d_list.append(f"user_id = '{safe_uid}'")
                 if agent_name and agent_name not in ("All Applications", "all"):
                     safe_ag = "".join(c for c in agent_name if c.isalnum() or c in ("-", "_", "."))
                     w_30d_list.append(f"agent_name = '{safe_ag}'")
@@ -382,7 +388,6 @@ class TelemetryRepository:
                 "statusCode": 200 if is_ok else 500,
                 "responseTimeMs": resp_ms,
                 "latencyMs": resp_ms,
-                "cpuPercent": 0.0,
                 "tokens": 0,
                 "model": "uAgent",
                 "timestamp": r["timestamp"],
@@ -406,17 +411,28 @@ class TelemetryRepository:
             "applications": applications,
         }
 
-    def delete_traces(self, trace_ids: Optional[List[str]] = None) -> Dict[str, Any]:
-        """Deletes specific telemetry traces by ID or truncates telemetry_metrics table."""
+    def delete_traces(self, trace_ids: Optional[List[str]] = None, user_id: Optional[str] = None) -> Dict[str, Any]:
+        """Deletes specific telemetry traces by ID or truncates/deletes telemetry_metrics for a user."""
+        safe_uid = "".join(c for c in user_id if c.isalnum() or c in ("-", "_", ".")) if user_id else None
         if not trace_ids:
-            self.conn.memory_records.clear()
-            if self.conn.is_connected and self.conn.client:
-                try:
-                    self.conn.safe_command("TRUNCATE TABLE IF EXISTS telemetry_metrics")
-                except Exception as e:
-                    logger.error(f"Error truncating telemetry_metrics: {e}")
-                    return {"status": "error", "message": str(e)}
-            return {"status": "success", "message": "All tracing data cleared successfully"}
+            if safe_uid:
+                self.conn.memory_records = [r for r in self.conn.memory_records if r.get("user_id") != safe_uid]
+                if self.conn.is_connected and self.conn.client:
+                    try:
+                        self.conn.safe_command(f"ALTER TABLE telemetry_metrics DELETE WHERE user_id = '{safe_uid}'")
+                    except Exception as e:
+                        logger.error(f"Error deleting telemetry_metrics for user: {e}")
+                        return {"status": "error", "message": str(e)}
+                return {"status": "success", "message": "User tracing data cleared successfully"}
+            else:
+                self.conn.memory_records.clear()
+                if self.conn.is_connected and self.conn.client:
+                    try:
+                        self.conn.safe_command("TRUNCATE TABLE IF EXISTS telemetry_metrics")
+                    except Exception as e:
+                        logger.error(f"Error truncating telemetry_metrics: {e}")
+                        return {"status": "error", "message": str(e)}
+                return {"status": "success", "message": "All tracing data cleared successfully"}
         else:
             ids_set = set(trace_ids)
             self.conn.memory_records = [r for r in self.conn.memory_records if r.get("id") not in ids_set]
@@ -425,7 +441,10 @@ class TelemetryRepository:
                     safe_ids = ["'" + "".join(c for c in tid if c.isalnum() or c in ("-", "_", ".")) + "'" for tid in trace_ids]
                     if safe_ids:
                         in_clause = ", ".join(safe_ids)
-                        self.conn.safe_command(f"DELETE FROM telemetry_metrics WHERE id IN ({in_clause})")
+                        cmd = f"ALTER TABLE telemetry_metrics DELETE WHERE id IN ({in_clause})"
+                        if safe_uid:
+                            cmd += f" AND user_id = '{safe_uid}'"
+                        self.conn.safe_command(cmd)
                 except Exception as e:
                     logger.error(f"Error deleting traces from ClickHouse: {e}")
                     return {"status": "error", "message": str(e)}

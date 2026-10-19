@@ -95,8 +95,6 @@ def seed():
                 resp_time = random.uniform(45.0, 320.0)
                 meta = json.dumps({"status_code": 200})
 
-            cpu_b = random.uniform(8.0, 22.0)
-            cpu_a = cpu_b + random.uniform(2.0, 15.0)
             mem_b = random.uniform(85.0, 130.0)
             mem_a = mem_b + random.uniform(1.0, 8.0)
 
@@ -107,8 +105,6 @@ def seed():
                 func,
                 status,
                 round(resp_time, 2),
-                round(cpu_b, 1),
-                round(cpu_a, 1),
                 round(mem_b, 1),
                 round(mem_a, 1),
                 meta,
@@ -173,7 +169,7 @@ def seed():
     # Insert in batches
     telemetry_cols = [
         "id", "timestamp", "agent_name", "func_name", "status",
-        "response_time_ms", "cpu_before", "cpu_after",
+        "response_time_ms",
         "memory_before", "memory_after", "metadata"
     ]
     db_connection.safe_insert("telemetry_metrics", telemetry_rows, column_names=telemetry_cols)

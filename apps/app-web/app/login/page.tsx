@@ -17,12 +17,12 @@ import {
   Zap,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { saveStoredUser } from "@/lib/auth";
+import { loginUser } from "@/lib/auth";
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = React.useState("alex@devrithm.io");
-  const [password, setPassword] = React.useState("••••••••••••");
+  const [password, setPassword] = React.useState("StrongPassword123!");
   const [showPassword, setShowPassword] = React.useState(false);
   const [rememberMe, setRememberMe] = React.useState(true);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -30,7 +30,7 @@ export default function LoginPage() {
   const [showForgotModal, setShowForgotModal] = React.useState(false);
   const [forgotEmailSent, setForgotEmailSent] = React.useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
       setErrorMsg("Please enter both email and password.");
@@ -39,41 +39,21 @@ export default function LoginPage() {
     setErrorMsg(null);
     setIsLoading(true);
 
-    setTimeout(() => {
-      // Create session
-      const nameFromEmail = email.split("@")[0] || "Telemetry User";
-      const formattedName = nameFromEmail
-        .split(".")
-        .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-        .join(" ");
-
-      saveStoredUser({
-        id: `usr_${Date.now()}`,
-        name: formattedName || "Alex Vance",
-        email: email,
-        company: "Devrithm Labs",
-        role: "AI Lead Architect",
-      });
-
-      setIsLoading(false);
-      router.push("/api-keys");
-    }, 600);
+    const result = await loginUser(email, password);
+    setIsLoading(false);
+    if (!result.success) {
+      setErrorMsg(result.error || "Login failed.");
+      return;
+    }
+    router.push("/api-keys");
   };
 
-  const handleQuickDemoLogin = () => {
+  const handleQuickDemoLogin = async () => {
     setIsLoading(true);
     setErrorMsg(null);
-    setTimeout(() => {
-      saveStoredUser({
-        id: "usr_demo_1",
-        name: "Alex Vance",
-        email: "alex@devrithm.io",
-        company: "Devrithm Labs",
-        role: "Lead Observability Engineer",
-      });
-      setIsLoading(false);
-      router.push("/api-keys");
-    }, 450);
+    const result = await loginUser("alex@devrithm.io", "DemoPass123!");
+    setIsLoading(false);
+    router.push("/api-keys");
   };
 
   return (

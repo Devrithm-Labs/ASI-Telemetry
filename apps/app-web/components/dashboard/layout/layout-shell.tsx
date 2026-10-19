@@ -11,7 +11,7 @@ import { DashboardProvider, useDashboard } from "../context/dashboard-context";
 
 function DashboardShellInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isAuthRoute = pathname === "/login" || pathname === "/signup";
+  const isPublicRoute = pathname === "/" || pathname === "/login" || pathname === "/signup";
   const {
     activeHeaderTab,
     setActiveHeaderTab,
@@ -25,7 +25,7 @@ function DashboardShellInner({ children }: { children: React.ReactNode }) {
     setIsDashboardModalOpen,
   } = useDashboard();
 
-  if (isAuthRoute) {
+  if (isPublicRoute) {
     return <>{children}</>;
   }
 

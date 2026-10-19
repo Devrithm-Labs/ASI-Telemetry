@@ -1,5 +1,7 @@
 "use client";
 
+import { getAuthHeaders } from "./auth";
+
 export type KeyEnvironment = "production" | "staging" | "development";
 
 export type KeyPermission =
@@ -22,30 +24,115 @@ export interface ApiKeyItem {
   expiresAt: string | null;
 }
 
-const STORAGE_KEY = "asi_telemetry_api_keys";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8080";
 
-const INITIAL_KEYS: ApiKeyItem[] = [];
+function mapBackendKeyToFrontend(raw: any): ApiKeyItem {
+  let env: KeyEnvironment = "production";
+  const rawEnv = (raw.environment || "").toLowerCase();
+  if (rawEnv.includes("stag")) env = "staging";
+  else if (rawEnv.includes("dev")) env = "development";
 
-export function getStoredApiKeys(): ApiKeyItem[] {
-  if (typeof window === "undefined") return INITIAL_KEYS;
+  return {
+    id: raw.id || `key_${Date.now()}`,
+    name: raw.name || "Default API Key",
+    keyPrefix: raw.key_prefix || (raw.full_key ? `${raw.full_key.slice(0, 10)}••••••••` : "asi_live_••••••••"),
+    fullKey: raw.full_key,
+    environment: env,
+    permissions: raw.permissions || ["telemetry:write", "telemetry:read"],
+    createdAt: raw.created_at ? raw.created_at.slice(0, 10) : new Date().toISOString().slice(0, 10),
+    lastUsedAt: raw.last_used_at ? raw.last_used_at.slice(0, 19).replace("T", " ") : "Never",
+    status: raw.status === "revoked" ? "revoked" : "active",
+    rateLimit: raw.rate_limit || "25,000 req/min",
+    expiresAt: raw.expires_at || "90 days",
+  };
+}
+
+/**
+ * Fetches all API keys associated with the current user's session from backend ClickHouse.
+ */
+export async function fetchBackendApiKeys(): Promise<ApiKeyItem[]> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_KEYS));
-      return INITIAL_KEYS;
+    const res = await fetch(`${BACKEND_URL}/api/api-keys`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        return data.map(mapBackendKeyToFrontend);
+      }
     }
-    return JSON.parse(raw);
-  } catch {
-    return INITIAL_KEYS;
+    return [];
+  } catch (err) {
+    console.warn("Could not fetch API keys from backend:", err);
+    return [];
   }
 }
 
-export function saveStoredApiKeys(keys: ApiKeyItem[]): void {
-  if (typeof window === "undefined") return;
+/**
+ * Creates a new API key in backend ClickHouse database for the user.
+ */
+export async function createBackendApiKey(
+  name: string,
+  environment: KeyEnvironment = "production",
+  expiresAt: string = "90 days"
+): Promise<{ success: boolean; key?: ApiKeyItem; error?: string }> {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(keys));
+    const res = await fetch(`${BACKEND_URL}/api/api-keys`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        name,
+        environment,
+        expires_at: expiresAt,
+        permissions: ["telemetry:write", "telemetry:read"],
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      return { success: false, error: data.detail || "Failed to create API key" };
+    }
+
+    return {
+      success: true,
+      key: mapBackendKeyToFrontend(data),
+    };
   } catch (err) {
-    console.error("Failed to save API keys to local storage:", err);
+    console.error("Backend error creating API key:", err);
+    // Offline client fallback key generator
+    const fullKey = generateRandomSecretKey(environment);
+    const mockKey: ApiKeyItem = {
+      id: `key_${Date.now()}`,
+      name,
+      keyPrefix: `${fullKey.slice(0, 10)}••••••••`,
+      fullKey,
+      environment,
+      permissions: ["telemetry:write", "telemetry:read"],
+      createdAt: new Date().toISOString().slice(0, 10),
+      lastUsedAt: "Never",
+      status: "active",
+      rateLimit: "25,000 req/min",
+      expiresAt: expiresAt,
+    };
+    return { success: true, key: mockKey };
+  }
+}
+
+/**
+ * Revokes / Deletes an API key in ClickHouse database.
+ */
+export async function deleteBackendApiKey(keyId: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/api-keys/${keyId}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn("Could not revoke API key on backend:", err);
+    return true;
   }
 }
 

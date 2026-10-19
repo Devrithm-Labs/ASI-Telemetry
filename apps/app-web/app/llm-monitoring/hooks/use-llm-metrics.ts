@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { LLMMetricsSummary, TimeRange } from "../types";
+import { getAuthHeaders } from "@/lib/auth";
 
 const INITIAL_SUMMARY: LLMMetricsSummary = {
   totalCount: 0,
@@ -55,7 +56,9 @@ export function useLLMMetrics() {
           ? `http://127.0.0.1:8080/api/llm/monitoring?${qs}`
           : "http://127.0.0.1:8080/api/llm/monitoring";
 
-        const res = await fetch(url);
+        const res = await fetch(url, {
+          headers: getAuthHeaders(),
+        });
         if (res.ok) {
           const data = await res.json();
           if (data.summary) setSummary(data.summary);

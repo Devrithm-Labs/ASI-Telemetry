@@ -22,7 +22,7 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   title: "ASI-Telemetry | AI Observability & Monitoring",
   description:
-    "OpenTelemetry observability platform: latency, requests, error analysis, CPU utilization, and trace execution.",
+    "OpenTelemetry observability platform: latency, requests, error analysis, and trace execution.",
 };
 
 export default function RootLayout({

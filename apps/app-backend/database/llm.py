@@ -68,6 +68,8 @@ class LLMRepository:
         metadata_dict["is_agent_root"] = is_agent_root
         metadata_str = json.dumps(metadata_dict)
 
+        user_id = str(payload.get("user_id") or "")
+
         record = {
             "id": record_id,
             "trace_id": trace_id,
@@ -92,6 +94,7 @@ class LLMRepository:
             "agent_handle": "",
             "agent_name": agent_name,
             "is_agent_root": is_agent_root,
+            "user_id": user_id,
         }
 
         # 1. Store in memory fallback
@@ -124,6 +127,7 @@ class LLMRepository:
                     record["metadata"],
                     record["agent_address"],
                     record["agent_handle"],
+                    user_id,
                 ]
                 self.conn.safe_insert(
                     "llm_traces",
@@ -150,6 +154,7 @@ class LLMRepository:
                         "metadata",
                         "agent_address",
                         "agent_handle",
+                        "user_id",
                     ],
                 )
             except Exception as e:
@@ -163,19 +168,23 @@ class LLMRepository:
         search: Optional[str] = None,
         status: Optional[str] = None,
         model: Optional[str] = None,
+        user_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Queries LLM traces from ClickHouse or memory fallback with metrics."""
-        records = self.conn.llm_records
+        records: List[Dict[str, Any]] = []
 
         if self.conn.is_connected and self.conn.client:
             try:
                 where_clauses = []
+                if user_id:
+                    safe_uid = "".join(c for c in user_id if c.isalnum() or c in ("-", "_", "."))
+                    where_clauses.append(f"user_id = '{safe_uid}'")
                 if status and status != "all":
                     where_clauses.append(f"status = '{status}'")
                 if model:
                     where_clauses.append(f"model = '{model}'")
                 if search:
-                    where_clauses.append(f"(name ILIKE '%{search}%' OR input ILIKE '%{search}%' OR output ILIKE '%{search}%')")
+                    where_clauses.append(f"(trace_id ILIKE '%{search}%' OR id ILIKE '%{search}%' OR name ILIKE '%{search}%' OR input ILIKE '%{search}%' OR output ILIKE '%{search}%')")
 
                 where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
                 sql = f"SELECT * FROM llm_traces {where_sql} ORDER BY start_time DESC LIMIT {limit}"
@@ -209,16 +218,20 @@ class LLMRepository:
                     item["metadata"] = meta
 
                     db_records.append(item)
-                if db_records:
-                    records = db_records
+                records = db_records
             except Exception as e:
                 logger.warning(f"ClickHouse query error for llm_traces: {e}")
+                records = self.conn.llm_records
+        else:
+            records = self.conn.llm_records
 
         # In-memory filter if using memory records
         filtered = records
+        if user_id and not (self.conn.is_connected and self.conn.client):
+            filtered = [r for r in filtered if r.get("user_id") == user_id]
         if search:
             q = search.lower()
-            filtered = [r for r in filtered if q in r.get("name", "").lower() or q in str(r.get("input", "")).lower() or q in str(r.get("output", "")).lower()]
+            filtered = [r for r in filtered if q in str(r.get("trace_id", "")).lower() or q in str(r.get("id", "")).lower() or q in r.get("name", "").lower() or q in str(r.get("input", "")).lower() or q in str(r.get("output", "")).lower()]
         if status and status != "all":
             filtered = [r for r in filtered if r.get("status") == status]
         if model:
@@ -248,6 +261,7 @@ class LLMRepository:
         time_range: str = "7d",
         model: Optional[str] = None,
         limit: int = 2000,
+        user_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Calculates all LLM monitoring metrics, KPIs, and chart time-series in the backend."""
         now_dt = datetime.now().astimezone()
@@ -269,10 +283,15 @@ class LLMRepository:
 
         if self.conn.is_connected and self.conn.client:
             try:
-                model_res = self.conn.safe_query("SELECT DISTINCT model FROM llm_traces WHERE model != '' ORDER BY model ASC")
+                where_clauses = []
+                if user_id:
+                    safe_uid = "".join(c for c in user_id if c.isalnum() or c in ("-", "_", "."))
+                    where_clauses.append(f"user_id = '{safe_uid}'")
+
+                model_where = f"WHERE user_id = '{safe_uid}' AND model != ''" if user_id else "WHERE model != ''"
+                model_res = self.conn.safe_query(f"SELECT DISTINCT model FROM llm_traces {model_where} ORDER BY model ASC")
                 distinct_models = [row[0] for row in model_res.result_rows if row[0]]
 
-                where_clauses = []
                 if model and model not in ("All Models", "all", "All"):
                     safe_model = model.replace("'", "\\'")
                     where_clauses.append(f"model = '{safe_model}'")
@@ -295,8 +314,10 @@ class LLMRepository:
             except Exception as e:
                 logger.warning(f"ClickHouse query error in get_llm_monitoring_data: {e}")
 
-        if not records and self.conn.llm_records:
+        if not self.conn.is_connected and self.conn.llm_records:
             mem = sorted(self.conn.llm_records, key=lambda r: str(r.get("start_time", "")))
+            if user_id:
+                mem = [r for r in mem if r.get("user_id") == user_id]
             distinct_models = sorted(list(set(r.get("model") for r in mem if r.get("model"))))
             if model and model not in ("All Models", "all", "All"):
                 mem = [r for r in mem if r.get("model") == model]
@@ -588,15 +609,25 @@ class LLMRepository:
             "toolsLatencyData": tools_latency_data,
         }
 
-    def clear_llm_traces(self) -> Dict[str, Any]:
-        """Truncates or clears llm_traces from ClickHouse and memory."""
-        self.conn.llm_records.clear()
-        if self.conn.is_connected and self.conn.client:
-            try:
-                self.conn.safe_command("TRUNCATE TABLE IF EXISTS llm_traces")
-            except Exception as e:
-                logger.warning(f"Error truncating llm_traces table: {e}")
-        return {"status": "success", "message": "All LLM traces cleared"}
+    def clear_llm_traces(self, user_id: Optional[str] = None) -> Dict[str, Any]:
+        """Truncates or clears llm_traces from ClickHouse and memory for a user."""
+        safe_uid = "".join(c for c in user_id if c.isalnum() or c in ("-", "_", ".")) if user_id else None
+        if safe_uid:
+            self.conn.llm_records = [r for r in self.conn.llm_records if r.get("user_id") != safe_uid]
+            if self.conn.is_connected and self.conn.client:
+                try:
+                    self.conn.safe_command(f"ALTER TABLE llm_traces DELETE WHERE user_id = '{safe_uid}'")
+                except Exception as e:
+                    logger.warning(f"Error deleting user llm_traces: {e}")
+            return {"status": "success", "message": "User LLM traces cleared"}
+        else:
+            self.conn.llm_records.clear()
+            if self.conn.is_connected and self.conn.client:
+                try:
+                    self.conn.safe_command("TRUNCATE TABLE IF EXISTS llm_traces")
+                except Exception as e:
+                    logger.warning(f"Error truncating llm_traces table: {e}")
+            return {"status": "success", "message": "All LLM traces cleared"}
 
 
 # Default repository instance

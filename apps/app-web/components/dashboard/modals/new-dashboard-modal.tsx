@@ -59,7 +59,6 @@ export function NewDashboardModal({ open, onClose }: NewDashboardModalProps) {
                 "Request Volume & Throughput (Success vs Errors)",
                 "Latency Percentiles (P50, P90, P99)",
                 "Failure & HTTP Error Distribution",
-                "Node CPU & Memory Saturation",
                 "Real-time Trace Spans Stream",
               ].map((item, idx) => (
                 <label

@@ -53,7 +53,6 @@ export function AlertModal({ open, onClose }: AlertModalProps) {
             >
               <option value="latency">Trace Latency (P99 ms)</option>
               <option value="error_rate">Trace Error Rate (%)</option>
-              <option value="cpu_usage">Host CPU Core Usage (%)</option>
               <option value="rate_limit">HTTP 429 Rate Limit Surges</option>
             </select>
           </div>

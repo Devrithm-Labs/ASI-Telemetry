@@ -61,7 +61,7 @@ export function DashboardSidebar({
       group: "Application",
       items: [
         { label: "Agents", href: "/all-applications", icon: Boxes },
-        { label: "Home", href: "/", icon: Home },
+        { label: "Dashboard", href: "/dashboard", icon: Home },
       ],
     },
     {

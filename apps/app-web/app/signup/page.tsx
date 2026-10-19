@@ -19,7 +19,7 @@ import {
   Zap,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { saveStoredUser } from "@/lib/auth";
+import { signupUser } from "@/lib/auth";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -60,7 +60,7 @@ export default function SignupPage() {
     return { label: "Strong", color: "bg-foreground", text: "text-foreground" };
   };
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName || !email || !password) {
       setErrorMsg("Please fill in all required fields.");
@@ -77,18 +77,13 @@ export default function SignupPage() {
     setErrorMsg(null);
     setIsLoading(true);
 
-    setTimeout(() => {
-      saveStoredUser({
-        id: `usr_${Date.now()}`,
-        name: fullName,
-        email: email,
-        company: company || "Independent Engineer",
-        role: role,
-      });
-
-      setIsLoading(false);
-      router.push("/api-keys");
-    }, 750);
+    const result = await signupUser(fullName, email, password, company, role);
+    setIsLoading(false);
+    if (!result.success) {
+      setErrorMsg(result.error || "Registration failed.");
+      return;
+    }
+    router.push("/api-keys");
   };
 
   const handleQuickDemoFill = () => {

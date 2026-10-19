@@ -1,6 +1,6 @@
 export type TimeRange = "1h" | "24h" | "7d" | "30d";
 
-export type MetricTab = "traces" | "llm" | "response-time" | "latency" | "cpu" | "errors";
+export type MetricTab = "traces" | "llm" | "response-time" | "latency" | "errors";
 
 export interface RequestMetricPoint {
   time: string;
@@ -23,13 +23,6 @@ export interface ResponseTimeMetricPoint {
 // Backwards-compatible alias for ResponseTimeMetricPoint
 export type LatencyMetricPoint = ResponseTimeMetricPoint;
 
-export interface CpuMetricPoint {
-  time: string;
-  cpuPercent: number;
-  memoryPercent: number;
-  coreLoad: number;
-}
-
 export interface ErrorMetricPoint {
   time: string;
   errorRate: number;
@@ -47,7 +40,6 @@ export interface TraceRecord {
   statusCode: number;
   responseTimeMs: number;
   latencyMs: number; // Backwards-compatible alias
-  cpuPercent: number;
   tokens: number;
   model: string;
   timestamp: string;
@@ -70,8 +62,6 @@ export interface MetricSummary {
   uptime_desc?: string;
   agent_address?: string;
   agent_handle?: string;
-  current_cpu?: number;
-  current_memory?: number;
 }
 
 export interface ApplicationMetadata {

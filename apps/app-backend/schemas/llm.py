@@ -23,6 +23,8 @@ class LLMTracePayload(BaseModel):
     total_tokens: int = Field(default=0, description="Total tokens used")
     cost_usd: float = Field(default=0.0, description="Calculated cost in USD")
     agent_address: Optional[str] = Field(default=None, description="uAgent or wallet address")
+    user_id: Optional[str] = Field(default=None, description="Owner user ID if known")
+    api_key: Optional[str] = Field(default=None, description="API Key for user authentication")
     metadata: Optional[Dict[str, Any]] = Field(default=None, description="Arbitrary metadata dictionary")
 
     @model_validator(mode="after")

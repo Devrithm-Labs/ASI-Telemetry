@@ -24,14 +24,16 @@ import {
 import {
   ApiKeyItem,
   KeyEnvironment,
-  generateRandomSecretKey,
-  getStoredApiKeys,
-  saveStoredApiKeys,
+  fetchBackendApiKeys,
+  createBackendApiKey,
+  deleteBackendApiKey,
 } from "@/lib/api-keys";
 
 export default function ApiKeysPage() {
   const [keys, setKeys] = React.useState<ApiKeyItem[]>([]);
   const [copiedId, setCopiedId] = React.useState<string | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   // Create key modal state
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
@@ -47,15 +49,20 @@ export default function ApiKeysPage() {
   const [keyToRevoke, setKeyToRevoke] = React.useState<ApiKeyItem | null>(null);
   const [keyToDelete, setKeyToDelete] = React.useState<ApiKeyItem | null>(null);
 
-  // Load keys from storage on mount
-  React.useEffect(() => {
-    setKeys(getStoredApiKeys());
+  const loadKeys = React.useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const items = await fetchBackendApiKeys();
+      setKeys(items);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const persistKeys = (updated: ApiKeyItem[]) => {
-    setKeys(updated);
-    saveStoredApiKeys(updated);
-  };
+  // Load keys from backend on mount
+  React.useEffect(() => {
+    loadKeys();
+  }, [loadKeys]);
 
   const handleStartCreate = () => {
     setKeyName("");
@@ -64,34 +71,23 @@ export default function ApiKeysPage() {
     setIsCreateOpen(true);
   };
 
-  const handleConfirmCreate = (e: React.FormEvent) => {
+  const handleConfirmCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     const finalName = keyName.trim() || `${keyEnv.charAt(0).toUpperCase() + keyEnv.slice(1)} Key`;
-    const fullSecret = generateRandomSecretKey(keyEnv);
-    const prefix = `${fullSecret.slice(0, 10)}••••••••${fullSecret.slice(-4)}`;
-
-    const newKey: ApiKeyItem = {
-      id: `key_${Date.now()}`,
-      name: finalName,
-      keyPrefix: prefix,
-      fullKey: fullSecret,
-      environment: keyEnv,
-      permissions: ["telemetry:write", "telemetry:read"],
-      createdAt: new Date().toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      }),
-      lastUsedAt: "Never",
-      status: "active",
-      rateLimit: "25,000 req/min",
-      expiresAt: keyExpires,
-    };
-
-    persistKeys([newKey, ...keys]);
-    setIsCreateOpen(false);
-    setRevealedKey(fullSecret);
-    setRevealedCopied(false);
+    setIsSubmitting(true);
+    try {
+      const result = await createBackendApiKey(finalName, keyEnv, keyExpires);
+      if (result.success && result.key) {
+        setKeys((prev) => [result.key!, ...prev]);
+        setIsCreateOpen(false);
+        if (result.key.fullKey) {
+          setRevealedKey(result.key.fullKey);
+          setRevealedCopied(false);
+        }
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCopyKey = (key: ApiKeyItem) => {
@@ -108,19 +104,21 @@ export default function ApiKeysPage() {
     setTimeout(() => setRevealedCopied(false), 2000);
   };
 
-  const handleRevokeConfirm = () => {
+  const handleRevokeConfirm = async () => {
     if (!keyToRevoke) return;
-    const updated = keys.map((k) =>
-      k.id === keyToRevoke.id ? { ...k, status: "revoked" as const } : k
+    await deleteBackendApiKey(keyToRevoke.id);
+    setKeys((prev) =>
+      prev.map((k) =>
+        k.id === keyToRevoke.id ? { ...k, status: "revoked" as const } : k
+      )
     );
-    persistKeys(updated);
     setKeyToRevoke(null);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!keyToDelete) return;
-    const updated = keys.filter((k) => k.id !== keyToDelete.id);
-    persistKeys(updated);
+    await deleteBackendApiKey(keyToDelete.id);
+    setKeys((prev) => prev.filter((k) => k.id !== keyToDelete.id));
     setKeyToDelete(null);
   };
 

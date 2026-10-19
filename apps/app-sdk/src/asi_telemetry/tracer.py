@@ -11,6 +11,10 @@ from typing import Any, Callable, Dict, Optional, Tuple
 
 from .instrumentation import save_token_usage
 
+sdk_config: Dict[str, Any] = {
+    "api_key": os.getenv("ASI_API_KEY") or os.getenv("ASI_TELEMETRY_API_KEY") or os.getenv("TELEMETRY_API_KEY"),
+}
+
 current_agent: Dict[str, Optional[str]] = {
     "agent_name": os.getenv("AGENT_NAME", "assistant"),
     "agent_address": os.getenv("AGENT_ADDRESS", None),
@@ -19,6 +23,15 @@ CURRENT_AGENT_INFO = current_agent
 
 active_span: ContextVar[Optional[Dict[str, Any]]] = ContextVar("active_span", default=None)
 current_span = active_span
+
+
+def set_api_key(api_key: str) -> None:
+    sdk_config["api_key"] = api_key
+    os.environ["ASI_API_KEY"] = api_key
+
+
+def get_api_key() -> Optional[str]:
+    return sdk_config.get("api_key") or os.getenv("ASI_API_KEY") or os.getenv("ASI_TELEMETRY_API_KEY") or os.getenv("TELEMETRY_API_KEY")
 
 
 def set_agent_info(agent_name: Optional[str] = None, agent_address: Optional[str] = None) -> None:
@@ -64,10 +77,18 @@ def _dispatch_span(payload: Dict[str, Any]) -> None:
             url = os.getenv("TELEMETRY_TRACES_URL") or os.getenv("TELEMETRY_BACKEND_URL", "http://127.0.0.1:8080/api/llm/traces")
             if "/api/metrics" in url:
                 url = url.replace("/api/metrics", "/api/llm/traces")
+
+            api_key = get_api_key()
+            headers = {"Content-Type": "application/json"}
+            if api_key:
+                headers["x-api-key"] = api_key
+                headers["Authorization"] = f"Bearer {api_key}"
+                payload["api_key"] = api_key
+
             req = urllib.request.Request(
                 url,
                 data=json.dumps(payload, default=str).encode("utf-8"),
-                headers={"Content-Type": "application/json"},
+                headers=headers,
                 method="POST",
             )
             with urllib.request.urlopen(req, timeout=2.0):

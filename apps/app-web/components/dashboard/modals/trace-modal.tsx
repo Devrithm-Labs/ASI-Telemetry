@@ -80,17 +80,11 @@ export function TraceModal({ trace, open, onClose }: TraceModalProps) {
         </div>
 
         {/* Metric Badges Banner */}
-        <div className="grid grid-cols-4 border-b border-border bg-muted/30 px-6 py-3 text-xs">
+        <div className="grid grid-cols-3 border-b border-border bg-muted/30 px-6 py-3 text-xs">
           <div>
             <span className="text-muted-foreground">Response Time:</span>
             <div className="font-mono font-semibold text-foreground mt-0.5">
               {trace.responseTimeMs || trace.latencyMs} ms
-            </div>
-          </div>
-          <div>
-            <span className="text-muted-foreground">CPU Impact:</span>
-            <div className="font-mono font-semibold text-foreground mt-0.5">
-              {trace.cpuPercent}%
             </div>
           </div>
           <div>
