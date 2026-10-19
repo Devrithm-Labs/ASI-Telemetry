@@ -4,19 +4,9 @@ export interface AuthUser {
   id: string;
   name: string;
   email: string;
-  company?: string;
-  avatar?: string;
-  role?: string;
+  created_at?: string;
   default_api_key?: string;
 }
-
-const DEFAULT_USER: AuthUser = {
-  id: "usr_devrithm_1",
-  name: "Alex Vance",
-  email: "alex@devrithm.io",
-  company: "Devrithm Labs",
-  role: "Lead AI Engineer",
-};
 
 export const TOKEN_COOKIE_NAME = "asi_access_token";
 export const USER_COOKIE_NAME = "asi_user_session";
@@ -60,15 +50,10 @@ export function removeAuthToken(): void {
 // ── User Session Helpers (Saved exclusively in Cookies) ───────────────────────
 
 export function getStoredUser(): AuthUser | null {
-  if (typeof document === "undefined") return DEFAULT_USER;
+  if (typeof document === "undefined") return null;
   try {
     const raw = getCookie(USER_COOKIE_NAME);
-    if (!raw) {
-      // If no token exists, fallback to guest/demo default
-      const token = getAuthToken();
-      if (!token) return null;
-      return DEFAULT_USER;
-    }
+    if (!raw) return null;
     return JSON.parse(raw);
   } catch {
     return null;
@@ -87,7 +72,7 @@ export function clearStoredUser(): void {
   removeAuthToken();
   removeCookie(USER_COOKIE_NAME);
 
-  // Clean up any historical residual localStorage keys if present
+  // Clean up any residual localStorage keys if present
   try {
     if (typeof window !== "undefined") {
       localStorage.removeItem("asi_telemetry_user");
@@ -126,7 +111,7 @@ export async function loginUser(
     const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email: email.trim(), password }),
     });
 
     const data = await res.json();
@@ -139,11 +124,10 @@ export async function loginUser(
 
     const token = data.access_token;
     const user: AuthUser = {
-      id: data.user?.id || `usr_${Date.now()}`,
+      id: data.user?.id || "",
       name: data.user?.name || email.split("@")[0],
       email: data.user?.email || email,
-      company: "Devrithm Labs",
-      role: "Lead AI Engineer",
+      created_at: data.user?.created_at,
     };
 
     // Save token & user strictly in cookies
@@ -151,35 +135,24 @@ export async function loginUser(
     saveStoredUser(user, 30);
 
     return { success: true, user, token };
-  } catch (err) {
-    console.warn("Backend auth call error, using local fallback session:", err);
-    // Offline / Demo fallback
-    const fallbackUser: AuthUser = {
-      id: "usr_demo",
-      name: email.split("@")[0] || "Alex Vance",
-      email: email,
-      company: "Devrithm Labs",
-      role: "Lead AI Engineer",
+  } catch (err: any) {
+    return {
+      success: false,
+      error: "Unable to reach the backend service. Please check your network connection.",
     };
-    const mockToken = "asi_dev_demo_token_cookie";
-    setAuthToken(mockToken, 30);
-    saveStoredUser(fallbackUser, 30);
-    return { success: true, user: fallbackUser, token: mockToken };
   }
 }
 
 export async function signupUser(
   name: string,
   email: string,
-  password: string,
-  company?: string,
-  role?: string
+  password: string
 ): Promise<{ success: boolean; error?: string; user?: AuthUser; token?: string }> {
   try {
     const res = await fetch(`${BACKEND_URL}/api/auth/signup`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify({ name: name.trim(), email: email.trim(), password }),
     });
 
     const data = await res.json();
@@ -195,11 +168,11 @@ export async function signupUser(
 
     const token = data.access_token;
     const user: AuthUser = {
-      id: data.user?.id || `usr_${Date.now()}`,
+      id: data.user?.id || "",
       name: data.user?.name || name,
       email: data.user?.email || email,
-      company: company || "Devrithm Labs",
-      role: role || "Lead AI Engineer",
+      created_at: data.user?.created_at,
+      default_api_key: data.default_api_key,
     };
 
     // Save token & user strictly in cookies
@@ -207,18 +180,10 @@ export async function signupUser(
     saveStoredUser(user, 30);
 
     return { success: true, user, token };
-  } catch (err) {
-    console.warn("Backend signup error, using demo fallback session:", err);
-    const fallbackUser: AuthUser = {
-      id: `usr_${Date.now()}`,
-      name: name,
-      email: email,
-      company: company || "Independent",
-      role: role || "AI Engineer",
+  } catch (err: any) {
+    return {
+      success: false,
+      error: "Unable to reach the backend service. Please check your network connection.",
     };
-    const mockToken = "asi_dev_demo_token_cookie";
-    setAuthToken(mockToken, 30);
-    saveStoredUser(fallbackUser, 30);
-    return { success: true, user: fallbackUser, token: mockToken };
   }
 }

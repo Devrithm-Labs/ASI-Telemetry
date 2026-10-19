@@ -99,24 +99,9 @@ export async function createBackendApiKey(
       success: true,
       key: mapBackendKeyToFrontend(data),
     };
-  } catch (err) {
+  } catch (err: any) {
     console.error("Backend error creating API key:", err);
-    // Offline client fallback key generator
-    const fullKey = generateRandomSecretKey(environment);
-    const mockKey: ApiKeyItem = {
-      id: `key_${Date.now()}`,
-      name,
-      keyPrefix: `${fullKey.slice(0, 10)}••••••••`,
-      fullKey,
-      environment,
-      permissions: ["telemetry:write", "telemetry:read"],
-      createdAt: new Date().toISOString().slice(0, 10),
-      lastUsedAt: "Never",
-      status: "active",
-      rateLimit: "25,000 req/min",
-      expiresAt: expiresAt,
-    };
-    return { success: true, key: mockKey };
+    return { success: false, error: "Unable to reach backend service to create API key." };
   }
 }
 
@@ -132,16 +117,6 @@ export async function deleteBackendApiKey(keyId: string): Promise<boolean> {
     return res.ok;
   } catch (err) {
     console.warn("Could not revoke API key on backend:", err);
-    return true;
+    return false;
   }
-}
-
-export function generateRandomSecretKey(env: KeyEnvironment): string {
-  const chars = "abcdef0123456789";
-  let randomHex = "";
-  for (let i = 0; i < 32; i++) {
-    randomHex += chars[Math.floor(Math.random() * chars.length)];
-  }
-  const prefix = env === "production" ? "asi_live" : env === "staging" ? "asi_stage" : "asi_dev";
-  return `${prefix}_${randomHex}`;
 }

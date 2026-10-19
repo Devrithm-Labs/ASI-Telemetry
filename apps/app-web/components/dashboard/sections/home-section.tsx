@@ -2,9 +2,11 @@
 
 import * as React from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Check, Copy, Key } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { CodeBlock, dracula } from "react-code-blocks";
+import { cn } from "cn";
 
 interface HomeSectionProps {
   apiKey?: string;
@@ -21,13 +23,25 @@ export function HomeSection({
   // Environment format tab: Shell vs .env
   const [envFormat, setEnvFormat] = React.useState<"Shell" | ".env">("Shell");
 
-  // Generated API key state
-  const [generatedKey, setGeneratedKey] = React.useState<string | null>(null);
+  const [realKey, setRealKey] = React.useState<string | null>(null);
 
   // Copy feedback state
   const [copiedSection, setCopiedSection] = React.useState<string | null>(null);
 
-  const activeApiKey = generatedKey || initialApiKey;
+  React.useEffect(() => {
+    import("@/lib/api-keys").then(({ fetchBackendApiKeys }) => {
+      fetchBackendApiKeys().then((keys) => {
+        if (keys && keys.length > 0) {
+          const active = keys.find((k) => k.status === "active") || keys[0];
+          if (active) {
+            setRealKey(active.fullKey || active.keyPrefix);
+          }
+        }
+      });
+    });
+  }, []);
+
+  const activeApiKey = realKey || initialApiKey;
 
   const handleCopy = (text: string, sectionId: string) => {
     navigator.clipboard.writeText(text);
@@ -35,12 +49,6 @@ export function HomeSection({
     setTimeout(() => {
       setCopiedSection(null);
     }, 1800);
-  };
-
-  const handleGenerateApiKey = () => {
-    const randomHex = Math.random().toString(36).substring(2, 10);
-    const newKey = `asi_sk_live_${randomHex}`;
-    setGeneratedKey(newKey);
   };
 
   // Code snippets
@@ -199,14 +207,13 @@ if __name__ == "__main__":
             <h3 className="text-sm font-semibold text-foreground tracking-tight">
               Configure telemetry environment
             </h3>
-            <Button
-              size="sm"
-              onClick={handleGenerateApiKey}
-              className="gap-1.5 text-xs font-medium"
+            <Link
+              href="/api-keys"
+              className={cn(buttonVariants({ size: "sm" }), "gap-1.5 text-xs font-medium")}
             >
               <Key className="h-3.5 w-3.5" />
-              Generate API Key
-            </Button>
+              Manage API Keys
+            </Link>
           </div>
 
           <div className="rounded-lg border border-border bg-card overflow-hidden shadow-xs">

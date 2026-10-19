@@ -254,15 +254,17 @@ export function DashboardSidebar({
                       .join("")
                       .slice(0, 2)
                       .toUpperCase()
-                  : "ASI"}
+                  : "U"}
               </div>
               <div className="flex flex-col truncate">
                 <span className="text-xs font-medium text-foreground truncate group-hover:underline">
-                  {currentUser?.name || "Devrithm Labs"}
+                  {currentUser?.name || "My Account"}
                 </span>
-                <span className="text-[10px] text-muted-foreground truncate">
-                  {currentUser?.email || "admin@devrithm.io"}
-                </span>
+                {currentUser?.email && (
+                  <span className="text-[10px] text-muted-foreground truncate">
+                    {currentUser.email}
+                  </span>
+                )}
               </div>
             </Link>
 

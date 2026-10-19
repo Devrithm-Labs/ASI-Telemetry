@@ -1,17 +1,21 @@
 "use client";
 
 import * as React from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { DashboardSidebar } from "./sidebar";
 import { DashboardHeader } from "./header";
 import { TraceModal } from "../modals/trace-modal";
 import { AlertModal } from "../modals/alert-modal";
 import { NewDashboardModal } from "../modals/new-dashboard-modal";
 import { DashboardProvider, useDashboard } from "../context/dashboard-context";
+import { getAuthToken } from "@/lib/auth";
 
 function DashboardShellInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const isPublicRoute = pathname === "/" || pathname === "/login" || pathname === "/signup";
+  const [isAuthenticated, setIsAuthenticated] = React.useState<boolean | null>(null);
+
   const {
     activeHeaderTab,
     setActiveHeaderTab,
@@ -25,8 +29,33 @@ function DashboardShellInner({ children }: { children: React.ReactNode }) {
     setIsDashboardModalOpen,
   } = useDashboard();
 
+  React.useEffect(() => {
+    if (isPublicRoute) {
+      setIsAuthenticated(true);
+      return;
+    }
+    const token = getAuthToken();
+    if (!token) {
+      setIsAuthenticated(false);
+      router.replace(`/login?from=${encodeURIComponent(pathname)}`);
+    } else {
+      setIsAuthenticated(true);
+    }
+  }, [isPublicRoute, pathname, router]);
+
   if (isPublicRoute) {
     return <>{children}</>;
+  }
+
+  if (isAuthenticated === null || isAuthenticated === false) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-background text-foreground">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <span className="text-xs text-muted-foreground font-mono">Verifying authentication...</span>
+        </div>
+      </div>
+    );
   }
 
   return (
