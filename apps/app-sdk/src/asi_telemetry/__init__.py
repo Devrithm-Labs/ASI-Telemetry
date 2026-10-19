@@ -16,8 +16,6 @@ from .tracer import (
     set_agent_info,
     get_agent_info,
     current_span,
-    spans_in_trace,
-    LAST_TRACE,
 )
 from .instrumentation import (
     instrument_gemini,
@@ -47,8 +45,6 @@ __all__ = [
     "set_agent_info",
     "get_agent_info",
     "current_span",
-    "spans_in_trace",
-    "LAST_TRACE",
     # Instrumentation
     "instrument_gemini",
     "instrument_openai",

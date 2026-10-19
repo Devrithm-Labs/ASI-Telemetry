@@ -46,12 +46,26 @@ class LLMRepository:
                 meta = {}
         metadata_dict = dict(meta)
 
+        is_agent_root = payload.get("is_agent_root")
+        if is_agent_root is None:
+            is_agent_root = metadata_dict.get("is_agent_root")
+        if is_agent_root is None:
+            is_agent_root = (parent_id is None)
+        is_agent_root = bool(is_agent_root)
+
         agent_address = (
             payload.get("agent_address")
             or metadata_dict.get("agent_address")
             or ""
         )
+        agent_name = (
+            payload.get("agent_name")
+            or metadata_dict.get("agent_name")
+            or ""
+        )
         metadata_dict["agent_address"] = agent_address
+        metadata_dict["agent_name"] = agent_name
+        metadata_dict["is_agent_root"] = is_agent_root
         metadata_str = json.dumps(metadata_dict)
 
         record = {
@@ -76,6 +90,8 @@ class LLMRepository:
             "metadata": metadata_str,
             "agent_address": agent_address,
             "agent_handle": "",
+            "agent_name": agent_name,
+            "is_agent_root": is_agent_root,
         }
 
         # 1. Store in memory fallback
@@ -188,6 +204,9 @@ class LLMRepository:
                         item["agent_address"] = meta.get("agent_address") or ""
                     if not item.get("agent_handle"):
                         item["agent_handle"] = meta.get("agent_handle") or ""
+                    item["agent_name"] = meta.get("agent_name") or item.get("agent_name") or ""
+                    item["is_agent_root"] = bool(meta.get("is_agent_root", item.get("parent_id") is None))
+                    item["metadata"] = meta
 
                     db_records.append(item)
                 if db_records:

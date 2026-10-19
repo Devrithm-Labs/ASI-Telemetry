@@ -8,20 +8,15 @@ SDK_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "
 if SDK_PATH not in sys.path:
     sys.path.insert(0, SDK_PATH)
 
+from typing import Optional
 from uagents import Agent, Context, Model
 from uagents.resolver import RulesBasedResolver
-from asi_telemetry import MetricsTracker
+from asi_telemetry import MetricsTracker, traceable, create_trace_context
 
-
-
-try:
-    loop = asyncio.get_event_loop()
-except RuntimeError:
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
 
 class Greeting(Model):
     text: str
+    trace_context: Optional[dict] = None
 
 RECEIVER_ADDRESS = "agent1qfzll7xq6t8d9rx5n3cnql32me650q2sakexpc979u0luhn702jh2af5mds"
 
@@ -39,13 +34,14 @@ sender = Agent(
 )
 
 # Initialize telemetry monitor for the sender agent
-monitor = MetricsTracker(agent_name="sender",agent_address=sender.address)
+monitor = MetricsTracker(agent_name="sender", agent_address=sender.address)
 
-@monitor.track()
+@monitor.track("send_greeting")
+@traceable(name="send_greeting", run_type="tool")
 async def send_greeting(ctx: Context, text: str):
-    """Tracked dispatch of messages to the receiver agent."""
+    """Tracked dispatch of messages to the receiver agent with trace propagation."""
     print(f"\n[Sending to Assistant]: {text}")
-    await ctx.send(RECEIVER_ADDRESS, Greeting(text=text))
+    await ctx.send(RECEIVER_ADDRESS, Greeting(text=text, trace_context=create_trace_context()))
     print("[Dispatched]: Awaiting response from Gemini...")
 
 @sender.on_event("startup")
@@ -71,7 +67,8 @@ async def startup(ctx: Context):
     asyncio.create_task(console_listener())
 
 @sender.on_message(model=Greeting)
-@monitor.track()
+@monitor.track("handle_reply")
+@traceable(name="handle_reply", run_type="tool")
 async def handle_reply(ctx: Context, sender_address: str, msg: Greeting):
     """Tracked handling of replies coming back to sender."""
     print(f"\n==========================================")

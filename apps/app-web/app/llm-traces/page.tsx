@@ -42,6 +42,8 @@ export interface LLMTraceItem {
   cost_usd: number;
   agent_address?: string;
   agent_handle?: string;
+  agent_name?: string;
+  is_agent_root?: boolean;
   metadata?: Record<string, any>;
 }
 
@@ -132,11 +134,55 @@ export default function LLMTracingPage() {
       if (!map.has(tid)) map.set(tid, []);
       map.get(tid)!.push(t);
     });
-    // Ensure every group is sorted by start_time ascending (Hop 1 at top -> downstream hops)
-    map.forEach((items) => {
-      items.sort(
+
+    // Ensure every group is sorted into hierarchical parent -> children structure:
+    // Root parent 1 (Agent A) -> its children
+    // Root parent 2 (Agent B) -> its children
+    map.forEach((items, key) => {
+      const roots = items.filter(
+        (t) => t.is_agent_root === true || t.metadata?.is_agent_root === true || !t.parent_id
+      );
+      roots.sort(
         (a, b) => new Date(a.start_time || 0).getTime() - new Date(b.start_time || 0).getTime()
       );
+
+      const ordered: LLMTraceItem[] = [];
+      const visited = new Set<string>();
+
+      roots.forEach((root) => {
+        ordered.push(root);
+        visited.add(root.id);
+
+        // Find child spans belonging to this root/agent
+        const children = items.filter((child) => {
+          if (visited.has(child.id)) return false;
+          if (child.parent_id === root.span_id || child.parent_id === root.id) return true;
+          const isChild = child.is_agent_root === false || child.metadata?.is_agent_root === false;
+          if (isChild && child.agent_name && root.agent_name && child.agent_name === root.agent_name) {
+            return true;
+          }
+          return false;
+        });
+
+        children.sort(
+          (a, b) => new Date(a.start_time || 0).getTime() - new Date(b.start_time || 0).getTime()
+        );
+
+        children.forEach((c) => {
+          ordered.push(c);
+          visited.add(c.id);
+        });
+      });
+
+      // Any remaining spans that didn't match
+      items.forEach((item) => {
+        if (!visited.has(item.id)) {
+          ordered.push(item);
+          visited.add(item.id);
+        }
+      });
+
+      map.set(key, ordered);
     });
     return map;
   }, [filteredTraces]);
@@ -380,6 +426,17 @@ export default function LLMTracingPage() {
                 const isMiddle = !isFirst && !isLast;
                 const isHovered = hoveredTraceId === (trace.trace_id || trace.id);
 
+                const isParentRoot =
+                  trace.is_agent_root === true ||
+                  trace.metadata?.is_agent_root === true ||
+                  !trace.parent_id;
+
+                const agentDisplayName =
+                  trace.agent_name ||
+                  trace.metadata?.agent_name ||
+                  trace.agent_handle ||
+                  (trace.agent_address ? `@${trace.agent_address.slice(0, 10)}` : "agent");
+
                 return (
                   <tr
                     key={trace.id}
@@ -427,7 +484,7 @@ export default function LLMTracingPage() {
                               className={cn(
                                 "absolute left-[14px] top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 h-2.5 w-2.5 rounded-full border-2 transition-all duration-150 cursor-pointer",
                                 isHovered
-                                  ? "border-white bg-sky-300 scale-125 shadow-sm"
+                                   ? "border-white bg-sky-300 scale-125 shadow-sm"
                                   : "border-card bg-blue-500"
                               )}
                             />
@@ -477,15 +534,26 @@ export default function LLMTracingPage() {
                       )}
                     </td>
 
-                    <td className="px-3 py-2.5 font-mono font-medium text-slate-100 whitespace-nowrap">
-                      <div className="flex items-center gap-1.5">
-                        {isCollective && (
-                          <span className="rounded bg-blue-950/80 border border-blue-800/60 px-1 py-0.2 text-[9px] font-mono text-blue-300 font-semibold">
-                            Hop {indexInGroup + 1}
+                    {/* Branch Hierarchy Name Column */}
+                    <td className="px-3 py-2.5 font-mono font-medium whitespace-nowrap">
+                      {isParentRoot ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-blue-500 font-bold select-none text-xs">└─</span>
+                          <span className="inline-flex items-center gap-1 rounded bg-blue-500/15 border border-blue-500/30 px-2 py-0.5 text-[10px] font-bold text-blue-400 font-mono">
+                            <Bot className="h-3 w-3" />
+                            <span>parent {agentDisplayName}</span>
                           </span>
-                        )}
-                        <span>{trace.name}</span>
-                      </div>
+                          <span className="font-semibold text-foreground">{trace.name}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 pl-7">
+                          <span className="text-muted-foreground/70 font-bold select-none text-xs">└─</span>
+                          <span className="inline-flex items-center rounded bg-muted/60 border border-border px-1.5 py-0.5 text-[9px] font-semibold text-muted-foreground font-mono">
+                            child
+                          </span>
+                          <span className="font-normal text-muted-foreground">{trace.name}</span>
+                        </div>
+                      )}
                     </td>
 
                     <td className="px-3 py-2.5 max-w-[200px] truncate text-slate-400">
@@ -718,37 +786,106 @@ export default function LLMTracingPage() {
                     <span className="text-foreground">{formatTime(selectedTrace.start_time)}</span>
                   </div>
 
-                  {/* Connected Hops in this Collective Call */}
-                  {(traceGroups.get(selectedTrace.trace_id || selectedTrace.id) || []).length > 1 && (
-                    <div className="mt-2 pt-2 border-t border-border">
-                      <span className="text-muted-foreground block mb-1 text-[10px] uppercase font-semibold">
-                        Connected Hops in this Chain:
-                      </span>
-                      <div className="space-y-1">
-                        {(traceGroups.get(selectedTrace.trace_id || selectedTrace.id) || []).map((hop, hIdx) => {
-                          const isCurrent = hop.id === selectedTrace.id;
-                          return (
-                            <button
-                              key={hop.id}
-                              onClick={() => setSelectedTrace(hop)}
-                              className={cn(
-                                "w-full flex items-center justify-between px-2 py-1 rounded text-[10px] transition-colors text-left",
-                                isCurrent
-                                  ? "bg-blue-600 text-white font-semibold"
-                                  : "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground"
-                              )}
-                            >
-                              <div className="flex items-center gap-1.5 truncate">
-                                <span className={isCurrent ? "text-white font-mono" : "text-blue-500 font-mono"}>Hop {hIdx + 1}:</span>
-                                <span className="truncate">{hop.name}</span>
-                              </div>
-                              <span className="font-mono opacity-80">{formatLatency(hop.latency_ms)}</span>
-                            </button>
-                          );
-                        })}
+                  {/* Trace Branch Hierarchy Tree */}
+                  {(() => {
+                    const currentTraceSpans = traceGroups.get(selectedTrace.trace_id || selectedTrace.id) || [selectedTrace];
+                    if (currentTraceSpans.length === 0) return null;
+                    return (
+                      <div className="mt-2 pt-2 border-t border-border">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-muted-foreground text-[10px] uppercase font-semibold flex items-center gap-1">
+                            <GitFork className="h-3 w-3 text-blue-500" />
+                            <span>Trace Branch Hierarchy</span>
+                          </span>
+                          <span className="text-[10px] font-mono text-muted-foreground">
+                            {currentTraceSpans.length} {currentTraceSpans.length === 1 ? "span" : "spans"}
+                          </span>
+                        </div>
+                        <div className="space-y-1 font-mono text-[11px] rounded-md border border-border bg-muted/20 p-2">
+                          {currentTraceSpans.map((span) => {
+                            const isCurrent = span.id === selectedTrace.id;
+                            const isRoot =
+                              span.is_agent_root === true ||
+                              span.metadata?.is_agent_root === true ||
+                              !span.parent_id;
+                            const agentName =
+                              span.agent_name ||
+                              span.metadata?.agent_name ||
+                              span.agent_handle ||
+                              (span.agent_address ? `@${span.agent_address.slice(0, 10)}` : "agent");
+
+                            return (
+                              <button
+                                key={span.id}
+                                onClick={() => setSelectedTrace(span)}
+                                className={cn(
+                                  "w-full flex items-center justify-between px-2 py-1.5 rounded transition-all text-left",
+                                  isCurrent
+                                    ? "bg-blue-600 text-white font-semibold shadow-sm"
+                                    : "hover:bg-muted text-foreground/80 hover:text-foreground",
+                                  !isRoot && "pl-6"
+                                )}
+                              >
+                                <div className="flex items-center gap-1.5 truncate">
+                                  <span
+                                    className={cn(
+                                      "font-bold text-xs select-none",
+                                      isCurrent ? "text-white" : isRoot ? "text-blue-500" : "text-muted-foreground/60"
+                                    )}
+                                  >
+                                    └─
+                                  </span>
+                                  {isRoot ? (
+                                    <span
+                                      className={cn(
+                                        "px-1.5 py-0.2 rounded text-[9px] font-bold uppercase",
+                                        isCurrent
+                                          ? "bg-white/20 text-white"
+                                          : "bg-blue-500/15 text-blue-400 border border-blue-500/30"
+                                      )}
+                                    >
+                                      parent {agentName}
+                                    </span>
+                                  ) : (
+                                    <span
+                                      className={cn(
+                                        "px-1.5 py-0.2 rounded text-[9px] font-medium uppercase",
+                                        isCurrent
+                                          ? "bg-white/20 text-white"
+                                          : "bg-muted text-muted-foreground border border-border"
+                                      )}
+                                    >
+                                      child
+                                    </span>
+                                  )}
+                                  <span className="truncate">{span.name}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                                  <span
+                                    className={cn(
+                                      "text-[9px] px-1 py-0.2 rounded font-mono",
+                                      span.status === "success"
+                                        ? isCurrent
+                                          ? "text-emerald-200"
+                                          : "text-emerald-400"
+                                        : isCurrent
+                                        ? "text-rose-200"
+                                        : "text-rose-400"
+                                    )}
+                                  >
+                                    {span.status}
+                                  </span>
+                                  <span className="font-mono text-[10px] opacity-75">
+                                    {formatLatency(span.latency_ms)}
+                                  </span>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {selectedTrace.metadata && Object.keys(selectedTrace.metadata).length > 0 && (
                     <div className="mt-2 pt-2 border-t border-border">
