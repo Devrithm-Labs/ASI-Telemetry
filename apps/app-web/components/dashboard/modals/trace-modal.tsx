@@ -42,79 +42,79 @@ export function TraceModal({ trace, open, onClose }: TraceModalProps) {
   const totalDuration = trace.spans.reduce((acc, s) => acc + s.durationMs, 0) || trace.responseTimeMs || trace.latencyMs;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 dark:bg-black/85 backdrop-blur-sm p-4">
-      <div className="relative flex max-h-[90vh] w-full max-w-3xl flex-col rounded-xl border border-slate-200 dark:border-[#1e293b] bg-white dark:bg-black shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="relative flex max-h-[90vh] w-full max-w-3xl flex-col rounded-xl border border-border bg-card shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-[#1e293b] px-6 py-4 bg-slate-50 dark:bg-black">
+        <div className="flex items-center justify-between border-b border-border px-6 py-4 bg-card">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-600/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-600/30">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-foreground border border-border">
               <Activity className="h-5 w-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-mono text-xs font-semibold text-blue-600 dark:text-blue-400">
+                <span className="font-mono text-xs font-semibold text-foreground">
                   {trace.id}
                 </span>
                 <span
-                  className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                  className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border ${
                     trace.status === "success"
-                      ? "border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-blue-500/30 dark:bg-blue-950/60 dark:text-blue-300"
+                      ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                       : trace.status === "rate_limited"
-                      ? "border border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-950/60 dark:text-amber-300"
-                      : "border border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-950/60 dark:text-rose-300"
+                      ? "border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                      : "border-destructive/20 bg-destructive/10 text-destructive"
                   }`}
                 >
                   {trace.statusCode} {trace.status}
                 </span>
               </div>
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{trace.name}</h3>
+              <h3 className="text-sm font-semibold text-foreground mt-0.5">{trace.name}</h3>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-[#171717] hover:text-slate-900 dark:hover:text-white transition-colors"
+            className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Metric Badges Banner */}
-        <div className="grid grid-cols-4 border-b border-slate-200 dark:border-[#1e293b] bg-slate-50/50 dark:bg-black px-6 py-3 text-xs">
+        <div className="grid grid-cols-4 border-b border-border bg-muted/30 px-6 py-3 text-xs">
           <div>
-            <span className="text-slate-500 dark:text-slate-400">Response Time:</span>
-            <div className="font-mono font-semibold text-slate-900 dark:text-slate-200 mt-0.5">
+            <span className="text-muted-foreground">Response Time:</span>
+            <div className="font-mono font-semibold text-foreground mt-0.5">
               {trace.responseTimeMs || trace.latencyMs} ms
             </div>
           </div>
           <div>
-            <span className="text-slate-500 dark:text-slate-400">CPU Impact:</span>
-            <div className="font-mono font-semibold text-blue-600 dark:text-blue-400 mt-0.5">
+            <span className="text-muted-foreground">CPU Impact:</span>
+            <div className="font-mono font-semibold text-foreground mt-0.5">
               {trace.cpuPercent}%
             </div>
           </div>
           <div>
-            <span className="text-slate-500 dark:text-slate-400">Model / Engine:</span>
-            <div className="font-medium text-slate-900 dark:text-slate-200 truncate mt-0.5">
+            <span className="text-muted-foreground">Model / Engine:</span>
+            <div className="font-medium text-foreground truncate mt-0.5">
               {trace.model}
             </div>
           </div>
           <div>
-            <span className="text-slate-500 dark:text-slate-400">Tokens Generated:</span>
-            <div className="font-mono font-semibold text-slate-900 dark:text-slate-200 mt-0.5">
+            <span className="text-muted-foreground">Tokens Generated:</span>
+            <div className="font-mono font-semibold text-foreground mt-0.5">
               {trace.tokens > 0 ? trace.tokens.toLocaleString() : "N/A"}
             </div>
           </div>
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex border-b border-slate-200 dark:border-[#1e293b] px-6 bg-white dark:bg-black gap-4">
+        <div className="flex border-b border-border px-6 bg-card gap-4">
           <button
             onClick={() => setActiveTab("waterfall")}
-            className={`py-2.5 text-xs font-semibold transition-colors border-b-2 ${
+            className={`py-2.5 text-xs font-medium transition-colors border-b-2 cursor-pointer ${
               activeTab === "waterfall"
-                ? "border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-400"
-                : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                ? "border-primary text-foreground font-semibold"
+                : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
             Span Execution Waterfall ({trace.spans.length})
@@ -122,10 +122,10 @@ export function TraceModal({ trace, open, onClose }: TraceModalProps) {
           {trace.errorMessage && (
             <button
               onClick={() => setActiveTab("error")}
-              className={`py-2.5 text-xs font-semibold transition-colors border-b-2 ${
+              className={`py-2.5 text-xs font-medium transition-colors border-b-2 cursor-pointer ${
                 activeTab === "error"
-                  ? "border-rose-500 text-rose-600 dark:text-rose-400"
-                  : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                  ? "border-destructive text-destructive font-semibold"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
               Error Diagnostic
@@ -133,10 +133,10 @@ export function TraceModal({ trace, open, onClose }: TraceModalProps) {
           )}
           <button
             onClick={() => setActiveTab("raw")}
-            className={`py-2.5 text-xs font-semibold transition-colors border-b-2 ${
+            className={`py-2.5 text-xs font-medium transition-colors border-b-2 cursor-pointer ${
               activeTab === "raw"
-                ? "border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-400"
-                : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                ? "border-primary text-foreground font-semibold"
+                : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
             Raw OpenTelemetry Payload
@@ -147,12 +147,12 @@ export function TraceModal({ trace, open, onClose }: TraceModalProps) {
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {activeTab === "waterfall" && (
             <div className="space-y-3">
-              <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between">
+              <div className="text-xs text-muted-foreground flex items-center justify-between">
                 <span>Sub-Span Timeline Breakdown</span>
-                <span className="font-mono text-slate-700 dark:text-slate-300">Total Span Time: {totalDuration} ms</span>
+                <span className="font-mono text-foreground font-medium">Total Span Time: {totalDuration} ms</span>
               </div>
 
-              <div className="space-y-2 rounded-lg border border-slate-200 dark:border-[#172554] bg-slate-50 dark:bg-[#030712] p-3">
+              <div className="space-y-2 rounded-lg border border-border bg-muted/20 p-3">
                 {trace.spans.map((span, idx) => {
                   const widthPercent = Math.max(
                     8,
@@ -164,24 +164,24 @@ export function TraceModal({ trace, open, onClose }: TraceModalProps) {
                       <div className="flex items-center justify-between text-xs">
                         <div className="flex items-center gap-2">
                           {span.status === "ok" ? (
-                            <CheckCircle2 className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                            <CheckCircle2 className="h-3.5 w-3.5 text-foreground" />
                           ) : (
-                            <XCircle className="h-3.5 w-3.5 text-rose-500 dark:text-rose-400" />
+                            <XCircle className="h-3.5 w-3.5 text-destructive" />
                           )}
-                          <span className="font-mono text-slate-800 dark:text-slate-200">{span.name}</span>
+                          <span className="font-mono text-foreground">{span.name}</span>
                         </div>
-                        <span className="font-mono text-xs text-slate-500 dark:text-slate-400">
+                        <span className="font-mono text-xs text-muted-foreground">
                           {span.durationMs} ms
                         </span>
                       </div>
 
                       {/* Bar indicator */}
-                      <div className="h-2 w-full rounded bg-slate-200 dark:bg-[#0c1527] overflow-hidden">
+                      <div className="h-1.5 w-full rounded bg-muted overflow-hidden">
                         <div
                           className={`h-full rounded transition-all ${
                             span.status === "ok"
-                              ? "bg-gradient-to-r from-blue-600 to-blue-400"
-                              : "bg-rose-500"
+                              ? "bg-foreground"
+                              : "bg-destructive"
                           }`}
                           style={{ width: `${widthPercent}%` }}
                         />
@@ -194,23 +194,23 @@ export function TraceModal({ trace, open, onClose }: TraceModalProps) {
           )}
 
           {activeTab === "error" && trace.errorMessage && (
-            <div className="rounded-lg border border-rose-200 dark:border-rose-900/50 bg-rose-50 dark:bg-rose-950/20 p-4 space-y-2">
-              <div className="flex items-center gap-2 text-xs font-semibold text-rose-700 dark:text-rose-300">
-                <AlertTriangle className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+            <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-4 space-y-2">
+              <div className="flex items-center gap-2 text-xs font-semibold text-destructive">
+                <AlertTriangle className="h-4 w-4" />
                 <span>Execution Fault Diagnostic</span>
               </div>
-              <p className="font-mono text-xs text-rose-900 dark:text-rose-200/90 leading-relaxed bg-white dark:bg-black p-3 rounded border border-rose-200 dark:border-rose-900/40">
+              <p className="font-mono text-xs text-foreground leading-relaxed bg-background p-3 rounded-md border border-border">
                 {trace.errorMessage}
               </p>
-              <div className="text-[11px] text-slate-500 dark:text-slate-400 pt-1">
+              <div className="text-[11px] text-muted-foreground pt-1">
                 Suggested Remediation: Check downstream service timeout quota or configure exponential backoff retry policy in telemetry agent.
               </div>
             </div>
           )}
 
           {activeTab === "raw" && (
-            <div className="rounded-lg border border-slate-200 dark:border-[#1e293b] bg-slate-50 dark:bg-black p-3">
-              <pre className="font-mono text-xs text-blue-700 dark:text-blue-300 overflow-x-auto">
+            <div className="rounded-lg border border-border bg-muted/20 p-3">
+              <pre className="font-mono text-xs text-foreground overflow-x-auto">
                 {JSON.stringify(trace, null, 2)}
               </pre>
             </div>
@@ -218,28 +218,29 @@ export function TraceModal({ trace, open, onClose }: TraceModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-200 dark:border-[#1e293b] px-6 py-3 bg-slate-50 dark:bg-black">
-          <span className="text-[11px] text-slate-500">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-border px-6 py-3 bg-muted/30">
+          <span className="text-[11px] text-muted-foreground">
             Recorded at {trace.timestamp} • Service: {trace.service}
           </span>
           <div className="flex items-center gap-2">
             {confirmDelete ? (
-              <div className="flex items-center gap-2 bg-rose-500/10 border border-rose-500/30 rounded-lg px-2.5 py-1">
-                <span className="text-xs text-rose-600 dark:text-rose-400 font-medium">Delete permanently?</span>
+              <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/30 rounded-md px-2.5 py-1">
+                <span className="text-xs text-destructive font-medium">Delete permanently?</span>
                 <Button
                   size="sm"
                   variant="outline"
                   disabled={isDeleting}
                   onClick={() => setConfirmDelete(false)}
-                  className="h-7 px-2 text-xs border-slate-200 dark:border-[#1e293b]"
+                  className="h-7 px-2 text-xs"
                 >
                   Cancel
                 </Button>
                 <Button
                   size="sm"
+                  variant="destructive"
                   disabled={isDeleting}
                   onClick={handleDelete}
-                  className="h-7 px-2.5 text-xs bg-rose-600 hover:bg-rose-700 text-white font-semibold flex items-center gap-1"
+                  className="h-7 px-2.5 text-xs font-medium flex items-center gap-1"
                 >
                   {isDeleting ? (
                     <Loader2 className="h-3 w-3 animate-spin" />
@@ -254,7 +255,7 @@ export function TraceModal({ trace, open, onClose }: TraceModalProps) {
                 size="sm"
                 variant="outline"
                 onClick={() => setConfirmDelete(true)}
-                className="text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 border-rose-500/30 flex items-center gap-1.5"
+                className="text-xs text-destructive hover:bg-destructive/10 border-destructive/30 flex items-center gap-1.5"
               >
                 <Trash2 className="h-3.5 w-3.5" />
                 <span>Delete Trace</span>
@@ -263,7 +264,7 @@ export function TraceModal({ trace, open, onClose }: TraceModalProps) {
             <Button
               size="sm"
               onClick={onClose}
-              className="bg-blue-600 text-white hover:bg-blue-500 text-xs font-semibold"
+              className="text-xs font-medium"
             >
               Close Inspector
             </Button>

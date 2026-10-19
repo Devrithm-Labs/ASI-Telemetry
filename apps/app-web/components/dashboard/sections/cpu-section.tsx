@@ -26,18 +26,18 @@ interface CpuSectionProps {
 const cpuChartConfig = {
   cpuPercent: {
     label: "CPU Usage %",
-    color: "#3b82f6",
+    color: "var(--foreground)",
   },
   coreLoad: {
     label: "Load Avg",
-    color: "#f59e0b",
+    color: "#a1a1aa",
   },
 } satisfies ChartConfig;
 
 const memoryChartConfig = {
   memoryPercent: {
     label: "Memory (MB)",
-    color: "#10b981",
+    color: "var(--foreground)",
   },
 } satisfies ChartConfig;
 
@@ -55,11 +55,11 @@ export function CpuSection({ data, summary }: CpuSectionProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
       {/* Component 1: CPU Core Utilization */}
-      <Card className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border/80 bg-card shadow-xs transition-all duration-200 hover:border-amber-500/30 hover:shadow-md">
+      <Card className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card shadow-xs transition-all duration-200 hover:border-foreground/30">
         {/* Simplified Header */}
-        <div className="flex items-center justify-between border-b border-border/70 px-5 py-3.5 bg-card/50">
+        <div className="flex items-center justify-between border-b border-border px-5 py-3.5 bg-muted/20">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-border/80 bg-background text-amber-500 shadow-xs">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-muted text-foreground shadow-xs">
               <Cpu className="h-4 w-4" />
             </div>
             <div>
@@ -77,11 +77,11 @@ export function CpuSection({ data, summary }: CpuSectionProps) {
 
           <div className="flex items-center gap-3 text-xs">
             <div className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-[#3b82f6]" />
+              <span className="h-2 w-2 rounded-full bg-foreground" />
               <span className="text-[11px] text-muted-foreground font-medium">CPU %</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-[#f59e0b]" />
+              <span className="h-2 w-2 rounded-full bg-[#a1a1aa]" />
               <span className="text-[11px] text-muted-foreground font-medium">Core Load</span>
             </div>
           </div>
@@ -91,7 +91,7 @@ export function CpuSection({ data, summary }: CpuSectionProps) {
         <div className="p-5 flex-1 flex flex-col justify-end">
           {!hasData ? (
             <div className="flex h-52 flex-col items-center justify-center text-center p-4 select-none">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted border border-border/60 text-muted-foreground mb-2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted border border-border text-muted-foreground mb-2">
                 <Search className="h-4 w-4" />
               </div>
               <p className="text-xs font-semibold text-foreground">No host metrics</p>
@@ -100,16 +100,16 @@ export function CpuSection({ data, summary }: CpuSectionProps) {
           ) : (
             <ChartContainer config={cpuChartConfig} className="h-56 w-full">
               <LineChart data={data} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={true} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={true} />
                 <XAxis
                   dataKey="time"
-                  stroke="#64748b"
+                  stroke="var(--muted-foreground)"
                   tickLine={false}
                   axisLine={false}
                   fontSize={11}
                 />
                 <YAxis
-                  stroke="#64748b"
+                  stroke="var(--muted-foreground)"
                   tickLine={false}
                   axisLine={false}
                   fontSize={11}
@@ -121,7 +121,7 @@ export function CpuSection({ data, summary }: CpuSectionProps) {
                 <Line
                   type="monotone"
                   dataKey="cpuPercent"
-                  stroke="#3b82f6"
+                  stroke="var(--foreground)"
                   strokeWidth={2}
                   dot={{ r: 3 }}
                   activeDot={{ r: 5 }}
@@ -129,7 +129,7 @@ export function CpuSection({ data, summary }: CpuSectionProps) {
                 <Line
                   type="monotone"
                   dataKey="coreLoad"
-                  stroke="#f59e0b"
+                  stroke="#a1a1aa"
                   strokeWidth={2}
                   dot={{ r: 3 }}
                   activeDot={{ r: 5 }}
@@ -141,11 +141,11 @@ export function CpuSection({ data, summary }: CpuSectionProps) {
       </Card>
 
       {/* Component 2: Memory Footprint */}
-      <Card className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border/80 bg-card shadow-xs transition-all duration-200 hover:border-emerald-500/30 hover:shadow-md">
+      <Card className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card shadow-xs transition-all duration-200 hover:border-foreground/30">
         {/* Simplified Header */}
-        <div className="flex items-center justify-between border-b border-border/70 px-5 py-3.5 bg-card/50">
+        <div className="flex items-center justify-between border-b border-border px-5 py-3.5 bg-muted/20">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-border/80 bg-background text-emerald-500 shadow-xs">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-muted text-foreground shadow-xs">
               <Layers className="h-4 w-4" />
             </div>
             <div>
@@ -154,18 +154,18 @@ export function CpuSection({ data, summary }: CpuSectionProps) {
               </h3>
               <div className="flex items-baseline gap-1.5 mt-0.5">
                 <span className="text-xl font-bold font-mono text-foreground">{latestMem}</span>
-                <span className="text-xs font-semibold text-emerald-500 font-mono">MB</span>
+                <span className="text-xs font-semibold text-muted-foreground font-mono ml-1">MB</span>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-3 text-xs">
             <div className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-[#10b981]" />
+              <span className="h-2 w-2 rounded-full bg-foreground" />
               <span className="text-[11px] text-muted-foreground font-medium">Memory (MB)</span>
             </div>
-            <div className="flex items-center gap-1.5 font-mono text-[11px] text-emerald-500">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <div className="flex items-center gap-1.5 font-mono text-[11px] text-muted-foreground">
+              <span className="h-1.5 w-1.5 rounded-full bg-foreground" />
               <span>Live Sync</span>
             </div>
           </div>
@@ -175,7 +175,7 @@ export function CpuSection({ data, summary }: CpuSectionProps) {
         <div className="p-5 flex-1 flex flex-col justify-end">
           {!hasData ? (
             <div className="flex h-52 flex-col items-center justify-center text-center p-4 select-none">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted border border-border/60 text-muted-foreground mb-2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted border border-border text-muted-foreground mb-2">
                 <Search className="h-4 w-4" />
               </div>
               <p className="text-xs font-semibold text-foreground">No memory records</p>
@@ -184,16 +184,16 @@ export function CpuSection({ data, summary }: CpuSectionProps) {
           ) : (
             <ChartContainer config={memoryChartConfig} className="h-56 w-full">
               <LineChart data={data} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={true} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={true} />
                 <XAxis
                   dataKey="time"
-                  stroke="#64748b"
+                  stroke="var(--muted-foreground)"
                   tickLine={false}
                   axisLine={false}
                   fontSize={11}
                 />
                 <YAxis
-                  stroke="#64748b"
+                  stroke="var(--muted-foreground)"
                   tickLine={false}
                   axisLine={false}
                   fontSize={11}
@@ -205,7 +205,7 @@ export function CpuSection({ data, summary }: CpuSectionProps) {
                 <Line
                   type="monotone"
                   dataKey="memoryPercent"
-                  stroke="#10b981"
+                  stroke="var(--foreground)"
                   strokeWidth={2}
                   dot={{ r: 3 }}
                   activeDot={{ r: 5 }}

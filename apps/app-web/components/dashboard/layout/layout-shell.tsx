@@ -30,7 +30,7 @@ function DashboardShellInner({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground font-sans selection:bg-blue-600/30 selection:text-blue-600 dark:selection:text-blue-200">
+    <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground font-sans selection:bg-foreground selection:text-background">
       {/* Persistent Sidebar Navigation */}
       <DashboardSidebar
         collapsed={sidebarCollapsed}

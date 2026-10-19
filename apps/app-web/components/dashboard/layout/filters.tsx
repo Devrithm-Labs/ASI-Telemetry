@@ -8,8 +8,11 @@ import {
   Code,
   Gauge,
   LucideIcon,
+  Check,
 } from "lucide-react";
 import { TimeRange, ApplicationItem } from "../context/dashboard-types";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export interface SubTabItem {
   id: string;
@@ -73,6 +76,20 @@ export function DashboardFilters({
   const [isFuncOpen, setIsFuncOpen] = React.useState(false);
   const [isTimeOpen, setIsTimeOpen] = React.useState(false);
 
+  // Close menus on outside click
+  React.useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest("[data-filters-wrapper]")) {
+        setIsProjectOpen(false);
+        setIsFuncOpen(false);
+        setIsTimeOpen(false);
+      }
+    };
+    document.addEventListener("click", handleOutsideClick);
+    return () => document.removeEventListener("click", handleOutsideClick);
+  }, []);
+
   // Derive distinct applications list
   const appList = React.useMemo(() => {
     return applications || [];
@@ -91,19 +108,19 @@ export function DashboardFilters({
 
   if (hideFilterControls) {
     return (
-      <div className="border-b border-slate-200 dark:border-[#1e293b] bg-white/95 dark:bg-black/95 px-6 py-2.5 space-y-2 backdrop-blur-md">
+      <div data-filters-wrapper className="border-b border-border bg-background/95 px-6 py-2.5 space-y-2 backdrop-blur-md">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          {/* Distinct Route Breadcrumb */}
+          {/* Route Breadcrumb */}
           <div className="flex items-center gap-1.5 text-xs">
-            <RouteIcon className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
-            <span className="text-slate-500 dark:text-slate-400">{routeCategory}</span>
-            <span className="text-slate-300 dark:text-slate-600">/</span>
-            <span className="text-slate-900 dark:text-white font-semibold">{routeTitle}</span>
+            <RouteIcon className="h-4 w-4 text-foreground shrink-0" />
+            <span className="text-muted-foreground">{routeCategory}</span>
+            <span className="text-border">/</span>
+            <span className="text-foreground font-semibold">{routeTitle}</span>
           </div>
 
           {/* Route-Specific Sub-Tabs Bar */}
           {subTabs && subTabs.length > 0 && (
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
               {subTabs.map((subTab) => {
                 const isActive = activeSubTab === subTab.id || activeSubTab === subTab.label;
 
@@ -119,20 +136,22 @@ export function DashboardFilters({
                         }
                       }
                     }}
-                    className={`whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 select-none ${
+                    className={cn(
+                      "whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 select-none",
                       isActive
-                        ? "bg-blue-600 text-white shadow-sm shadow-blue-600/30 font-semibold"
-                        : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#141414] hover:text-slate-900 dark:hover:text-slate-200"
-                    }`}
+                        ? "bg-primary text-primary-foreground shadow-xs"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
                   >
                     <span>{subTab.label}</span>
                     {subTab.badge && (
                       <span
-                        className={`rounded px-1.5 py-0.2 text-[10px] font-mono ${
+                        className={cn(
+                          "rounded px-1.5 py-0.2 text-[10px] font-mono",
                           isActive
-                            ? "bg-white/20 text-white"
-                            : "bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300"
-                        }`}
+                            ? "bg-primary-foreground/20 text-primary-foreground"
+                            : "border border-border/70 bg-muted text-muted-foreground"
+                        )}
                       >
                         {subTab.badge}
                       </span>
@@ -148,38 +167,40 @@ export function DashboardFilters({
   }
 
   return (
-    <div className="border-b border-slate-200 dark:border-[#1e293b] bg-white/95 dark:bg-black/95 px-6 py-2.5 space-y-2.5 backdrop-blur-md">
+    <div data-filters-wrapper className="border-b border-border bg-background/95 px-6 py-2.5 space-y-2.5 backdrop-blur-md">
       {/* Top Filter Controls Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          {/* Distinct Route Breadcrumb */}
+          {/* Route Breadcrumb */}
           <div className="flex items-center gap-1.5 text-xs">
-            <RouteIcon className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
-            <span className="text-slate-500 dark:text-slate-400">{routeCategory}</span>
-            <span className="text-slate-300 dark:text-slate-600">/</span>
-            <span className="text-slate-900 dark:text-white font-semibold">{routeTitle}</span>
+            <RouteIcon className="h-4 w-4 text-foreground shrink-0" />
+            <span className="text-muted-foreground">{routeCategory}</span>
+            <span className="text-border">/</span>
+            <span className="text-foreground font-semibold">{routeTitle}</span>
           </div>
 
           {/* Project & Respective Function Selector Dropdown */}
           {showProjectSelector && onProjectChange && (
             <div className="relative">
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => {
                   setIsProjectOpen(!isProjectOpen);
                   setIsFuncOpen(false);
                   setIsTimeOpen(false);
                 }}
-                className="flex h-7.5 items-center gap-1.5 rounded-md border border-slate-200 dark:border-[#1e293b] bg-slate-50 dark:bg-[#0c1017] px-2.5 text-xs font-semibold text-slate-800 dark:text-slate-200 hover:border-blue-500/60 hover:text-slate-900 dark:hover:text-white transition-colors"
+                className="h-8 gap-1.5 text-xs font-medium"
                 title="Select Agent Application"
               >
-                <Layers className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                <Layers className="h-3.5 w-3.5 text-muted-foreground" />
                 <span>{selectedProject === "all-applications" ? "All Applications" : selectedProject}</span>
-                <ChevronDown className="h-3 w-3 text-slate-400" />
-              </button>
+                <ChevronDown className="h-3 w-3 text-muted-foreground" />
+              </Button>
 
               {isProjectOpen && (
-                <div className="absolute left-0 top-9 z-50 w-72 rounded-xl border border-slate-200 dark:border-[#1e293b] bg-white dark:bg-[#090d16] py-1 shadow-2xl backdrop-blur-md">
-                  <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-[#1e293b]/70 flex items-center justify-between">
+                <div className="absolute left-0 top-9.5 z-50 w-72 rounded-md border border-border bg-popover p-1 shadow-md backdrop-blur-md text-popover-foreground">
+                  <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground border-b border-border flex items-center justify-between">
                     <span>Application</span>
                     <span>Respective Func</span>
                   </div>
@@ -190,14 +211,15 @@ export function DashboardFilters({
                       onProjectChange("all-applications");
                       setIsProjectOpen(false);
                     }}
-                    className={`flex w-full items-center justify-between px-3 py-2 text-xs transition-colors ${
+                    className={cn(
+                      "flex w-full items-center justify-between rounded-sm px-3 py-1.5 text-xs transition-colors cursor-pointer",
                       selectedProject === "all-applications"
-                        ? "bg-blue-50 dark:bg-blue-600/20 text-blue-600 dark:text-blue-300 font-semibold"
-                        : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#141414] hover:text-slate-900 dark:hover:text-white"
-                    }`}
+                        ? "bg-accent text-accent-foreground font-medium"
+                        : "text-foreground hover:bg-muted"
+                    )}
                   >
                     <span>All Applications</span>
-                    <span className="font-mono text-[10px] text-slate-400">Fleet wide</span>
+                    <span className="font-mono text-[10px] text-muted-foreground">Fleet wide</span>
                   </button>
 
                   {/* Individual application rows */}
@@ -208,25 +230,26 @@ export function DashboardFilters({
                         onProjectChange(app.agent_name);
                         setIsProjectOpen(false);
                       }}
-                      className={`flex w-full items-center justify-between px-3 py-2 text-xs transition-colors ${
+                      className={cn(
+                        "flex w-full items-center justify-between rounded-sm px-3 py-1.5 text-xs transition-colors cursor-pointer",
                         selectedProject === app.agent_name
-                          ? "bg-blue-50 dark:bg-blue-600/20 text-blue-600 dark:text-blue-300 font-semibold"
-                          : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#141414] hover:text-slate-900 dark:hover:text-white"
-                      }`}
+                          ? "bg-accent text-accent-foreground font-medium"
+                          : "text-foreground hover:bg-muted"
+                      )}
                     >
                       <span className="truncate font-medium">{app.agent_name}</span>
                       <div className="flex items-center gap-1 overflow-hidden ml-2 max-w-[130px]">
                         {app.functions.slice(0, 2).map((fn: string) => (
                           <span
                             key={fn}
-                            className="rounded bg-slate-100 dark:bg-[#070a10] border border-slate-200 dark:border-[#1e293b] px-1.5 py-0.5 font-mono text-[10px] text-slate-600 dark:text-slate-300 truncate"
+                            className="rounded bg-muted border border-border px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground truncate"
                             title={`Function: ${fn}`}
                           >
                             {fn}
                           </span>
                         ))}
                         {app.functions.length > 2 && (
-                          <span className="text-[10px] text-slate-400 font-mono">
+                          <span className="text-[10px] text-muted-foreground font-mono">
                             +{app.functions.length - 2}
                           </span>
                         )}
@@ -241,28 +264,30 @@ export function DashboardFilters({
           {/* Respective Function Name Selector Pill */}
           {onFunctionChange && (
             <div className="relative">
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => {
                   setIsFuncOpen(!isFuncOpen);
                   setIsProjectOpen(false);
                   setIsTimeOpen(false);
                 }}
-                className="flex h-7.5 items-center gap-1.5 rounded-md border border-slate-200 dark:border-[#1e293b] bg-slate-50 dark:bg-[#0c1017] px-2.5 text-xs font-mono font-medium text-slate-800 dark:text-slate-200 hover:border-emerald-500/60 hover:text-slate-900 dark:hover:text-white transition-colors"
+                className="h-8 gap-1.5 font-mono text-xs font-medium"
                 title="Filter by function name"
               >
-                <Code className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span className="text-slate-400">fn:</span>
-                <span className="text-emerald-600 dark:text-emerald-300">
+                <Code className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-muted-foreground">fn:</span>
+                <span className="text-foreground">
                   {selectedFunction === "all" ? "All Functions" : selectedFunction}
                 </span>
-                <ChevronDown className="h-3 w-3 text-slate-400" />
-              </button>
+                <ChevronDown className="h-3 w-3 text-muted-foreground" />
+              </Button>
 
               {isFuncOpen && (
-                <div className="absolute left-0 top-9 z-50 w-56 rounded-xl border border-slate-200 dark:border-[#1e293b] bg-white dark:bg-[#090d16] py-1 shadow-2xl backdrop-blur-md">
-                  <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-[#1e293b]/70 flex items-center justify-between">
+                <div className="absolute left-0 top-9.5 z-50 w-56 rounded-md border border-border bg-popover p-1 shadow-md backdrop-blur-md text-popover-foreground">
+                  <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground border-b border-border flex items-center justify-between">
                     <span>Respective Functions</span>
-                    <span className="font-mono text-emerald-600 dark:text-emerald-400">{selectedProject}</span>
+                    <span className="font-mono text-foreground">{selectedProject}</span>
                   </div>
 
                   <button
@@ -270,11 +295,12 @@ export function DashboardFilters({
                       onFunctionChange("all");
                       setIsFuncOpen(false);
                     }}
-                    className={`flex w-full items-center px-3 py-1.5 text-xs font-mono transition-colors ${
+                    className={cn(
+                      "flex w-full items-center rounded-sm px-3 py-1.5 text-xs font-mono transition-colors cursor-pointer",
                       selectedFunction === "all"
-                        ? "bg-emerald-50 dark:bg-emerald-600/20 text-emerald-600 dark:text-emerald-300 font-semibold"
-                        : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#141414] hover:text-slate-900 dark:hover:text-white"
-                    }`}
+                        ? "bg-accent text-accent-foreground font-medium"
+                        : "text-foreground hover:bg-muted"
+                    )}
                   >
                     All Functions (Entire Agent)
                   </button>
@@ -286,14 +312,15 @@ export function DashboardFilters({
                         onFunctionChange(fn);
                         setIsFuncOpen(false);
                       }}
-                      className={`flex w-full items-center justify-between px-3 py-1.5 text-xs font-mono transition-colors ${
+                      className={cn(
+                        "flex w-full items-center justify-between rounded-sm px-3 py-1.5 text-xs font-mono transition-colors cursor-pointer",
                         selectedFunction === fn
-                          ? "bg-emerald-50 dark:bg-emerald-600/20 text-emerald-600 dark:text-emerald-300 font-semibold"
-                          : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#141414] hover:text-slate-900 dark:hover:text-white"
-                      }`}
+                          ? "bg-accent text-accent-foreground font-medium"
+                          : "text-foreground hover:bg-muted"
+                      )}
                     >
                       <span className="truncate">{fn}</span>
-                      <span className="text-[10px] text-slate-400">tracked</span>
+                      <span className="text-[10px] text-muted-foreground">tracked</span>
                     </button>
                   ))}
                 </div>
@@ -304,22 +331,24 @@ export function DashboardFilters({
           {/* Time Range Selector */}
           {showTimeRange && onTimeRangeChange && (
             <div className="relative">
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => {
                   setIsTimeOpen(!isTimeOpen);
                   setIsProjectOpen(false);
                   setIsFuncOpen(false);
                 }}
-                className="flex h-7.5 items-center gap-1.5 rounded-md border border-slate-200 dark:border-[#1e293b] bg-slate-50 dark:bg-[#0c1017] px-2.5 text-xs font-medium text-slate-800 dark:text-slate-200 hover:border-blue-500/60 hover:text-slate-900 dark:hover:text-white transition-colors"
+                className="h-8 gap-1.5 text-xs font-medium"
               >
-                <Calendar className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
                 <span>{timeRangeLabels[timeRange]}</span>
-                <ChevronDown className="h-3 w-3 text-slate-400" />
-              </button>
+                <ChevronDown className="h-3 w-3 text-muted-foreground" />
+              </Button>
 
               {isTimeOpen && (
-                <div className="absolute left-0 top-9 z-50 w-36 rounded-xl border border-slate-200 dark:border-[#1e293b] bg-white dark:bg-[#090d16] py-1 shadow-2xl backdrop-blur-md">
-                  <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-[#1e293b]/70 mb-1">
+                <div className="absolute left-0 top-9.5 z-50 w-36 rounded-md border border-border bg-popover p-1 shadow-md backdrop-blur-md text-popover-foreground">
+                  <div className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground border-b border-border mb-1">
                     Time Range
                   </div>
                   {(["1h", "24h", "7d", "30d"] as TimeRange[]).map((r) => (
@@ -329,13 +358,15 @@ export function DashboardFilters({
                         onTimeRangeChange(r);
                         setIsTimeOpen(false);
                       }}
-                      className={`flex w-full items-center px-2.5 py-1.5 text-xs transition-colors ${
+                      className={cn(
+                        "flex w-full items-center justify-between rounded-sm px-2.5 py-1.5 text-xs transition-colors cursor-pointer",
                         timeRange === r
-                          ? "bg-blue-50 dark:bg-blue-600/20 text-blue-600 dark:text-blue-300 font-semibold"
-                          : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#141414] hover:text-slate-900 dark:hover:text-white"
-                      }`}
+                          ? "bg-accent text-accent-foreground font-medium"
+                          : "text-foreground hover:bg-muted"
+                      )}
                     >
-                      {timeRangeLabels[r]}
+                      <span>{timeRangeLabels[r]}</span>
+                      {timeRange === r && <Check className="h-3.5 w-3.5 text-foreground" />}
                     </button>
                   ))}
                 </div>
@@ -354,7 +385,7 @@ export function DashboardFilters({
 
       {/* Route-Specific Sub-Tabs Bar */}
       {subTabs && subTabs.length > 0 && (
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 pt-0.5 no-scrollbar">
+        <div className="flex items-center gap-1 overflow-x-auto pb-0.5 pt-0.5 no-scrollbar">
           {subTabs.map((subTab) => {
             const isActive = activeSubTab === subTab.id || activeSubTab === subTab.label;
 
@@ -370,20 +401,22 @@ export function DashboardFilters({
                     }
                   }
                 }}
-                className={`whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 select-none ${
+                className={cn(
+                  "whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 select-none",
                   isActive
-                    ? "bg-blue-600 text-white shadow-sm shadow-blue-600/30 font-semibold"
-                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#141414] hover:text-slate-900 dark:hover:text-slate-200"
-                }`}
+                    ? "bg-primary text-primary-foreground shadow-xs"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
               >
                 <span>{subTab.label}</span>
                 {subTab.badge && (
                   <span
-                    className={`rounded px-1.5 py-0.2 text-[10px] font-mono ${
+                    className={cn(
+                      "rounded px-1.5 py-0.2 text-[10px] font-mono",
                       isActive
-                        ? "bg-white/20 text-white"
-                        : "bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300"
-                    }`}
+                        ? "bg-primary-foreground/20 text-primary-foreground"
+                        : "border border-border/70 bg-muted text-muted-foreground"
+                    )}
                   >
                     {subTab.badge}
                   </span>

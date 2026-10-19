@@ -57,6 +57,8 @@ def instrument_gemini(client: Any) -> None:
     def wrapped_generate(*args, **kwargs):
         span = current_span.get()
         model_name = kwargs.get("model", args[0] if args else "gemini-3.8-flash")
+        if span is not None:
+            span.setdefault("metadata", {})["model"] = model_name
 
         response = original_generate(*args, **kwargs)
 
@@ -83,6 +85,8 @@ def instrument_openai(client: Any) -> None:
     def wrapped_create(*args, **kwargs):
         span = current_span.get()
         model_name = kwargs.get("model", "asi1-mini")
+        if span is not None:
+            span.setdefault("metadata", {})["model"] = model_name
 
         response = original_create(*args, **kwargs)
 

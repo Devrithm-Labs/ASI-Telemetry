@@ -30,7 +30,7 @@ export function AlertModal({ open, onClose }: AlertModalProps) {
       <div className="relative w-full max-w-md rounded-xl border border-border bg-card shadow-2xl p-6 space-y-4">
         <div className="flex items-center justify-between border-b border-border pb-3">
           <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500 border border-blue-500/20">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-muted text-foreground border border-border">
               <Bell className="h-4 w-4" />
             </div>
             <h3 className="text-sm font-semibold text-foreground">Configure Telemetry Alert</h3>
@@ -49,7 +49,7 @@ export function AlertModal({ open, onClose }: AlertModalProps) {
             <select
               value={metric}
               onChange={(e) => setMetric(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground focus:border-blue-500 focus:outline-none transition-colors"
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-ring transition-colors"
             >
               <option value="latency">Trace Latency (P99 ms)</option>
               <option value="error_rate">Trace Error Rate (%)</option>
@@ -64,7 +64,7 @@ export function AlertModal({ open, onClose }: AlertModalProps) {
               <select
                 value={operator}
                 onChange={(e) => setOperator(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground focus:border-blue-500 focus:outline-none transition-colors"
+                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-ring transition-colors"
               >
                 <option value=">">Greater than (&gt;)</option>
                 <option value=">=">Greater than or equal (&gt;=)</option>
@@ -77,7 +77,7 @@ export function AlertModal({ open, onClose }: AlertModalProps) {
                 type="text"
                 value={threshold}
                 onChange={(e) => setThreshold(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground focus:border-blue-500 focus:outline-none font-mono transition-colors"
+                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-ring font-mono transition-colors"
               />
             </div>
           </div>
@@ -87,7 +87,7 @@ export function AlertModal({ open, onClose }: AlertModalProps) {
             <input
               type="text"
               defaultValue="#ops-telemetry-alerts (Slack) + PagerDuty"
-              className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground focus:border-blue-500 focus:outline-none transition-colors"
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-ring transition-colors"
             />
           </div>
         </div>
@@ -104,7 +104,7 @@ export function AlertModal({ open, onClose }: AlertModalProps) {
           <Button
             size="sm"
             onClick={handleSave}
-            className="rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-500 shadow-sm"
+            className="text-xs font-medium"
           >
             {saved ? (
               <>

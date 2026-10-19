@@ -218,7 +218,7 @@ export default function ApiKeysPage() {
                             ? "border-purple-500/30 text-purple-600 dark:text-purple-400 bg-purple-500/5 font-normal"
                             : key.environment === "staging"
                             ? "border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-500/5 font-normal"
-                            : "border-blue-500/30 text-blue-600 dark:text-blue-400 bg-blue-500/5 font-normal"
+                            : "border-border text-foreground bg-muted font-normal"
                         }
                       >
                         {key.environment}

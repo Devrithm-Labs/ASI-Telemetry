@@ -3,6 +3,13 @@ import asyncio
 import os
 import sys
 
+# Ensure an active event loop exists for uagents on Python 3.12+
+try:
+    asyncio.get_event_loop()
+except RuntimeError:
+    asyncio.set_event_loop(asyncio.new_event_loop())
+
+
 # Import SDK directly from local app-sdk folder
 SDK_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "app-sdk", "src"))
 if SDK_PATH not in sys.path:
@@ -42,7 +49,7 @@ async def send_greeting(ctx: Context, text: str):
     """Tracked dispatch of messages to the receiver agent with trace propagation."""
     print(f"\n[Sending to Assistant]: {text}")
     await ctx.send(RECEIVER_ADDRESS, Greeting(text=text, trace_context=create_trace_context()))
-    print("[Dispatched]: Awaiting response from Gemini...")
+
 
 @sender.on_event("startup")
 async def startup(ctx: Context):
@@ -70,12 +77,9 @@ async def startup(ctx: Context):
 @monitor.track("handle_reply")
 @traceable(name="handle_reply", run_type="tool")
 async def handle_reply(ctx: Context, sender_address: str, msg: Greeting):
-    """Tracked handling of replies coming back to sender."""
-    print(f"\n==========================================")
     print(f"[Received Gemini Reply from Assistant]:")
     print(msg.text)
-    print(f"from sender address {sender_address}")
-    print(f"==========================================\n")
+ 
 
 if __name__ == "__main__":
     sender.run()

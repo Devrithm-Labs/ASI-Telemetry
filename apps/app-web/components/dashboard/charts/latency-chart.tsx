@@ -32,15 +32,15 @@ interface LatencyChartProps {
 const chartConfig = {
   p50: {
     label: "P50 Median",
-    color: "#60a5fa",
+    color: "var(--foreground)",
   },
   p90: {
     label: "P90 Percentile",
-    color: "#3b82f6",
+    color: "var(--muted-foreground)",
   },
   p99: {
     label: "P99 Tail Latency",
-    color: "#93c5fd",
+    color: "var(--muted-foreground)",
   },
 } satisfies ChartConfig;
 
@@ -55,26 +55,26 @@ export function LatencyChart({ data }: LatencyChartProps) {
   );
 
   return (
-    <Card className="rounded-xl border border-slate-200/90 dark:border-[#1e293b] bg-white dark:bg-black shadow-[0_1px_3px_0_rgba(0,0,0,0.04)] dark:shadow-xl backdrop-blur-sm">
-      <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1e293b] pb-4">
+    <Card className="rounded-xl border border-border bg-card shadow-xs">
+      <CardHeader className="flex flex-row items-center justify-between border-b border-border pb-4 bg-muted/20">
         <div>
           <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-            <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-100">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-base font-semibold text-foreground">
               Response Time Percentiles
             </CardTitle>
           </div>
-          <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+          <CardDescription className="text-xs text-muted-foreground mt-0.5">
             P50, P90, and P99 response time percentiles over time (ms)
           </CardDescription>
         </div>
         <div className="flex items-center gap-3">
           <div className="text-right">
-            <div className="text-xs text-slate-500 dark:text-slate-400">P50 Avg</div>
-            <div className="text-sm font-semibold text-blue-600 dark:text-blue-400 font-mono">{avgP50} ms</div>
+            <div className="text-xs text-muted-foreground">P50 Avg</div>
+            <div className="text-sm font-semibold text-foreground font-mono">{avgP50} ms</div>
           </div>
-          <div className="flex items-center gap-1.5 rounded-md border border-blue-200 dark:border-blue-900/60 bg-blue-50 dark:bg-blue-950/40 px-2.5 py-1 text-xs text-blue-700 dark:text-blue-300">
-            <ShieldCheck className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+          <div className="flex items-center gap-1.5 rounded-md border border-border bg-muted px-2.5 py-1 text-xs text-foreground font-medium">
+            <ShieldCheck className="h-3.5 w-3.5 text-muted-foreground" />
             <span>SLA 300ms</span>
           </div>
         </div>
@@ -82,17 +82,17 @@ export function LatencyChart({ data }: LatencyChartProps) {
       <CardContent className="pt-4">
         <ChartContainer config={chartConfig} className="aspect-auto h-[260px] w-full">
           <LineChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.5} vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
             <XAxis
               dataKey="time"
-              stroke="#64748b"
+              stroke="var(--muted-foreground)"
               fontSize={11}
               tickLine={false}
               axisLine={false}
               tickMargin={8}
             />
             <YAxis
-              stroke="#64748b"
+              stroke="var(--muted-foreground)"
               fontSize={11}
               tickLine={false}
               axisLine={false}
@@ -100,25 +100,25 @@ export function LatencyChart({ data }: LatencyChartProps) {
             />
             <ReferenceLine
               y={300}
-              stroke="#2563eb"
+              stroke="var(--muted-foreground)"
               strokeDasharray="4 4"
               strokeWidth={1.5}
               label={{
                 value: "SLA Limit (300ms)",
-                fill: "#2563eb",
+                fill: "var(--muted-foreground)",
                 fontSize: 10,
                 position: "insideTopRight",
               }}
             />
             <ChartTooltip
-              cursor={{ stroke: "#3b82f6", strokeWidth: 1, strokeDasharray: "2 2" }}
+              cursor={{ stroke: "var(--border)", strokeWidth: 1, strokeDasharray: "2 2" }}
               content={
                 <ChartTooltipContent
                   indicator="line"
                   formatter={(value, name) => (
                     <div className="flex w-full items-center justify-between gap-3 text-xs">
-                      <span className="text-slate-500 dark:text-slate-400">{name}:</span>
-                      <span className="font-semibold text-blue-600 dark:text-blue-300 font-mono">{value} ms</span>
+                      <span className="text-muted-foreground">{name}:</span>
+                      <span className="font-semibold text-foreground font-mono">{value} ms</span>
                     </div>
                   )}
                 />
@@ -127,48 +127,48 @@ export function LatencyChart({ data }: LatencyChartProps) {
             <Line
               type="monotone"
               dataKey="p50"
-              stroke="#60a5fa"
+              stroke="var(--foreground)"
               strokeWidth={2}
               dot={false}
-              activeDot={{ r: 4, stroke: "#60a5fa", fill: "#030712" }}
+              activeDot={{ r: 4 }}
             />
             <Line
               type="monotone"
               dataKey="p90"
-              stroke="#3b82f6"
+              stroke="var(--muted-foreground)"
               strokeWidth={2}
               dot={false}
-              activeDot={{ r: 4, stroke: "#3b82f6", fill: "#030712" }}
+              activeDot={{ r: 4 }}
             />
             <Line
               type="monotone"
               dataKey="p99"
-              stroke="#93c5fd"
+              stroke="var(--muted-foreground)"
               strokeWidth={2}
               strokeDasharray="3 3"
               dot={false}
-              activeDot={{ r: 4, stroke: "#93c5fd", fill: "#030712" }}
+              activeDot={{ r: 4 }}
             />
           </LineChart>
         </ChartContainer>
 
-        <div className="mt-3 flex items-center justify-between border-t border-slate-200 dark:border-[#1e293b] pt-3 text-xs text-slate-500 dark:text-slate-400">
+        <div className="mt-3 flex items-center justify-between border-t border-border pt-3 text-xs text-muted-foreground">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-[#60a5fa]" />
-              <span className="text-slate-700 dark:text-slate-300">P50 (Median)</span>
+              <span className="h-2 w-2 rounded-full bg-foreground" />
+              <span className="text-foreground">P50 (Median)</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-[#3b82f6]" />
-              <span className="text-slate-700 dark:text-slate-300">P90 (90th)</span>
+              <span className="h-2 w-2 rounded-full bg-muted-foreground" />
+              <span className="text-muted-foreground">P90 (90th)</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-[#93c5fd]" />
-              <span className="text-slate-700 dark:text-slate-300">P99 (Tail)</span>
+              <span className="h-2 w-2 rounded-full bg-border" />
+              <span className="text-muted-foreground">P99 (Tail)</span>
             </div>
           </div>
-          <div className="text-slate-500 dark:text-slate-400 font-mono">
-            Peak P99: <span className="text-blue-600 dark:text-blue-300 font-semibold">{maxP99} ms</span>
+          <div className="text-muted-foreground font-mono">
+            Peak P99: <span className="text-foreground font-semibold">{maxP99} ms</span>
           </div>
         </div>
       </CardContent>

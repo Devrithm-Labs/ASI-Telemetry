@@ -31,11 +31,11 @@ interface CpuUsageChartProps {
 const chartConfig = {
   cpuPercent: {
     label: "CPU Usage %",
-    color: "#3b82f6",
+    color: "var(--foreground)",
   },
   memoryPercent: {
     label: "Memory Footprint %",
-    color: "#93c5fd",
+    color: "var(--muted-foreground)",
   },
 } satisfies ChartConfig;
 
@@ -45,26 +45,26 @@ export function CpuUsageChart({ data }: CpuUsageChartProps) {
   const latestLoad = data.length > 0 ? data[data.length - 1]?.coreLoad : 6.0;
 
   return (
-    <Card className="rounded-xl border border-slate-200/90 dark:border-[#1e293b] bg-white dark:bg-black shadow-[0_1px_3px_0_rgba(0,0,0,0.04)] dark:shadow-xl backdrop-blur-sm">
-      <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-[#1e293b] pb-4">
+    <Card className="rounded-xl border border-border bg-card shadow-xs">
+      <CardHeader className="flex flex-row items-center justify-between border-b border-border pb-4 bg-muted/20">
         <div>
           <div className="flex items-center gap-2">
-            <Cpu className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-            <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-100">
+            <Cpu className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-base font-semibold text-foreground">
               Compute & System Utilization
             </CardTitle>
           </div>
-          <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+          <CardDescription className="text-xs text-muted-foreground mt-0.5">
             Host node CPU core utilization & memory footprint saturation
           </CardDescription>
         </div>
         <div className="flex items-center gap-4">
           <div className="text-right">
-            <div className="text-xs text-slate-500 dark:text-slate-400">Load (15m)</div>
-            <div className="text-sm font-semibold text-blue-600 dark:text-blue-400 font-mono">{latestLoad}</div>
+            <div className="text-xs text-muted-foreground">Load (15m)</div>
+            <div className="text-sm font-semibold text-foreground font-mono">{latestLoad}</div>
           </div>
-          <div className="flex items-center gap-1.5 rounded-md border border-blue-200 dark:border-blue-900/60 bg-blue-50 dark:bg-blue-950/40 px-2.5 py-1 text-xs text-blue-700 dark:text-blue-300">
-            <HardDrive className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+          <div className="flex items-center gap-1.5 rounded-md border border-border bg-muted px-2.5 py-1 text-xs text-foreground font-medium">
+            <HardDrive className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="font-mono">16 Cores / 32GB</span>
           </div>
         </div>
@@ -74,25 +74,25 @@ export function CpuUsageChart({ data }: CpuUsageChartProps) {
           <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="fillCpu" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.45} />
-                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.0} />
+                <stop offset="5%" stopColor="var(--foreground)" stopOpacity={0.25} />
+                <stop offset="95%" stopColor="var(--foreground)" stopOpacity={0.0} />
               </linearGradient>
               <linearGradient id="fillMem" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#93c5fd" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#93c5fd" stopOpacity={0.0} />
+                <stop offset="5%" stopColor="var(--muted-foreground)" stopOpacity={0.2} />
+                <stop offset="95%" stopColor="var(--muted-foreground)" stopOpacity={0.0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.5} vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
             <XAxis
               dataKey="time"
-              stroke="#64748b"
+              stroke="var(--muted-foreground)"
               fontSize={11}
               tickLine={false}
               axisLine={false}
               tickMargin={8}
             />
             <YAxis
-              stroke="#64748b"
+              stroke="var(--muted-foreground)"
               fontSize={11}
               tickLine={false}
               axisLine={false}
@@ -100,14 +100,14 @@ export function CpuUsageChart({ data }: CpuUsageChartProps) {
               tickFormatter={(val) => `${val}%`}
             />
             <ChartTooltip
-              cursor={{ stroke: "#3b82f6", strokeWidth: 1, strokeDasharray: "2 2" }}
+              cursor={{ stroke: "var(--border)", strokeWidth: 1, strokeDasharray: "2 2" }}
               content={
                 <ChartTooltipContent
                   indicator="dot"
                   formatter={(value, name) => (
                     <div className="flex w-full items-center justify-between gap-3 text-xs">
-                      <span className="text-slate-500 dark:text-slate-400">{name}:</span>
-                      <span className="font-semibold text-blue-600 dark:text-blue-300 font-mono">{value}%</span>
+                      <span className="text-muted-foreground">{name}:</span>
+                      <span className="font-semibold text-foreground font-mono">{value}%</span>
                     </div>
                   )}
                 />
@@ -116,7 +116,7 @@ export function CpuUsageChart({ data }: CpuUsageChartProps) {
             <Area
               type="monotone"
               dataKey="cpuPercent"
-              stroke="#3b82f6"
+              stroke="var(--foreground)"
               strokeWidth={2}
               fillOpacity={1}
               fill="url(#fillCpu)"
@@ -124,7 +124,7 @@ export function CpuUsageChart({ data }: CpuUsageChartProps) {
             <Area
               type="monotone"
               dataKey="memoryPercent"
-              stroke="#93c5fd"
+              stroke="var(--muted-foreground)"
               strokeWidth={1.5}
               fillOpacity={1}
               fill="url(#fillMem)"
@@ -132,22 +132,22 @@ export function CpuUsageChart({ data }: CpuUsageChartProps) {
           </AreaChart>
         </ChartContainer>
 
-        <div className="mt-3 flex items-center justify-between border-t border-slate-200 dark:border-[#1e293b] pt-3 text-xs text-slate-500 dark:text-slate-400">
+        <div className="mt-3 flex items-center justify-between border-t border-border pt-3 text-xs text-muted-foreground">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-[#3b82f6]" />
-              <span className="text-slate-700 dark:text-slate-300">CPU:</span>
-              <span className="font-semibold text-slate-900 dark:text-slate-100 font-mono">{latestCpu}%</span>
+              <span className="h-2 w-2 rounded-full bg-foreground" />
+              <span className="text-foreground">CPU:</span>
+              <span className="font-semibold text-foreground font-mono">{latestCpu}%</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-[#93c5fd]" />
-              <span className="text-slate-700 dark:text-slate-300">Memory:</span>
-              <span className="font-semibold text-slate-900 dark:text-slate-100 font-mono">{latestMem}%</span>
+              <span className="h-2 w-2 rounded-full bg-muted-foreground" />
+              <span className="text-muted-foreground">Memory:</span>
+              <span className="font-semibold text-foreground font-mono">{latestMem}%</span>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-slate-500 dark:text-slate-400">GC Pause:</span>
-            <span className="text-blue-600 dark:text-blue-300 font-mono">1.2ms (avg)</span>
+            <span className="text-muted-foreground">GC Pause:</span>
+            <span className="text-foreground font-mono">1.2ms (avg)</span>
           </div>
         </div>
       </CardContent>

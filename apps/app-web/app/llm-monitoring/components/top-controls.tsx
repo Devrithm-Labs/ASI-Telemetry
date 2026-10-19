@@ -73,7 +73,7 @@ export function TopControls({
   return (
     <div
       data-top-controls-menu
-      className="sticky top-0 z-30 flex flex-col border-b border-border/80 bg-background/95 backdrop-blur-md px-6 pt-3 pb-2.5 gap-2.5"
+      className="sticky top-0 z-30 flex flex-col border-b border-border bg-background/95 backdrop-blur-md px-6 pt-3 pb-2.5 gap-2.5"
     >
       {/* Top Row: Time Range, Model filter and Actions */}
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -86,22 +86,22 @@ export function TopControls({
                 setIsTimeDropdownOpen(!isTimeDropdownOpen);
                 setIsModelDropdownOpen(false);
               }}
-              className="flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-medium text-foreground hover:border-blue-500/50 hover:bg-muted/40 transition-colors cursor-pointer select-none ring-1 ring-border/50"
+              className="flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-2.5 text-xs font-medium text-foreground hover:bg-muted transition-colors cursor-pointer select-none"
               title="Filter by time range"
             >
-              <Hourglass className="h-3.5 w-3.5 text-amber-500" />
+              <Hourglass className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="font-semibold">{currentTimeLabel}</span>
               <ChevronDown
                 className={cn(
                   "h-3 w-3 text-muted-foreground transition-transform duration-150",
-                  isTimeDropdownOpen && "rotate-180 text-blue-500"
+                  isTimeDropdownOpen && "rotate-180 text-foreground"
                 )}
               />
             </button>
 
             {isTimeDropdownOpen && (
-              <div className="absolute left-0 top-9.5 z-50 w-48 rounded-xl border border-border bg-card p-1 shadow-2xl backdrop-blur-xl animate-in fade-in-0 zoom-in-95 duration-150">
-                <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              <div className="absolute left-0 top-9.5 z-50 w-48 rounded-md border border-border bg-popover p-1 shadow-md text-popover-foreground">
+                <div className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground border-b border-border mb-1">
                   Select Time Range
                 </div>
                 {TIME_RANGE_OPTIONS.map((opt) => (
@@ -112,14 +112,14 @@ export function TopControls({
                       setIsTimeDropdownOpen(false);
                     }}
                     className={cn(
-                      "flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs transition-colors cursor-pointer",
+                      "flex w-full items-center justify-between rounded-sm px-2.5 py-1.5 text-xs transition-colors cursor-pointer",
                       timeRange === opt.id
-                        ? "bg-blue-500/10 text-blue-500 font-semibold"
+                        ? "bg-accent text-accent-foreground font-medium"
                         : "text-foreground hover:bg-muted"
                     )}
                   >
                     <span>{opt.label}</span>
-                    {timeRange === opt.id && <Check className="h-3.5 w-3.5 text-blue-500 shrink-0" />}
+                    {timeRange === opt.id && <Check className="h-3.5 w-3.5 text-foreground shrink-0" />}
                   </button>
                 ))}
               </div>
@@ -136,16 +136,16 @@ export function TopControls({
                 setIsModelDropdownOpen(!isModelDropdownOpen);
                 setIsTimeDropdownOpen(false);
               }}
-              className="flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-medium text-foreground hover:border-blue-500/50 hover:bg-muted/40 transition-colors cursor-pointer"
+              className="flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-2.5 text-xs font-medium text-foreground hover:bg-muted transition-colors cursor-pointer"
             >
-              <Bot className="h-3.5 w-3.5 text-blue-500" />
+              <Bot className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="max-w-[120px] truncate">{selectedModel}</span>
               <ChevronDown className="h-3 w-3 text-muted-foreground" />
             </button>
 
             {isModelDropdownOpen && (
-              <div className="absolute right-0 top-9.5 z-50 w-48 rounded-xl border border-border bg-card p-1 shadow-xl backdrop-blur-xl animate-in fade-in-0 zoom-in-95">
-                <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              <div className="absolute right-0 top-9.5 z-50 w-48 rounded-md border border-border bg-popover p-1 shadow-md text-popover-foreground">
+                <div className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground border-b border-border mb-1">
                   Filter Model
                 </div>
                 {models.map((m) => (
@@ -156,14 +156,14 @@ export function TopControls({
                       setIsModelDropdownOpen(false);
                     }}
                     className={cn(
-                      "flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs transition-colors cursor-pointer",
+                      "flex w-full items-center justify-between rounded-sm px-2.5 py-1.5 text-xs transition-colors cursor-pointer",
                       selectedModel === m
-                        ? "bg-blue-500/10 text-blue-500 font-semibold"
+                        ? "bg-accent text-accent-foreground font-medium"
                         : "text-foreground hover:bg-muted"
                     )}
                   >
                     <span className="truncate">{m}</span>
-                    {selectedModel === m && <Check className="h-3.5 w-3.5 text-blue-500 shrink-0" />}
+                    {selectedModel === m && <Check className="h-3.5 w-3.5 text-foreground shrink-0" />}
                   </button>
                 ))}
               </div>
@@ -174,9 +174,9 @@ export function TopControls({
           <button
             onClick={onRefresh}
             title="Refresh database traces"
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-input bg-background text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
           >
-            <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin text-blue-500")} />
+            <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin text-foreground")} />
           </button>
         </div>
       </div>
@@ -190,15 +190,20 @@ export function TopControls({
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
               className={cn(
-                "relative flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-150 select-none cursor-pointer",
+                "relative flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium transition-all select-none cursor-pointer",
                 isActive
-                  ? "bg-slate-900 text-white dark:bg-card dark:text-foreground shadow-xs ring-1 ring-border/80"
-                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                  ? "bg-primary text-primary-foreground shadow-xs font-semibold"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
             >
               <span>{tab.label}</span>
               {tab.id === "traces" && totalTracesCount > 0 && (
-                <span className="rounded-full bg-blue-500/20 px-1.5 text-[10px] font-mono text-blue-500 font-bold">
+                <span className={cn(
+                  "rounded-full px-1.5 text-[10px] font-mono",
+                  isActive
+                    ? "bg-primary-foreground/20 text-primary-foreground"
+                    : "border border-border/70 bg-muted text-muted-foreground"
+                )}>
                   {totalTracesCount}
                 </span>
               )}
@@ -209,4 +214,3 @@ export function TopControls({
     </div>
   );
 }
-

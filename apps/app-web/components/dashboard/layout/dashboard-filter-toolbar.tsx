@@ -9,6 +9,7 @@ import {
   Check,
 } from "lucide-react";
 import { TimeRange, ApplicationItem } from "../context/dashboard-types";
+import { cn } from "@/lib/utils";
 
 interface DashboardFilterToolbarProps {
   selectedProject?: string;
@@ -70,7 +71,7 @@ export function DashboardFilterToolbar({
   return (
     <div
       data-filter-menu
-      className="relative z-20 flex flex-wrap items-center gap-2.5 rounded-xl border border-slate-200 dark:border-[#1e293b] bg-white/90 dark:bg-black/80 px-3 py-2 shadow-sm backdrop-blur-md"
+      className="relative z-20 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-1.5 shadow-xs"
     >
       {/* 1. Filter: Application / Agent Selector */}
       {onProjectChange && (
@@ -83,14 +84,15 @@ export function DashboardFilterToolbar({
               setIsFuncOpen(false);
               setIsTimeOpen(false);
             }}
-            className={`group flex h-8 items-center gap-2 rounded-lg border px-3 text-xs font-medium transition-all duration-200 select-none ${
+            className={cn(
+              "group flex h-8 items-center gap-2 rounded-md border px-2.5 text-xs font-medium transition-colors select-none cursor-pointer",
               isProjectOpen
-                ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 shadow-sm"
-                : "border-slate-200 dark:border-[#1e293b] bg-slate-50 dark:bg-[#090d16] text-slate-700 dark:text-slate-200 hover:border-blue-500/50 hover:bg-slate-100 dark:hover:bg-[#0f172a] hover:text-slate-900 dark:hover:text-white"
-            }`}
+                ? "border-border bg-accent text-accent-foreground"
+                : "border-input bg-background text-foreground hover:bg-muted"
+            )}
             title="Filter by Application"
           >
-            <div className="flex h-4 w-4 items-center justify-center rounded bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400">
+            <div className="flex h-4 w-4 items-center justify-center rounded bg-muted text-foreground">
               <Layers className="h-3 w-3" />
             </div>
             <span className="font-semibold">
@@ -99,16 +101,15 @@ export function DashboardFilterToolbar({
                 : selectedProject}
             </span>
             <ChevronDown
-              className={`h-3 w-3 text-slate-400 transition-transform duration-200 ${
-                isProjectOpen ? "rotate-180 text-blue-500" : "group-hover:text-slate-600 dark:group-hover:text-slate-200"
-              }`}
+              className={cn(
+                "h-3 w-3 text-muted-foreground transition-transform duration-200",
+                isProjectOpen && "rotate-180 text-foreground"
+              )}
             />
           </button>
 
           {isProjectOpen && (
-            <div className="absolute left-0 top-10 z-50 w-72 rounded-xl border border-border dark:border-[#1e293b] bg-white dark:bg-[#090d18] p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
-             
-
+            <div className="absolute left-0 top-9.5 z-50 w-72 rounded-md border border-border bg-popover p-1 shadow-md text-popover-foreground">
               {/* All Applications option */}
               <button
                 type="button"
@@ -116,17 +117,18 @@ export function DashboardFilterToolbar({
                   onProjectChange("all-applications");
                   setIsProjectOpen(false);
                 }}
-                className={`flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-xs transition-colors ${
+                className={cn(
+                  "flex w-full items-center justify-between rounded-sm px-2.5 py-1.5 text-xs transition-colors cursor-pointer",
                   selectedProject === "all-applications"
-                    ? "bg-blue-50 dark:bg-blue-600/20 text-blue-600 dark:text-blue-300 font-semibold"
-                    : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#121927] hover:text-slate-900 dark:hover:text-white"
-                }`}
+                    ? "bg-accent text-accent-foreground font-medium"
+                    : "text-foreground hover:bg-muted"
+                )}
               >
                 <div className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-foreground" />
                   <span>All Agents</span>
                 </div>
-                <span className="font-mono text-[10px] text-slate-400">Total Agents {applications.length} handle</span>
+                <span className="font-mono text-[10px] text-muted-foreground">Total {applications.length}</span>
               </button>
 
               {/* Dynamic Application items */}
@@ -138,23 +140,24 @@ export function DashboardFilterToolbar({
                     onProjectChange(app.agent_name);
                     setIsProjectOpen(false);
                   }}
-                  className={`flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-xs transition-colors ${
+                  className={cn(
+                    "flex w-full items-center justify-between rounded-sm px-2.5 py-1.5 text-xs transition-colors cursor-pointer",
                     selectedProject === app.agent_name
-                      ? "bg-blue-50 dark:bg-blue-600/20 text-blue-600 dark:text-blue-300 font-semibold"
-                      : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#121927] hover:text-slate-900 dark:hover:text-white"
-                  }`}
+                      ? "bg-accent text-accent-foreground font-medium"
+                      : "text-foreground hover:bg-muted"
+                  )}
                 >
                   <div className="flex items-center gap-2 truncate">
-                    <span className="h-1.5 w-1.5 rounded-full bg-blue-500 dark:bg-blue-400" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
                     <span className="truncate font-mono font-medium">{app.agent_name}</span>
                   </div>
 
                   <div className="flex items-center gap-1 shrink-0 ml-2">
-                    <span className="rounded bg-blue-50 dark:bg-blue-950/70 border border-blue-200 dark:border-blue-900/50 px-1.5 py-0.5 font-mono text-[10px] text-blue-600 dark:text-blue-300">
+                    <span className="rounded bg-muted border border-border px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
                       {app.functions.length} fn
                     </span>
                     {selectedProject === app.agent_name && (
-                      <Check className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 ml-1" />
+                      <Check className="h-3.5 w-3.5 text-foreground ml-1" />
                     )}
                   </div>
                 </button>
@@ -175,30 +178,31 @@ export function DashboardFilterToolbar({
               setIsProjectOpen(false);
               setIsTimeOpen(false);
             }}
-            className={`group flex h-8 items-center gap-2 rounded-lg border px-3 text-xs font-mono font-medium transition-all duration-200 select-none ${
+            className={cn(
+              "group flex h-8 items-center gap-2 rounded-md border px-2.5 text-xs font-mono font-medium transition-colors select-none cursor-pointer",
               isFuncOpen
-                ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-200 shadow-sm"
-                : "border-slate-200 dark:border-[#1e293b] bg-slate-50 dark:bg-[#090d16] text-slate-700 dark:text-slate-200 hover:border-emerald-500/50 hover:bg-slate-100 dark:hover:bg-[#0f172a] hover:text-slate-900 dark:hover:text-white"
-            }`}
+                ? "border-border bg-accent text-accent-foreground"
+                : "border-input bg-background text-foreground hover:bg-muted"
+            )}
             title="Filter by Function Name"
           >
-            <div className="flex h-4 w-4 items-center justify-center rounded bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400">
+            <div className="flex h-4 w-4 items-center justify-center rounded bg-muted text-foreground">
               <Code className="h-3 w-3" />
             </div>
             
-            <span className="text-emerald-600 dark:text-emerald-300 font-semibold">
+            <span className="font-semibold text-foreground">
               {selectedFunction === "all" ? "All Functions" : selectedFunction}
             </span>
             <ChevronDown
-              className={`h-3 w-3 text-slate-400 transition-transform duration-200 ${
-                isFuncOpen ? "rotate-180 text-emerald-500" : "group-hover:text-slate-600 dark:group-hover:text-slate-200"
-              }`}
+              className={cn(
+                "h-3 w-3 text-muted-foreground transition-transform duration-200",
+                isFuncOpen && "rotate-180 text-foreground"
+              )}
             />
           </button>
 
           {isFuncOpen && (
-            <div className="absolute right-0 sm:left-0 sm:right-auto top-10 z-50 w-64 rounded-xl border border-border dark:border-[#1e293b] bg-white dark:bg-[#090d18] p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
-
+            <div className="absolute right-0 sm:left-0 sm:right-auto top-9.5 z-50 w-64 rounded-md border border-border bg-popover p-1 shadow-md text-popover-foreground">
               {/* All Functions option */}
               <button
                 type="button"
@@ -206,15 +210,16 @@ export function DashboardFilterToolbar({
                   onFunctionChange("all");
                   setIsFuncOpen(false);
                 }}
-                className={`flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-xs font-mono transition-colors ${
+                className={cn(
+                  "flex w-full items-center justify-between rounded-sm px-2.5 py-1.5 text-xs font-mono transition-colors cursor-pointer",
                   selectedFunction === "all"
-                    ? "bg-emerald-50 dark:bg-emerald-600/20 text-emerald-600 dark:text-emerald-300 font-semibold"
-                    : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#121927] hover:text-slate-900 dark:hover:text-white"
-                }`}
+                    ? "bg-accent text-accent-foreground font-medium"
+                    : "text-foreground hover:bg-muted"
+                )}
               >
-                <span>All Agents Functions</span>
+                <span>All Functions</span>
                 {selectedFunction === "all" && (
-                  <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <Check className="h-3.5 w-3.5 text-foreground" />
                 )}
               </button>
 
@@ -227,17 +232,18 @@ export function DashboardFilterToolbar({
                     onFunctionChange(fn);
                     setIsFuncOpen(false);
                   }}
-                  className={`flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-xs font-mono transition-colors ${
+                  className={cn(
+                    "flex w-full items-center justify-between rounded-sm px-2.5 py-1.5 text-xs font-mono transition-colors cursor-pointer",
                     selectedFunction === fn
-                      ? "bg-emerald-50 dark:bg-emerald-600/20 text-emerald-600 dark:text-emerald-300 font-semibold"
-                    : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#121927] hover:text-slate-900 dark:hover:text-white"
-                  }`}
+                      ? "bg-accent text-accent-foreground font-medium"
+                      : "text-foreground hover:bg-muted"
+                  )}
                 >
                   <span className="truncate">{fn}</span>
                   {selectedFunction === fn ? (
-                    <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <Check className="h-3.5 w-3.5 text-foreground shrink-0" />
                   ) : (
-                    <span className="text-[10px] text-slate-400">tracked</span>
+                    <span className="text-[10px] text-muted-foreground">tracked</span>
                   )}
                 </button>
               ))}
@@ -257,27 +263,29 @@ export function DashboardFilterToolbar({
               setIsProjectOpen(false);
               setIsFuncOpen(false);
             }}
-            className={`group flex h-8 items-center gap-2 rounded-lg border px-3 text-xs font-medium transition-all duration-200 select-none ${
+            className={cn(
+              "group flex h-8 items-center gap-2 rounded-md border px-2.5 text-xs font-medium transition-colors select-none cursor-pointer",
               isTimeOpen
-                ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-white shadow-sm"
-                : "border-slate-200 dark:border-[#1e293b] bg-slate-50 dark:bg-[#090d16] text-slate-700 dark:text-slate-200 hover:border-blue-500/50 hover:bg-slate-100 dark:hover:bg-[#0f172a] hover:text-slate-900 dark:hover:text-white"
-            }`}
+                ? "border-border bg-accent text-accent-foreground"
+                : "border-input bg-background text-foreground hover:bg-muted"
+            )}
             title="Select Time Range"
           >
-            <div className="flex h-4 w-4 items-center justify-center rounded bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400">
+            <div className="flex h-4 w-4 items-center justify-center rounded bg-muted text-foreground">
               <Calendar className="h-3 w-3" />
             </div>
             <span>{timeRangeLabels[timeRange]}</span>
             <ChevronDown
-              className={`h-3 w-3 text-slate-400 transition-transform duration-200 ${
-                isTimeOpen ? "rotate-180 text-blue-500 dark:text-blue-400" : "group-hover:text-slate-600 dark:group-hover:text-slate-200"
-              }`}
+              className={cn(
+                "h-3 w-3 text-muted-foreground transition-transform duration-200",
+                isTimeOpen && "rotate-180 text-foreground"
+              )}
             />
           </button>
 
           {isTimeOpen && (
-            <div className="absolute right-0 top-10 z-50 w-44 rounded-xl border border-border dark:border-[#1e293b] bg-white dark:bg-[#090d18] p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
-              <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-border dark:border-[#1e293b]/60 mb-1">
+            <div className="absolute right-0 top-9.5 z-50 w-44 rounded-md border border-border bg-popover p-1 shadow-md text-popover-foreground">
+              <div className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground border-b border-border mb-1">
                 Time Window
               </div>
               {(["1h", "24h", "7d", "30d"] as TimeRange[]).map((r) => (
@@ -288,15 +296,16 @@ export function DashboardFilterToolbar({
                     onTimeRangeChange(r);
                     setIsTimeOpen(false);
                   }}
-                  className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs transition-colors ${
+                  className={cn(
+                    "flex w-full items-center justify-between rounded-sm px-2.5 py-1.5 text-xs transition-colors cursor-pointer",
                     timeRange === r
-                      ? "bg-blue-50 dark:bg-blue-600/20 text-blue-600 dark:text-blue-300 font-semibold"
-                      : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#121927] hover:text-slate-900 dark:hover:text-white"
-                  }`}
+                      ? "bg-accent text-accent-foreground font-medium"
+                      : "text-foreground hover:bg-muted"
+                  )}
                 >
                   <span>{timeRangeLabels[r]}</span>
                   {timeRange === r && (
-                    <Check className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                    <Check className="h-3.5 w-3.5 text-foreground" />
                   )}
                 </button>
               ))}

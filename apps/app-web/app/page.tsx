@@ -34,7 +34,7 @@ export default function HomePage() {
         showTimeRange={false}
         showLiveToggle={false}
         extraControls={
-          <span className="flex items-center gap-1.5 rounded-md border border-slate-200 dark:border-blue-900/60 bg-blue-50 dark:bg-blue-950/40 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:text-blue-300 shadow-sm">
+          <span className="flex items-center gap-1.5 rounded-md border border-border bg-secondary px-2.5 py-1 text-xs font-medium text-secondary-foreground">
             <Image
               src="/image.png"
               alt="Python"

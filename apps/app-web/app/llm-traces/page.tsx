@@ -144,12 +144,19 @@ export default function LLMTracingPage() {
       const visited = new Set<string>();
 
       roots.forEach((root) => {
+        if (visited.has(root.id)) return;
         ordered.push(root);
         visited.add(root.id);
 
-        // Find child spans belonging to this root/agent
+        // Find child spans belonging to this root/agent (excluding other agent roots)
         const children = items.filter((child) => {
           if (visited.has(child.id)) return false;
+          const isAgentRoot =
+            child.is_agent_root === true ||
+            child.metadata?.is_agent_root === true ||
+            !child.parent_id;
+          if (isAgentRoot) return false;
+
           if (child.parent_id === root.span_id || child.parent_id === root.id) return true;
           const isChild = child.is_agent_root === false || child.metadata?.is_agent_root === false;
           if (isChild && child.agent_name && root.agent_name && child.agent_name === root.agent_name) {
@@ -163,8 +170,10 @@ export default function LLMTracingPage() {
         );
 
         children.forEach((c) => {
-          ordered.push(c);
-          visited.add(c.id);
+          if (!visited.has(c.id)) {
+            ordered.push(c);
+            visited.add(c.id);
+          }
         });
       });
 
@@ -254,11 +263,11 @@ export default function LLMTracingPage() {
       {/* 1. Header Bar */}
       <div className="flex h-12 items-center justify-between border-b border-border bg-card px-4">
         <div className="flex items-center gap-2">
-          <div className="flex h-5 w-5 items-center justify-center rounded bg-blue-600 text-[10px] font-bold text-white shadow-sm">
+          <div className="flex h-5 w-5 items-center justify-center rounded bg-primary text-[10px] font-bold text-primary-foreground shadow-xs">
             <Sparkles className="h-3 w-3" />
           </div>
-          <span className="font-bold text-sm tracking-tight text-foreground">devrithm</span>
-          <span className="rounded bg-muted border border-border px-1.5 py-0.5 font-mono text-[10px] font-semibold text-blue-500">
+          <span className="font-semibold text-sm tracking-tight text-foreground">devrithm</span>
+          <span className="rounded bg-muted border border-border px-1.5 py-0.5 font-mono text-[10px] font-medium text-foreground">
             ASI:LLM
           </span>
         </div>
@@ -268,7 +277,7 @@ export default function LLMTracingPage() {
             <button
               onClick={handleClearTraces}
               title="Clear all ClickHouse LLM traces"
-              className="flex items-center gap-1 rounded border border-rose-500/30 bg-rose-500/10 px-2.5 py-1 text-xs text-rose-500 hover:border-rose-500/60 hover:text-rose-600 transition-colors"
+              className="flex items-center gap-1 rounded-md border border-destructive/30 bg-destructive/10 px-2.5 py-1 text-xs text-destructive hover:bg-destructive/20 transition-colors"
             >
               <Trash2 className="h-3.5 w-3.5" />
               <span>Clear</span>
@@ -280,7 +289,7 @@ export default function LLMTracingPage() {
       {/* 2. Filter & Search Toolbar */}
       <div className="flex flex-wrap h-auto min-h-11 items-center justify-between gap-3 border-b border-border bg-card/80 backdrop-blur-md px-4 py-2">
         <div className="flex flex-wrap items-center gap-3">
-          {/* Search Box - Dedicated width, no squishing */}
+          {/* Search Box */}
           <div className="relative w-64 min-w-[200px]">
             <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
             <input
@@ -288,7 +297,7 @@ export default function LLMTracingPage() {
               placeholder="Search traces..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-7.5 w-full rounded-md border border-border bg-background pl-8 pr-7 text-xs text-foreground placeholder:text-muted-foreground focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/40 transition-colors"
+              className="h-7.5 w-full rounded-md border border-input bg-background pl-8 pr-7 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring transition-colors"
             />
             {searchQuery && (
               <button
@@ -301,14 +310,14 @@ export default function LLMTracingPage() {
           </div>
 
           {/* Status filter */}
-          <div className="flex items-center rounded-md border border-border bg-background p-0.5 text-xs">
+          <div className="flex items-center rounded-md border border-input bg-muted/40 p-0.5 text-xs">
             {(["all", "success", "error"] as const).map((st) => (
               <button
                 key={st}
                 onClick={() => setStatusFilter(st)}
-                className={`rounded px-2.5 py-0.5 text-[11px] capitalize transition-all ${
+                className={`rounded px-2.5 py-0.5 text-[11px] capitalize transition-all cursor-pointer ${
                   statusFilter === st
-                    ? "bg-blue-600 text-white font-medium shadow-sm"
+                    ? "bg-primary text-primary-foreground font-semibold shadow-xs"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -318,14 +327,14 @@ export default function LLMTracingPage() {
           </div>
 
           {/* Run Type filter: All / LLM / Tool */}
-          <div className="flex items-center rounded-md border border-border bg-background p-0.5 text-xs">
+          <div className="flex items-center rounded-md border border-input bg-muted/40 p-0.5 text-xs">
             {(["all", "llm", "tool"] as const).map((rt) => (
               <button
                 key={rt}
                 onClick={() => setRunTypeFilter(rt)}
-                className={`rounded px-2.5 py-0.5 text-[11px] uppercase transition-all flex items-center gap-1 ${
+                className={`rounded px-2.5 py-0.5 text-[11px] uppercase transition-all flex items-center gap-1 cursor-pointer ${
                   runTypeFilter === rt
-                    ? "bg-blue-600 text-white font-medium shadow-sm"
+                    ? "bg-primary text-primary-foreground font-semibold shadow-xs"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -337,12 +346,12 @@ export default function LLMTracingPage() {
           </div>
 
           {/* Collective / Standalone filter */}
-          <div className="flex items-center rounded-md border border-border bg-background p-0.5 text-xs">
+          <div className="flex items-center rounded-md border border-input bg-muted/40 p-0.5 text-xs">
             <button
               onClick={() => setTraceTypeFilter("all")}
-              className={`rounded px-2.5 py-0.5 text-[11px] transition-all ${
+              className={`rounded px-2.5 py-0.5 text-[11px] transition-all cursor-pointer ${
                 traceTypeFilter === "all"
-                  ? "bg-blue-600 text-white font-medium shadow-sm"
+                  ? "bg-primary text-primary-foreground font-semibold shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -350,20 +359,20 @@ export default function LLMTracingPage() {
             </button>
             <button
               onClick={() => setTraceTypeFilter("collective")}
-              className={`rounded px-2.5 py-0.5 text-[11px] transition-all flex items-center gap-1 ${
+              className={`rounded px-2.5 py-0.5 text-[11px] transition-all flex items-center gap-1 cursor-pointer ${
                 traceTypeFilter === "collective"
-                  ? "bg-blue-600 text-white font-medium shadow-sm"
+                  ? "bg-primary text-primary-foreground font-semibold shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <Link2 className="h-2.5 w-2.5 text-blue-500" />
+              <Link2 className="h-2.5 w-2.5 text-muted-foreground" />
               <span>Chains ({collectiveCount})</span>
             </button>
             <button
               onClick={() => setTraceTypeFilter("standalone")}
-              className={`rounded px-2.5 py-0.5 text-[11px] transition-all ${
+              className={`rounded px-2.5 py-0.5 text-[11px] transition-all cursor-pointer ${
                 traceTypeFilter === "standalone"
-                  ? "bg-blue-600 text-white font-medium shadow-sm"
+                  ? "bg-primary text-primary-foreground font-semibold shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -372,8 +381,8 @@ export default function LLMTracingPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 rounded border border-border bg-card px-2.5 py-1 text-xs text-muted-foreground">
-          <BarChart2 className="h-3.5 w-3.5 text-blue-500" />
+        <div className="flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-xs text-muted-foreground">
+          <BarChart2 className="h-3.5 w-3.5 text-foreground" />
           <span>Total Number Traces · <strong className="text-foreground font-mono">{filteredTraces.length}</strong></span>
         </div>
       </div>
@@ -390,7 +399,7 @@ export default function LLMTracingPage() {
                     type="checkbox"
                     checked={clusteredTraces.length > 0 && selectedIds.size === clusteredTraces.length}
                     onChange={(e) => handleSelectAll(e.target.checked)}
-                    className="h-3.5 w-3.5 rounded border-slate-700 bg-[#121620] text-blue-600 focus:ring-0 cursor-pointer"
+                    className="h-3.5 w-3.5 rounded border-input bg-background accent-foreground focus:ring-0 cursor-pointer"
                   />
                 </th>
                 <th className="w-16 px-2 py-2 text-center font-medium">Status</th>
@@ -439,9 +448,9 @@ export default function LLMTracingPage() {
                     onMouseLeave={() => isCollective && setHoveredTraceId(null)}
                     className={`group cursor-pointer transition-colors ${
                       isSelected
-                        ? "bg-blue-500/10 hover:bg-blue-500/15"
+                        ? "bg-muted hover:bg-muted/80"
                         : isCollective && isHovered
-                        ? "bg-blue-500/5 hover:bg-blue-500/10"
+                        ? "bg-muted/50 hover:bg-muted/70"
                         : "hover:bg-muted/40"
                     }`}
                   >
@@ -460,7 +469,7 @@ export default function LLMTracingPage() {
                                 isFirst && "top-1/2 bottom-0",
                                 isMiddle && "top-0 bottom-0",
                                 isLast && "top-0 bottom-1/2",
-                                isHovered ? "bg-sky-400" : "bg-blue-500"
+                                isHovered ? "bg-foreground" : "bg-muted-foreground/40"
                               )}
                             />
 
@@ -468,7 +477,7 @@ export default function LLMTracingPage() {
                             <div
                               className={cn(
                                 "absolute left-[13px] top-1/2 -translate-y-1/2 w-4 h-[2px] transition-colors pointer-events-none",
-                                isHovered ? "bg-sky-400" : "bg-blue-500"
+                                isHovered ? "bg-foreground" : "bg-muted-foreground/40"
                               )}
                             />
 
@@ -478,8 +487,8 @@ export default function LLMTracingPage() {
                               className={cn(
                                 "absolute left-[14px] top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 h-2.5 w-2.5 rounded-full border-2 transition-all duration-150 cursor-pointer",
                                 isHovered
-                                   ? "border-white bg-sky-300 scale-125 shadow-sm"
-                                  : "border-card bg-blue-500"
+                                   ? "border-background bg-foreground scale-125 shadow-xs"
+                                  : "border-card bg-muted-foreground/60"
                               )}
                             />
                           </>
@@ -496,7 +505,7 @@ export default function LLMTracingPage() {
                           type="checkbox"
                           checked={isChecked}
                           onChange={() => handleToggleRow(trace.id)}
-                          className="relative z-10 h-3.5 w-3.5 rounded border-border bg-background text-blue-600 focus:ring-0 cursor-pointer"
+                          className="relative z-10 h-3.5 w-3.5 rounded border-input bg-background accent-foreground focus:ring-0 cursor-pointer"
                         />
                       </div>
                     </td>
@@ -532,12 +541,9 @@ export default function LLMTracingPage() {
                     <td className="px-3 py-2.5 font-mono font-medium whitespace-nowrap">
                       {isParentRoot ? (
                         <div className="flex items-center gap-2">
-                          <span className="text-blue-500 font-bold select-none text-xs">└─</span>
-                          <span className="inline-flex items-center gap-1 rounded bg-blue-500/15 border border-blue-500/30 px-2 py-0.5 text-[10px] font-bold text-blue-400 font-mono">
-                            <Bot className="h-3 w-3" />
-                            <span>parent {agentDisplayName}</span>
-                          </span>
-                          <span className="font-semibold text-foreground">{trace.name}</span>
+                          <span className="text-muted-foreground font-bold select-none text-xs">└─</span>
+                         
+                          <span className="font-semibold text-foreground">{trace.name} |  {agentDisplayName}</span>
                         </div>
                       ) : (
                         <div className="flex items-center gap-2 pl-7">
@@ -602,7 +608,7 @@ export default function LLMTracingPage() {
                     <Bot className="h-10 w-10 mx-auto mb-3 text-slate-600 opacity-60" />
                     <p className="font-medium text-slate-300 text-sm">No ClickHouse LLM Traces Found</p>
                     <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-                      Send a message to your agent or run <code className="text-blue-400 bg-slate-900 px-1 py-0.5 rounded">python apps/testing/src/agent_swarm.py</code> to see incoming collective traces.
+                      Send a message to your agent or run <code className="text-foreground bg-muted px-1.5 py-0.5 rounded font-mono border border-border">python apps/testing/src/agent_swarm.py</code> to see incoming collective traces.
                     </p>
                   </td>
                 </tr>
@@ -638,7 +644,7 @@ export default function LLMTracingPage() {
                 >
                   {selectedTrace.status}
                 </span>
-                <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-blue-500 border border-border">
+                <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-foreground border border-border">
                   {selectedTrace.model}
                 </span>
               </div>
@@ -673,7 +679,7 @@ export default function LLMTracingPage() {
               </div>
               <div className="border-x border-border">
                 <div className="text-[10px] uppercase text-muted-foreground font-semibold">Total Tokens</div>
-                <div className="font-mono font-bold text-blue-500 mt-0.5">
+                <div className="font-mono font-bold text-foreground mt-0.5">
                   {(selectedTrace.total_tokens || 0).toLocaleString()}
                 </div>
                 <div className="text-[9px] text-muted-foreground">
@@ -692,7 +698,7 @@ export default function LLMTracingPage() {
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs font-semibold text-foreground">
                   <span className="flex items-center gap-1.5">
-                    <Terminal className="h-3.5 w-3.5 text-blue-500" />
+                    <Terminal className="h-3.5 w-3.5 text-muted-foreground" />
                     <span>Prompt / Input</span>
                   </span>
                   <button
@@ -751,8 +757,8 @@ export default function LLMTracingPage() {
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Call Type:</span>
                     {(traceGroups.get(selectedTrace.trace_id || selectedTrace.id) || []).length > 1 ? (
-                      <span className="inline-flex items-center gap-1 rounded bg-blue-500/10 border border-blue-500/30 px-1.5 py-0.5 text-[10px] text-blue-500 font-semibold">
-                        <Link2 className="h-2.5 w-2.5 text-blue-500" />
+                      <span className="inline-flex items-center gap-1 rounded bg-muted border border-border px-1.5 py-0.5 text-[10px] text-foreground font-semibold">
+                        <Link2 className="h-2.5 w-2.5 text-muted-foreground" />
                         <span>Collective Chain ({(traceGroups.get(selectedTrace.trace_id || selectedTrace.id) || []).length} Hops)</span>
                       </span>
                     ) : (
@@ -769,7 +775,7 @@ export default function LLMTracingPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Run Type:</span>
-                    <span className="text-blue-500 font-semibold">{selectedTrace.run_type}</span>
+                    <span className="text-foreground font-semibold">{selectedTrace.run_type}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Model:</span>
@@ -788,7 +794,7 @@ export default function LLMTracingPage() {
                       <div className="mt-2 pt-2 border-t border-border">
                         <div className="flex items-center justify-between mb-1.5">
                           <span className="text-muted-foreground text-[10px] uppercase font-semibold flex items-center gap-1">
-                            <GitFork className="h-3 w-3 text-blue-500" />
+                            <GitFork className="h-3 w-3 text-muted-foreground" />
                             <span>Trace Branch Hierarchy</span>
                           </span>
                           <span className="text-[10px] font-mono text-muted-foreground">
@@ -815,7 +821,7 @@ export default function LLMTracingPage() {
                                 className={cn(
                                   "w-full flex items-center justify-between px-2 py-1.5 rounded transition-all text-left",
                                   isCurrent
-                                    ? "bg-blue-600 text-white font-semibold shadow-sm"
+                                    ? "bg-primary text-primary-foreground font-semibold shadow-xs"
                                     : "hover:bg-muted text-foreground/80 hover:text-foreground",
                                   !isRoot && "pl-6"
                                 )}
@@ -824,7 +830,7 @@ export default function LLMTracingPage() {
                                   <span
                                     className={cn(
                                       "font-bold text-xs select-none",
-                                      isCurrent ? "text-white" : isRoot ? "text-blue-500" : "text-muted-foreground/60"
+                                      isCurrent ? "text-primary-foreground" : isRoot ? "text-foreground" : "text-muted-foreground/60"
                                     )}
                                   >
                                     └─
@@ -834,8 +840,8 @@ export default function LLMTracingPage() {
                                       className={cn(
                                         "px-1.5 py-0.2 rounded text-[9px] font-bold uppercase",
                                         isCurrent
-                                          ? "bg-white/20 text-white"
-                                          : "bg-blue-500/15 text-blue-400 border border-blue-500/30"
+                                          ? "bg-primary-foreground/20 text-primary-foreground"
+                                          : "bg-muted text-foreground border border-border"
                                       )}
                                     >
                                       parent {agentName}
@@ -845,7 +851,7 @@ export default function LLMTracingPage() {
                                       className={cn(
                                         "px-1.5 py-0.2 rounded text-[9px] font-medium uppercase",
                                         isCurrent
-                                          ? "bg-white/20 text-white"
+                                          ? "bg-primary-foreground/20 text-primary-foreground"
                                           : "bg-muted text-muted-foreground border border-border"
                                       )}
                                     >

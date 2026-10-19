@@ -177,7 +177,7 @@ export default function ToolMonitoringPage() {
                             setHandleInput(currentHandle);
                             setIsEditingHandle(true);
                           }}
-                          className="text-muted-foreground hover:text-blue-500 transition-colors p-0.5 rounded"
+                          className="text-muted-foreground hover:text-foreground transition-colors p-0.5 rounded"
                           title="Edit agent handle name"
                         >
                           <Pencil className="h-3 w-3" />
@@ -192,7 +192,7 @@ export default function ToolMonitoringPage() {
                           value={handleInput}
                           onChange={(e) => setHandleInput(e.target.value)}
                           placeholder="@agent-handle"
-                          className="h-7 w-48 rounded-md border border-border bg-background px-2 font-mono text-xs text-foreground focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="h-7 w-48 rounded-md border border-input bg-background px-2 font-mono text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                           autoFocus
                           onKeyDown={(e) => {
                             if (e.key === "Enter") handleSaveHandle();
@@ -201,13 +201,13 @@ export default function ToolMonitoringPage() {
                         />
                         <button
                           onClick={handleSaveHandle}
-                          className="rounded bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-blue-500 shadow-sm"
+                          className="rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 shadow-xs"
                         >
                           Save
                         </button>
                         <button
                           onClick={() => setIsEditingHandle(false)}
-                          className="rounded border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-muted"
+                          className="rounded-md border border-input bg-background px-2 py-1 text-xs text-muted-foreground hover:bg-muted"
                         >
                           Cancel
                         </button>
@@ -337,14 +337,14 @@ export default function ToolMonitoringPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Saved Observability Dashboards</h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                <h2 className="text-lg font-bold text-foreground">Saved Observability Dashboards</h2>
+                <p className="text-xs text-muted-foreground mt-1">
                   Custom telemetry views, multi-tenant agent fleets, and SLO tracking boards
                 </p>
               </div>
               <button
                 onClick={() => setIsDashboardModalOpen(true)}
-                className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-500 shadow-sm"
+                className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 shadow-xs cursor-pointer"
               >
                 + New Board
               </button>
@@ -373,25 +373,25 @@ export default function ToolMonitoringPage() {
               ].map((dash, idx) => (
                 <div
                   key={idx}
-                  className="group rounded-xl border border-slate-200 dark:border-[#1e293b] bg-white dark:bg-black p-5 shadow-sm dark:shadow-lg hover:border-blue-500/50 transition-all cursor-pointer"
+                  className="group rounded-xl border border-border bg-card p-5 shadow-xs hover:border-foreground/30 transition-all cursor-pointer"
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-900/50">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-foreground border border-border">
                       <LayoutDashboard className="h-4 w-4" />
                     </div>
-                    <span className="text-[11px] font-mono text-blue-600 dark:text-blue-400">
+                    <span className="text-[11px] font-mono text-muted-foreground">
                       {dash.widgets} Widgets
                     </span>
                   </div>
-                  <h3 className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors">
+                  <h3 className="mt-3 text-sm font-semibold text-foreground group-hover:underline transition-colors">
                     {dash.title}
                   </h3>
-                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
+                  <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
                     {dash.desc}
                   </p>
-                  <div className="mt-4 flex items-center justify-between border-t border-slate-100 dark:border-[#1e293b] pt-3 text-[11px] text-slate-400 dark:text-slate-500">
+                  <div className="mt-4 flex items-center justify-between border-t border-border pt-3 text-[11px] text-muted-foreground">
                     <span>Updated {dash.updated}</span>
-                    <span className="text-blue-600 dark:text-blue-400 font-medium group-hover:underline">Open Board →</span>
+                    <span className="text-foreground font-medium group-hover:underline">Open Board →</span>
                   </div>
                 </div>
               ))}
@@ -403,14 +403,14 @@ export default function ToolMonitoringPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Active Alert Rules &amp; Incidents</h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                <h2 className="text-lg font-bold text-foreground">Active Alert Rules &amp; Incidents</h2>
+                <p className="text-xs text-muted-foreground mt-1">
                   Threshold monitor rules, SLA breaches, and incident routing
                 </p>
               </div>
               <button
                 onClick={() => setIsAlertModalOpen(true)}
-                className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-500 shadow-sm"
+                className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 shadow-xs cursor-pointer"
               >
                 + Add Alert Policy
               </button>
@@ -435,29 +435,29 @@ export default function ToolMonitoringPage() {
               ].map((rule, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-[#1e293b] bg-white dark:bg-black p-4 text-xs shadow-sm dark:shadow-md"
+                  className="flex items-center justify-between rounded-xl border border-border bg-card p-4 text-xs shadow-xs"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-900/50">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-foreground border border-border">
                       <Bell className="h-4 w-4" />
                     </div>
                     <div>
-                      <h4 className="font-semibold text-slate-900 dark:text-slate-100">{rule.name}</h4>
-                      <div className="font-mono text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      <h4 className="font-semibold text-foreground">{rule.name}</h4>
+                      <div className="font-mono text-[11px] text-muted-foreground mt-0.5">
                         {rule.condition}
                       </div>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-6">
-                    <div className="text-slate-500 dark:text-slate-400">
-                      Destination: <span className="text-blue-600 dark:text-blue-300">{rule.channel}</span>
+                    <div className="text-muted-foreground">
+                      Destination: <span className="text-foreground font-medium">{rule.channel}</span>
                     </div>
                     <span
-                      className={`rounded px-2.5 py-1 text-[11px] font-semibold ${
+                      className={`rounded-md border border-border px-2.5 py-0.5 text-[11px] font-medium ${
                         rule.status === "Healthy"
-                          ? "bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800/60"
-                          : "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800/60"
+                          ? "bg-secondary text-secondary-foreground"
+                          : "border-amber-500/20 bg-amber-500/10 text-amber-500"
                       }`}
                     >
                       {rule.status}

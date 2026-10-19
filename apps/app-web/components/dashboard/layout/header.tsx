@@ -5,6 +5,7 @@ import Link from "next/link";
 import { KeyRound } from "lucide-react";
 import { useDashboard } from "../context/dashboard-context";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Button } from "@/components/ui/button";
 
 interface DashboardHeaderProps {
   activeTab?: "Monitoring" | "Dashboards" | "Alerts";
@@ -22,42 +23,40 @@ export function DashboardHeader({
   const { isLive, setIsLive, lastUpdated } = useDashboard();
 
   return (
-    <header className="border-b border-slate-200 dark:border-[#1e293b] bg-white/95 dark:bg-black/95 backdrop-blur-md px-6 py-2.5 flex items-center justify-between transition-colors">
+    <header className="border-b border-border bg-background/95 backdrop-blur-md px-6 py-2.5 flex items-center justify-between transition-colors">
       {/* Platform Title & Subtitle */}
       <div className="flex items-center gap-2.5">
-        <h1 className="font-bold text-base text-slate-900 dark:text-white tracking-tight">ASI:Telemetry</h1>
-        <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
-        <span className="text-xs text-slate-500 dark:text-slate-400 hidden sm:inline">
+        <h1 className="font-semibold text-sm text-foreground tracking-tight">ASI:Telemetry</h1>
+        <span className="text-border hidden sm:inline">|</span>
+        <span className="text-xs text-muted-foreground hidden sm:inline">
           Observability &amp; Monitoring Platform
         </span>
       </div>
 
       {/* Global Controls: Last updated, Live stream toggle, and Theme Switcher */}
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-2">
         {lastUpdated && (
-          <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono hidden md:inline">
+          <span className="text-[11px] text-muted-foreground font-mono hidden md:inline">
             Updated {lastUpdated.toLocaleTimeString()}
           </span>
         )}
 
         {/* Live / Static indicator */}
-        <button
+        <Button
+          variant="outline"
+          size="sm"
           onClick={() => setIsLive(!isLive)}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors select-none ${
-            isLive
-              ? "border-emerald-500/40 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:border-emerald-500/30 dark:text-emerald-400"
-              : "border-slate-200 dark:border-[#1e293b] bg-slate-100 dark:bg-[#0c0c0c] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-          }`}
+          className="h-8 gap-1.5 px-2.5 text-xs font-medium"
           title={isLive ? "Live telemetry stream active" : "Static mode"}
         >
-          <span className={`h-2 w-2 rounded-full ${isLive ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`} />
-          <span className="font-medium text-[11px]">{isLive ? "Live" : "Static"}</span>
-        </button>
+          <span className={`h-2 w-2 rounded-full ${isLive ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground"}`} />
+          <span className="text-xs">{isLive ? "Live" : "Static"}</span>
+        </Button>
 
         {/* API Keys Shortcut */}
         <Link
           href="/api-keys"
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border border-blue-500/30 bg-blue-50/60 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+          className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs font-medium shadow-xs hover:bg-muted hover:text-foreground"
           title="Manage API Keys"
         >
           <KeyRound className="h-3.5 w-3.5" />

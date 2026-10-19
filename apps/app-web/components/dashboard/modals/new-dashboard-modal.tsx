@@ -28,7 +28,7 @@ export function NewDashboardModal({ open, onClose }: NewDashboardModalProps) {
       <div className="relative w-full max-w-md rounded-xl border border-border bg-card shadow-2xl p-6 space-y-4">
         <div className="flex items-center justify-between border-b border-border pb-3">
           <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500 border border-blue-500/20">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-muted text-foreground border border-border">
               <LayoutDashboard className="h-4 w-4" />
             </div>
             <h3 className="text-sm font-semibold text-foreground">Create Custom Dashboard</h3>
@@ -48,7 +48,7 @@ export function NewDashboardModal({ open, onClose }: NewDashboardModalProps) {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground focus:border-blue-500 focus:outline-none transition-colors"
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-ring transition-colors"
             />
           </div>
 
@@ -69,7 +69,7 @@ export function NewDashboardModal({ open, onClose }: NewDashboardModalProps) {
                   <input
                     type="checkbox"
                     defaultChecked
-                    className="rounded border-border bg-background text-blue-600 focus:ring-blue-500"
+                    className="rounded border-input bg-background text-primary focus:ring-ring"
                   />
                   <span>{item}</span>
                 </label>
@@ -90,7 +90,7 @@ export function NewDashboardModal({ open, onClose }: NewDashboardModalProps) {
           <Button
             size="sm"
             onClick={handleCreate}
-            className="rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-500 shadow-sm"
+            className="text-xs font-medium"
           >
             {saved ? (
               <>

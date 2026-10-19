@@ -27,7 +27,7 @@ interface LatencySectionProps {
 const latencyChartConfig = {
   avg: {
     label: "Average Latency",
-    color: "#3b82f6",
+    color: "var(--foreground)",
   },
 } satisfies ChartConfig;
 
@@ -66,11 +66,11 @@ export function LatencySection({ data, summary }: LatencySectionProps) {
   const hasData = chartData.length > 0 && chartData.some((d) => d.avg > 0);
 
   return (
-    <Card className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border/80 bg-card shadow-xs transition-all duration-200 hover:border-blue-500/30 hover:shadow-md">
+    <Card className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card shadow-xs transition-all duration-200 hover:border-foreground/30">
       {/* Simplified Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/70 px-5 py-3.5 bg-card/50">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border px-5 py-3.5 bg-muted/20">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-border/80 bg-background text-blue-500 shadow-xs">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-muted text-foreground shadow-xs">
             <Clock className="h-4 w-4" />
           </div>
           <div>
@@ -79,7 +79,7 @@ export function LatencySection({ data, summary }: LatencySectionProps) {
             </h3>
             <div className="flex items-baseline gap-1.5 mt-0.5">
               <span className="text-xl font-bold font-mono text-foreground">{overallAvg}</span>
-              <span className="text-xs font-semibold text-blue-500 font-mono">ms avg</span>
+              <span className="text-xs font-semibold text-muted-foreground font-mono">ms avg</span>
               {peakLatency > 0 && (
                 <span className="text-xs text-muted-foreground font-mono ml-1">
                   (Peak: {peakLatency}ms{minLatency > 0 && minLatency !== peakLatency ? ` • Min: ${minLatency}ms` : ""})
@@ -91,11 +91,11 @@ export function LatencySection({ data, summary }: LatencySectionProps) {
 
         <div className="flex items-center gap-3 text-xs">
           <div className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-[#3b82f6]" />
+            <span className="h-2 w-2 rounded-full bg-foreground" />
             <span className="text-[11px] text-muted-foreground font-medium">Average Latency</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="h-1.5 w-3 rounded-xs bg-[#3b82f6]" />
+            <span className="h-1.5 w-3 rounded-xs bg-muted-foreground" />
             <span className="text-[11px] text-muted-foreground font-medium">SLA 300ms</span>
           </div>
         </div>
@@ -105,7 +105,7 @@ export function LatencySection({ data, summary }: LatencySectionProps) {
       <div className="p-5 flex-1 flex flex-col justify-end">
         {!hasData ? (
           <div className="flex h-56 flex-col items-center justify-center text-center p-4 select-none">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted border border-border/60 text-muted-foreground mb-2">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted border border-border text-muted-foreground mb-2">
               <Search className="h-4 w-4" />
             </div>
             <p className="text-xs font-semibold text-foreground">No latency metrics</p>
@@ -116,16 +116,16 @@ export function LatencySection({ data, summary }: LatencySectionProps) {
         ) : (
           <ChartContainer config={latencyChartConfig} className="h-60 w-full">
             <LineChart data={chartData} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={true} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={true} />
               <XAxis
                 dataKey="time"
-                stroke="#64748b"
+                stroke="var(--muted-foreground)"
                 tickLine={false}
                 axisLine={false}
                 fontSize={11}
               />
               <YAxis
-                stroke="#64748b"
+                stroke="var(--muted-foreground)"
                 tickLine={false}
                 axisLine={false}
                 fontSize={11}
@@ -135,12 +135,12 @@ export function LatencySection({ data, summary }: LatencySectionProps) {
               />
               <ReferenceLine
                 y={300}
-                stroke="#3b82f6"
+                stroke="var(--muted-foreground)"
                 strokeDasharray="4 4"
                 strokeWidth={1.5}
                 label={{
                   value: "SLA (300ms)",
-                  fill: "#3b82f6",
+                  fill: "var(--muted-foreground)",
                   fontSize: 10,
                   position: "insideTopRight",
                 }}
@@ -149,7 +149,7 @@ export function LatencySection({ data, summary }: LatencySectionProps) {
               <Line
                 type="monotone"
                 dataKey="avg"
-                stroke="#3b82f6"
+                stroke="var(--foreground)"
                 strokeWidth={2}
                 dot={{ r: 3 }}
                 activeDot={{ r: 5 }}

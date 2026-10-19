@@ -4,6 +4,13 @@ import sys
 from typing import Optional
 from dotenv import load_dotenv
 
+# Ensure an active event loop exists for uagents on Python 3.12+
+try:
+    asyncio.get_event_loop()
+except RuntimeError:
+    asyncio.set_event_loop(asyncio.new_event_loop())
+
+
 # 1. Load Environment & SDK
 env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
 load_dotenv(dotenv_path=env_path)
@@ -40,24 +47,23 @@ agent = Agent(
 
 # 4. Telemetry & LLM Setup
 # Initializing MetricsTracker also automatically registers agent identity with the tracer
-monitor = MetricsTracker(agent_name="assistant", agent_address=agent.address)
+monitor = MetricsTracker(agent_name="agent1q", agent_address=agent.address)
 
 gemini_client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
 instrument_gemini(gemini_client)
 
 
 # 5. Tracked LLM Call
-@traceable(name="gemini_generate", run_type="llm")
+@traceable(name="gemini_generate", run_type="llm", metadata={"model": "gemini-3.5-flash"})
 def call_gemini(prompt: str) -> str:
     """Generates AI response using Gemini with automatic span tracking."""
-    try:
-        response = gemini_client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt,
-        )
-        return response.text.strip() if response and response.text else "No response generated."
-    except Exception as e:
-        return f"Error from Gemini: {e}"
+    response = gemini_client.models.generate_content(
+        model="gemini-3.5-flash",
+        contents=prompt,
+    )
+
+    print(response)
+    return response.text.strip() if response and response.text else "No response generated."
 
 
 # 6. Event Listeners
@@ -75,7 +81,10 @@ async def handle_message(ctx: Context, sender: str, msg: Greeting):
     print(f"\n[Received from {sender[:16]}...]: {msg.text}")
 
     # Run Gemini call (automatically nested as a child span of handle_message)
-    ai_reply = await asyncio.to_thread(call_gemini, msg.text)
+    try:
+        ai_reply = await asyncio.to_thread(call_gemini, msg.text)
+    except Exception as e:
+        ai_reply = f"Error from Gemini: {e}"
     print(f"[Generated Reply]: {ai_reply[:60]}...")
 
     # Reply back to sender, attaching active trace context

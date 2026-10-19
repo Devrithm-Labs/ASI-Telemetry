@@ -42,11 +42,11 @@ const statusBreakdownConfig = {
   },
   timeout: {
     label: "504 Timeout",
-    color: "#3b82f6",
+    color: "#71717a",
   },
   validationError: {
     label: "400 Client",
-    color: "#a855f7",
+    color: "#a1a1aa",
   },
 } satisfies ChartConfig;
 
@@ -78,11 +78,11 @@ export function ErrorSection({ data, summary }: ErrorSectionProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
       {/* Component 1: Trace Error Rate % */}
-      <Card className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border/80 bg-card shadow-xs transition-all duration-200 hover:border-rose-500/30 hover:shadow-md">
+      <Card className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card shadow-xs transition-all duration-200 hover:border-foreground/30">
         {/* Simplified Header */}
-        <div className="flex items-center justify-between border-b border-border/70 px-5 py-3.5 bg-card/50">
+        <div className="flex items-center justify-between border-b border-border px-5 py-3.5 bg-muted/20">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-border/80 bg-background text-rose-500 shadow-xs">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-muted text-foreground shadow-xs">
               <AlertCircle className="h-4 w-4" />
             </div>
             <div>
@@ -90,7 +90,7 @@ export function ErrorSection({ data, summary }: ErrorSectionProps) {
                 Trace Error Rate %
               </h3>
               <div className="flex items-baseline gap-1.5 mt-0.5">
-                <span className="text-xl font-bold font-mono text-rose-500">{errorRateDisplay}%</span>
+                <span className="text-xl font-bold font-mono text-foreground">{errorRateDisplay}%</span>
                 <span className="text-xs text-muted-foreground font-mono ml-1">
                   ({faultsCount.toLocaleString()} faults)
                 </span>
@@ -101,10 +101,10 @@ export function ErrorSection({ data, summary }: ErrorSectionProps) {
           <div className="flex items-center gap-3 text-xs">
             <div className="flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-[#ef4444]" />
-              <span className="text-[11px] text-muted-foreground font-medium">Error Rate</span>
+              <span className="text-[11px] text-muted-foreground font-medium">Faults %</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="h-1.5 w-3 rounded-xs bg-[#3b82f6]" />
+              <span className="h-1.5 w-3 rounded-xs bg-muted-foreground" />
               <span className="text-[11px] text-muted-foreground font-medium">SLO &lt;1%</span>
             </div>
           </div>
@@ -114,40 +114,40 @@ export function ErrorSection({ data, summary }: ErrorSectionProps) {
         <div className="p-5 flex-1 flex flex-col justify-end">
           {!hasData ? (
             <div className="flex h-52 flex-col items-center justify-center text-center p-4 select-none">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted border border-border/60 text-muted-foreground mb-2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted border border-border text-muted-foreground mb-2">
                 <Search className="h-4 w-4" />
               </div>
-              <p className="text-xs font-semibold text-foreground">No error records</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">All invocations completed successfully.</p>
+              <p className="text-xs font-semibold text-foreground">No error metrics</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">All requests healthy in this period.</p>
             </div>
           ) : (
             <ChartContainer config={errorRateChartConfig} className="h-56 w-full">
               <LineChart data={data} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={true} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={true} />
                 <XAxis
                   dataKey="time"
-                  stroke="#64748b"
+                  stroke="var(--muted-foreground)"
                   tickLine={false}
                   axisLine={false}
                   fontSize={11}
                 />
                 <YAxis
-                  stroke="#64748b"
+                  stroke="var(--muted-foreground)"
                   tickLine={false}
                   axisLine={false}
                   fontSize={11}
+                  domain={[0, (dataMax: number) => Math.max(dataMax ? Math.ceil(dataMax * 1.5) : 5, 5)]}
                   unit="%"
-                  domain={[0, (dataMax: number) => Math.max(dataMax ? Math.ceil(dataMax * 1.25) : 10, 10)]}
                   tickCount={5}
                 />
                 <ReferenceLine
                   y={1}
-                  stroke="#3b82f6"
+                  stroke="var(--muted-foreground)"
                   strokeDasharray="4 4"
                   strokeWidth={1.5}
                   label={{
                     value: "SLO 1%",
-                    fill: "#3b82f6",
+                    fill: "var(--muted-foreground)",
                     fontSize: 10,
                     position: "insideTopRight",
                   }}
@@ -168,11 +168,11 @@ export function ErrorSection({ data, summary }: ErrorSectionProps) {
       </Card>
 
       {/* Component 2: Error Status Breakdown */}
-      <Card className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border/80 bg-card shadow-xs transition-all duration-200 hover:border-amber-500/30 hover:shadow-md">
+      <Card className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card shadow-xs transition-all duration-200 hover:border-foreground/30">
         {/* Simplified Header */}
-        <div className="flex items-center justify-between border-b border-border/70 px-5 py-3.5 bg-card/50">
+        <div className="flex items-center justify-between border-b border-border px-5 py-3.5 bg-muted/20">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-border/80 bg-background text-amber-500 shadow-xs">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-muted text-foreground shadow-xs">
               <AlertTriangle className="h-4 w-4" />
             </div>
             <div>
@@ -196,12 +196,12 @@ export function ErrorSection({ data, summary }: ErrorSectionProps) {
               <span className="text-[11px] text-muted-foreground font-medium">429 ({count429})</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="h-2 w-2 rounded-full bg-[#3b82f6]" />
+              <span className="h-2 w-2 rounded-full bg-[#71717a]" />
               <span className="text-[11px] text-muted-foreground font-medium">504 ({count504})</span>
             </div>
             {count400 > 0 && (
               <div className="flex items-center gap-1">
-                <span className="h-2 w-2 rounded-full bg-[#a855f7]" />
+                <span className="h-2 w-2 rounded-full bg-[#a1a1aa]" />
                 <span className="text-[11px] text-muted-foreground font-medium">400 ({count400})</span>
               </div>
             )}
@@ -212,7 +212,7 @@ export function ErrorSection({ data, summary }: ErrorSectionProps) {
         <div className="p-5 flex-1 flex flex-col justify-end">
           {!hasData ? (
             <div className="flex h-52 flex-col items-center justify-center text-center p-4 select-none">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted border border-border/60 text-muted-foreground mb-2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted border border-border text-muted-foreground mb-2">
                 <Search className="h-4 w-4" />
               </div>
               <p className="text-xs font-semibold text-foreground">No incident records</p>
@@ -221,16 +221,16 @@ export function ErrorSection({ data, summary }: ErrorSectionProps) {
           ) : (
             <ChartContainer config={statusBreakdownConfig} className="h-56 w-full">
               <LineChart data={data} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={true} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={true} />
                 <XAxis
                   dataKey="time"
-                  stroke="#64748b"
+                  stroke="var(--muted-foreground)"
                   tickLine={false}
                   axisLine={false}
                   fontSize={11}
                 />
                 <YAxis
-                  stroke="#64748b"
+                  stroke="var(--muted-foreground)"
                   tickLine={false}
                   axisLine={false}
                   fontSize={11}
@@ -258,7 +258,7 @@ export function ErrorSection({ data, summary }: ErrorSectionProps) {
                 <Line
                   type="monotone"
                   dataKey="timeout"
-                  stroke="#3b82f6"
+                  stroke="#71717a"
                   strokeWidth={2}
                   dot={{ r: 3 }}
                   activeDot={{ r: 5 }}
@@ -266,7 +266,7 @@ export function ErrorSection({ data, summary }: ErrorSectionProps) {
                 <Line
                   type="monotone"
                   dataKey="validationError"
-                  stroke="#a855f7"
+                  stroke="#a1a1aa"
                   strokeWidth={1.5}
                   dot={{ r: 2.5 }}
                   activeDot={{ r: 4 }}

@@ -67,7 +67,7 @@ export function CostTokensSection({
         className="group flex cursor-pointer items-center justify-between border-b border-border/80 pb-2.5 select-none"
       >
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-bold text-foreground group-hover:text-blue-500 transition-colors flex items-center gap-1.5">
+          <h2 className="text-lg font-bold text-foreground group-hover:text-foreground/80 transition-colors flex items-center gap-1.5">
             <span>Cost & Tokens</span>
           </h2>
         </div>

@@ -79,28 +79,19 @@ export function TraceTable({ traces, onSelectTrace }: TraceTableProps) {
     });
   };
 
-  const confirmDeleteSingle = (e: React.MouseEvent, traceId: string) => {
+  const confirmDeleteSingle = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    setDeleteTarget({
-      type: "single",
-      traceId,
-      count: 1,
-    });
+    setDeleteTarget({ type: "single", traceId: id, count: 1 });
   };
 
   const confirmDeleteSelected = () => {
     if (selectedIds.size === 0) return;
-    setDeleteTarget({
-      type: "selected",
-      count: selectedIds.size,
-    });
+    setDeleteTarget({ type: "selected", count: selectedIds.size });
   };
 
   const confirmClearAll = () => {
-    setDeleteTarget({
-      type: "all",
-      count: traces.length,
-    });
+    if (traces.length === 0) return;
+    setDeleteTarget({ type: "all", count: traces.length });
   };
 
   const executeDelete = async () => {
@@ -129,43 +120,40 @@ export function TraceTable({ traces, onSelectTrace }: TraceTableProps) {
 
   return (
     <>
-      <Card className="rounded-xl border border-slate-200/90 dark:border-[#1e293b] bg-white dark:bg-black shadow-[0_1px_3px_0_rgba(0,0,0,0.04)] dark:shadow-xl backdrop-blur-sm overflow-hidden">
-        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 dark:border-[#1e293b] pb-4 px-6 gap-3">
+      <Card className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border pb-4 px-6 gap-3">
           <div>
             <div className="flex items-center gap-2">
-              <Activity className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-100">
-                Live Trace Execution Logs
+              <Activity className="h-4 w-4 text-foreground" />
+              <CardTitle className="text-base font-semibold text-foreground">
+                Tool Tracing Logs
               </CardTitle>
             </div>
-            <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Real-time incoming agent spans, HTTP traces, and latency profile
-            </CardDescription>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2">
             {/* Search Input */}
             <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
               <input
                 type="text"
                 placeholder="Filter trace ID or operation..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="h-8 w-56 rounded-md border border-slate-200 dark:border-[#1e293b] bg-slate-50 dark:bg-black pl-8 pr-3 text-xs text-slate-900 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
+                className="h-8 w-56 rounded-md border border-input bg-background pl-8 pr-3 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring transition-colors"
               />
             </div>
 
             {/* Status Filter Buttons */}
-            <div className="flex items-center rounded-md border border-slate-200 dark:border-[#1e293b] bg-slate-100 dark:bg-black p-0.5 text-xs">
+            <div className="flex items-center rounded-md border border-input bg-muted/40 p-0.5 text-xs">
               {(["all", "success", "error", "rate_limited"] as const).map((st) => (
                 <button
                   key={st}
                   onClick={() => setStatusFilter(st)}
-                  className={`rounded px-2.5 py-1 text-[11px] font-medium transition-colors select-none ${
+                  className={`rounded-sm px-2.5 py-1 text-[11px] font-medium transition-colors select-none cursor-pointer ${
                     statusFilter === st
-                      ? "bg-blue-600 text-white font-semibold shadow-sm"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                      ? "bg-primary text-primary-foreground shadow-xs font-semibold"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   {st === "all" ? "All" : st === "rate_limited" ? "429 Rate" : st}
@@ -175,85 +163,88 @@ export function TraceTable({ traces, onSelectTrace }: TraceTableProps) {
 
             {/* Clear All Traces Button */}
             {traces.length > 0 && (
-              <button
-                type="button"
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={confirmClearAll}
                 title="Clear all tool traces from ClickHouse"
-                className="flex items-center gap-1.5 rounded-md border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 px-2.5 py-1 text-[11px] font-medium text-rose-600 dark:text-rose-400 hover:border-rose-500/60 transition-colors"
+                className="h-8 text-xs font-medium text-destructive hover:bg-destructive/10 hover:text-destructive"
               >
-                <Trash2 className="h-3 w-3" />
+                <Trash2 className="h-3 w-3 mr-1" />
                 <span>Clear All</span>
-              </button>
+              </Button>
             )}
           </div>
         </CardHeader>
 
         {/* Selected Rows Bulk Action Bar */}
         {selectedIds.size > 0 && (
-          <div className="flex items-center justify-between border-b border-rose-500/20 bg-rose-50/50 dark:bg-rose-950/20 px-6 py-2.5 text-xs transition-all">
+          <div className="flex items-center justify-between border-b border-border bg-muted/40 px-6 py-2 text-xs transition-all">
             <div className="flex items-center gap-2">
-              <span className="flex h-5 w-5 items-center justify-center rounded bg-rose-500/20 text-rose-600 dark:text-rose-400 font-bold text-[11px]">
+              <span className="flex h-5 w-5 items-center justify-center rounded bg-primary text-primary-foreground font-mono text-[11px]">
                 {selectedIds.size}
               </span>
-              <span className="font-medium text-slate-700 dark:text-slate-200">
+              <span className="font-medium text-foreground">
                 {selectedIds.size === 1 ? "1 trace selected" : `${selectedIds.size} traces selected`}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setSelectedIds(new Set())}
-                className="rounded px-2.5 py-1 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+                className="h-7 text-xs"
               >
                 Deselect
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
                 onClick={confirmDeleteSelected}
-                className="flex items-center gap-1.5 rounded-md bg-rose-600 hover:bg-rose-700 text-white px-3 py-1 text-xs font-semibold shadow-sm transition-colors"
+                className="h-7 text-xs gap-1.5"
               >
                 <Trash2 className="h-3.5 w-3.5" />
                 <span>Delete Selected ({selectedIds.size})</span>
-              </button>
+              </Button>
             </div>
           </div>
         )}
 
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300">
-              <thead className="border-b border-slate-200 dark:border-[#1e293b] bg-slate-50/90 dark:bg-black text-[11px] uppercase tracking-wider text-slate-600 dark:text-slate-400 font-semibold">
+            <table className="w-full text-left text-xs text-foreground">
+              <thead className="border-b border-border bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
                 <tr>
-                  <th className="py-3 px-3 w-10 text-center">
+                  <th className="py-2.5 px-3 w-10 text-center">
                     <button
                       type="button"
                       onClick={handleToggleSelectAll}
-                      className="inline-flex items-center justify-center text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                      className="inline-flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                       title={allFilteredSelected ? "Deselect all" : "Select all visible"}
                     >
                       {allFilteredSelected ? (
-                        <CheckSquare className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        <CheckSquare className="h-4 w-4 text-foreground" />
                       ) : someFilteredSelected ? (
-                        <Square className="h-4 w-4 text-blue-600 dark:text-blue-400 fill-blue-600/30" />
+                        <Square className="h-4 w-4 text-foreground fill-foreground/30" />
                       ) : (
                         <Square className="h-4 w-4" />
                       )}
                     </button>
                   </th>
-                  <th className="py-3 px-4 font-semibold">Trace ID</th>
-                  <th className="py-3 px-4 font-semibold">Operation / Span</th>
-                  <th className="py-3 px-4 font-semibold">Service</th>
-                  <th className="py-3 px-4 font-semibold">Status</th>
-                  <th className="py-3 px-4 font-semibold">Response Time</th>
-                  <th className="py-3 px-4 font-semibold">Model / Provider</th>
-                  <th className="py-3 px-4 font-semibold">Timestamp</th>
-                  <th className="py-3 px-4 font-semibold text-right w-16">Action</th>
+                  <th className="py-2.5 px-4 font-medium">Trace ID</th>
+                  <th className="py-2.5 px-4 font-medium">Operation / Span</th>
+                  <th className="py-2.5 px-4 font-medium">Service</th>
+                  <th className="py-2.5 px-4 font-medium">Status</th>
+                  <th className="py-2.5 px-4 font-medium">Response Time</th>
+                  <th className="py-2.5 px-4 font-medium">Model / Provider</th>
+                  <th className="py-2.5 px-4 font-medium">Timestamp</th>
+                  <th className="py-2.5 px-4 font-medium text-right w-16">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200/80 dark:divide-[#111e38]/70">
+              <tbody className="divide-y divide-border">
                 {filteredTraces.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="py-8 text-center text-slate-400">
+                    <td colSpan={9} className="py-8 text-center text-muted-foreground">
                       No matching traces found.
                     </td>
                   </tr>
@@ -266,83 +257,73 @@ export function TraceTable({ traces, onSelectTrace }: TraceTableProps) {
                         onClick={() => onSelectTrace(trace)}
                         className={`group cursor-pointer transition-colors ${
                           isSelected
-                            ? "bg-blue-50/60 dark:bg-blue-950/40"
-                            : "hover:bg-slate-50/90 dark:hover:bg-blue-950/20"
+                            ? "bg-muted"
+                            : "hover:bg-muted/50"
                         }`}
                       >
                         {/* Row Selection Checkbox */}
                         <td
-                          className="py-3 px-3 text-center"
+                          className="py-2.5 px-3 text-center"
                           onClick={(e) => handleToggleRow(e, trace.id)}
                         >
                           <button
                             type="button"
-                            className="inline-flex items-center justify-center text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                            className="inline-flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                           >
                             {isSelected ? (
-                              <CheckSquare className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                              <CheckSquare className="h-4 w-4 text-foreground" />
                             ) : (
                               <Square className="h-4 w-4" />
                             )}
                           </button>
                         </td>
 
-                        <td className="py-3 px-4 font-mono text-blue-600 dark:text-blue-400 font-semibold group-hover:underline">
+                        <td className="py-2.5 px-4 font-mono font-medium text-foreground group-hover:underline">
                           {trace.id}
                         </td>
-                        <td className="py-3 px-4 font-medium text-slate-900 dark:text-slate-200">
+                        <td className="py-2.5 px-4 font-medium text-foreground">
                           {trace.name}
                         </td>
-                        <td className="py-3 px-4 text-slate-500 dark:text-slate-400">
-                          <span className="rounded bg-slate-100 dark:bg-[#0c1527] px-2 py-0.5 border border-slate-200 dark:border-[#172554] text-[11px] font-mono">
+                        <td className="py-2.5 px-4 text-muted-foreground">
+                          <span className="rounded bg-muted border border-border px-2 py-0.5 text-[11px] font-mono">
                             {trace.service}
                           </span>
                         </td>
-                        <td className="py-3 px-4">
+                        <td className="py-2.5 px-4">
                           <span
-                            className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-semibold ${
+                            className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium border ${
                               trace.status === "success"
-                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800/60"
+                                ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                                 : trace.status === "rate_limited"
-                                ? "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800/60"
-                                : "bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800/60"
+                                ? "border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                : "border-destructive/20 bg-destructive/10 text-destructive"
                             }`}
                           >
                             {trace.status === "success" ? (
-                              <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-blue-400" />
+                              <CheckCircle2 className="h-3 w-3" />
                             ) : (
-                              <XCircle className="h-3 w-3 text-rose-600 dark:text-rose-400" />
+                              <XCircle className="h-3 w-3" />
                             )}
                             {trace.statusCode}
                           </span>
                         </td>
-                        <td className="py-3 px-4 font-mono">
-                          <span
-                            className={`font-semibold ${
-                              trace.latencyMs > 1000
-                                ? "text-rose-600 dark:text-rose-400"
-                                : trace.latencyMs > 300
-                                ? "text-amber-600 dark:text-blue-300"
-                                : "text-blue-600 dark:text-blue-400"
-                            }`}
-                          >
-                            {trace.latencyMs} ms
-                          </span>
+                        <td className="py-2.5 px-4 font-mono font-medium text-foreground">
+                          {trace.latencyMs} ms
                         </td>
-                        <td className="py-3 px-4 text-slate-600 dark:text-slate-300">
+                        <td className="py-2.5 px-4 text-muted-foreground">
                           {trace.model}
                         </td>
-                        <td className="py-3 px-4 text-slate-500 dark:text-slate-400 font-mono text-[11px]">
+                        <td className="py-2.5 px-4 text-muted-foreground font-mono text-[11px]">
                           {trace.timestamp}
                         </td>
 
                         {/* Individual Delete Action */}
-                        <td className="py-3 px-4 text-right">
+                        <td className="py-2.5 px-4 text-right">
                           <button
                             type="button"
                             title="Delete trace"
                             onClick={(e) => confirmDeleteSingle(e, trace.id)}
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/50 dark:hover:text-rose-400 transition-colors"
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
@@ -359,25 +340,25 @@ export function TraceTable({ traces, onSelectTrace }: TraceTableProps) {
 
       {/* Confirmation Dialog */}
       {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 dark:bg-black/85 backdrop-blur-sm p-4">
-          <div className="relative w-full max-w-md rounded-xl border border-slate-200 dark:border-[#1e293b] bg-white dark:bg-black shadow-2xl p-6 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-md rounded-xl border border-border bg-card shadow-2xl p-6 space-y-4">
             <div className="flex items-start gap-3.5">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400 border border-rose-200 dark:border-rose-900/40">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive border border-destructive/20">
                 <AlertTriangle className="h-5 w-5" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                <h3 className="text-sm font-semibold text-foreground">
                   {deleteTarget.type === "single"
                     ? "Delete Trace Record"
                     : deleteTarget.type === "selected"
                     ? `Delete ${deleteTarget.count} Traces`
                     : "Clear All Tracing Data"}
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                <p className="text-xs text-muted-foreground leading-relaxed">
                   {deleteTarget.type === "single" && (
                     <>
                       Are you sure you want to permanently delete trace{" "}
-                      <span className="font-mono font-semibold text-blue-600 dark:text-blue-400">
+                      <span className="font-mono font-semibold text-foreground">
                         {deleteTarget.traceId}
                       </span>{" "}
                       from ClickHouse? This action cannot be undone.
@@ -386,7 +367,7 @@ export function TraceTable({ traces, onSelectTrace }: TraceTableProps) {
                   {deleteTarget.type === "selected" && (
                     <>
                       Are you sure you want to permanently delete the{" "}
-                      <span className="font-semibold text-slate-900 dark:text-white">
+                      <span className="font-semibold text-foreground">
                         {deleteTarget.count} selected trace records
                       </span>{" "}
                       from ClickHouse? This action cannot be undone.
@@ -395,7 +376,7 @@ export function TraceTable({ traces, onSelectTrace }: TraceTableProps) {
                   {deleteTarget.type === "all" && (
                     <>
                       Are you sure you want to clear{" "}
-                      <span className="font-semibold text-rose-600 dark:text-rose-400">
+                      <span className="font-semibold text-destructive">
                         all {deleteTarget.count} traces
                       </span>{" "}
                       recorded in ClickHouse? This will truncate the telemetry table and reset all metrics.
@@ -405,21 +386,22 @@ export function TraceTable({ traces, onSelectTrace }: TraceTableProps) {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-200 dark:border-[#1e293b]">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
               <Button
                 variant="outline"
                 size="sm"
                 disabled={isDeleting}
                 onClick={() => setDeleteTarget(null)}
-                className="text-xs h-8 border-slate-200 dark:border-[#1e293b]"
+                className="text-xs h-8"
               >
                 Cancel
               </Button>
               <Button
+                variant="destructive"
                 size="sm"
                 disabled={isDeleting}
                 onClick={executeDelete}
-                className="bg-rose-600 hover:bg-rose-700 text-white text-xs h-8 font-semibold flex items-center gap-1.5"
+                className="text-xs h-8 font-medium gap-1.5"
               >
                 {isDeleting ? (
                   <>

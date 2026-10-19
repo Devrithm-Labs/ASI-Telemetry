@@ -47,7 +47,7 @@ export function MonitoringChartCard({
   return (
     <Card
       className={cn(
-        "group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border/80 bg-card p-5 shadow-xs transition-all duration-200 hover:border-blue-500/30 hover:shadow-md",
+        "group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card p-5 shadow-xs transition-all duration-200 hover:border-foreground/30",
         className
       )}
     >
@@ -56,7 +56,7 @@ export function MonitoringChartCard({
           <h3 className="text-sm font-semibold text-foreground tracking-tight flex items-center gap-2">
             <span>{title}</span>
             {badge && (
-              <span className="rounded-md bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-medium text-blue-500 font-mono">
+              <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground font-mono border border-border">
                 {badge}
               </span>
             )}
