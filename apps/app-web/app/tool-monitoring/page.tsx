@@ -306,7 +306,7 @@ export default function ToolMonitoringPage() {
               <div className="flex items-center justify-between border-b border-border/80 pb-2 select-none">
                 <div className="flex items-center gap-2">
                   <h2 className="text-base font-bold text-foreground flex items-center gap-1.5">
-                    <span>Response Time &amp; Percentiles</span>
+                    <span>Average Latency</span>
                   </h2>
                 </div>
                 <span className="text-[11px] text-muted-foreground font-mono">

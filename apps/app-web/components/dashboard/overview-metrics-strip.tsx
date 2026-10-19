@@ -51,7 +51,7 @@ export function OverviewMetricsStrip({
 
   const avgRespTime = summary?.avg_response_time_ms != null
     ? Math.round(summary.avg_response_time_ms)
-    : (times.length > 0 ? Math.round(times.reduce((acc, curr) => acc + curr.p50, 0) / times.length) : 0);
+    : (times.length > 0 ? Math.round(times.reduce((acc, curr) => acc + (curr.p50 ?? 0), 0) / times.length) : 0);
 
   const uptime = summary?.uptime != null
     ? summary.uptime.toFixed(1)

@@ -310,25 +310,16 @@ class TelemetryRepository:
             closest_idx = min(range(len(ticks)), key=lambda idx: abs((r_dt - ticks[idx]).total_seconds()))
             buckets_map[labels[closest_idx]].append(r)
 
-        def calc_pct(arr: List[float], p: float) -> float:
-            if not arr:
-                return 0.0
-            k = (len(arr) - 1) * p
-            f, c = math.floor(k), math.ceil(k)
-            return arr[f] if f == c else arr[f] * (c - k) + arr[c] * (k - f)
-
         req_data = []
         resp_data = []
         err_data = []
-
-        last_p50 = round(avg_resp) if avg_resp else 0
 
         for time_key in labels:
             items = buckets_map[time_key]
             n = len(items)
             succ_cnt = sum(1 for i in items if i["status"] == "success")
             fail_cnt = n - succ_cnt
-            times = sorted(i["response_time_ms"] for i in items)
+            times = [i["response_time_ms"] for i in items]
             err_rate = round((fail_cnt / n * 100), 1) if n else 0.0
 
             c_timeout = 0
@@ -349,17 +340,7 @@ class TelemetryRepository:
                     else:
                         c_server += 1
 
-            if n > 0:
-                p50_val = round(calc_pct(times, 0.50))
-                p90_val = round(calc_pct(times, 0.90))
-                p95_val = round(calc_pct(times, 0.95))
-                p99_val = round(calc_pct(times, 0.99))
-                last_p50 = p50_val
-            else:
-                p50_val = last_p50
-                p90_val = last_p50
-                p95_val = last_p50
-                p99_val = last_p50
+            avg_latency = round(sum(times) / n, 1) if n > 0 else 0.0
 
             req_data.append({
                 "time": time_key,
@@ -370,10 +351,12 @@ class TelemetryRepository:
 
             resp_data.append({
                 "time": time_key,
-                "p50": p50_val,
-                "p90": p90_val,
-                "p95": p95_val,
-                "p99": p99_val,
+                "avg": avg_latency,
+                "latency": avg_latency,
+                "p50": avg_latency,
+                "p90": avg_latency,
+                "p95": avg_latency,
+                "p99": avg_latency,
                 "slaLimit": 300,
             })
 

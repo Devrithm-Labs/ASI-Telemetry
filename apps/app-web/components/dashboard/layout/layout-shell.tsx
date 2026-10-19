@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { usePathname } from "next/navigation";
 import { DashboardSidebar } from "./sidebar";
 import { DashboardHeader } from "./header";
 import { TraceModal } from "../modals/trace-modal";
@@ -9,6 +10,8 @@ import { NewDashboardModal } from "../modals/new-dashboard-modal";
 import { DashboardProvider, useDashboard } from "../context/dashboard-context";
 
 function DashboardShellInner({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const isAuthRoute = pathname === "/login" || pathname === "/signup";
   const {
     activeHeaderTab,
     setActiveHeaderTab,
@@ -21,6 +24,10 @@ function DashboardShellInner({ children }: { children: React.ReactNode }) {
     isDashboardModalOpen,
     setIsDashboardModalOpen,
   } = useDashboard();
+
+  if (isAuthRoute) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground font-sans selection:bg-blue-600/30 selection:text-blue-600 dark:selection:text-blue-200">

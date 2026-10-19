@@ -10,12 +10,16 @@ import {
   ChevronDown,
   Gauge,
   Home,
+  KeyRound,
+  LogOut,
   PanelLeftClose,
   PanelLeftOpen,
   Search,
   Settings,
+  User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getStoredUser, clearStoredUser } from "@/lib/auth";
 
 interface NavItem {
   label: string;
@@ -47,6 +51,12 @@ export function DashboardSidebar({
   const pathname = usePathname();
   const [searchQuery, setSearchQuery] = React.useState("");
 
+  const [currentUser, setCurrentUser] = React.useState<ReturnType<typeof getStoredUser>>(null);
+
+  React.useEffect(() => {
+    setCurrentUser(getStoredUser());
+  }, []);
+
   const navigationGroups: NavGroup[] = [
     {
       group: "Application",
@@ -62,6 +72,12 @@ export function DashboardSidebar({
         { label: "Tool Tracing", href: "/tracing", icon: Activity, badge: "1" },
         { label: "LLM Tracing", href: "/llm-traces", icon: Bot, badge: "New" },
         { label: "LLM Monitoring", href: "/llm-monitoring", icon: Bot },
+      ],
+    },
+    {
+      group: "Access & Security",
+      items: [
+        { label: "API Keys", href: "/api-keys", icon: KeyRound, badge: "Active" },
       ],
     },
   ];
@@ -225,18 +241,40 @@ export function DashboardSidebar({
         </button>
 
         {!collapsed && (
-          <div className="flex items-center gap-2.5 px-2.5 py-1.5 border-t border-slate-200 dark:border-[#1e293b]/70 pt-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 border border-blue-200 text-blue-700 dark:bg-blue-950 dark:border-blue-700/60 dark:text-blue-300 font-bold text-xs">
-              DL
-            </div>
-            <div className="flex flex-col truncate">
-              <span className="text-xs font-medium text-slate-900 dark:text-slate-200 truncate">
-                Devrithm Labs
-              </span>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
-                admin@devrithm.io
-              </span>
-            </div>
+          <div className="flex items-center justify-between gap-2 px-2 py-1.5 border-t border-slate-200 dark:border-[#1e293b]/70 pt-2">
+            <Link
+              href="/api-keys"
+              className="flex items-center gap-2.5 overflow-hidden flex-1 group hover:opacity-80 transition-opacity"
+              title="Manage API Keys & Profile"
+            >
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-white font-bold text-xs shrink-0 shadow-xs">
+                {currentUser?.name
+                  ? currentUser.name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase()
+                  : "ASI"}
+              </div>
+              <div className="flex flex-col truncate">
+                <span className="text-xs font-medium text-slate-900 dark:text-slate-200 truncate group-hover:text-blue-500 transition-colors">
+                  {currentUser?.name || "Devrithm Labs"}
+                </span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                  {currentUser?.email || "admin@devrithm.io"}
+                </span>
+              </div>
+            </Link>
+
+            <Link
+              href="/login"
+              onClick={() => clearStoredUser()}
+              className="flex h-7 w-7 items-center justify-center rounded-md text-slate-400 hover:text-rose-500 hover:bg-slate-100 dark:hover:bg-[#1a1a1a] transition-colors shrink-0"
+              title="Sign Out / Switch Account"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+            </Link>
           </div>
         )}
       </div>

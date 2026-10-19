@@ -11,11 +11,13 @@ export interface RequestMetricPoint {
 
 export interface ResponseTimeMetricPoint {
   time: string;
-  p50: number;
-  p90: number;
+  avg?: number;
+  latency?: number;
+  p50?: number;
+  p90?: number;
   p95?: number;
-  p99: number;
-  slaLimit: number;
+  p99?: number;
+  slaLimit?: number;
 }
 
 // Backwards-compatible alias for ResponseTimeMetricPoint

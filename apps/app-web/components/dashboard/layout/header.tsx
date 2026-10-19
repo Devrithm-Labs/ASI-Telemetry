@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
+import { KeyRound } from "lucide-react";
 import { useDashboard } from "../context/dashboard-context";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -51,6 +53,16 @@ export function DashboardHeader({
           <span className={`h-2 w-2 rounded-full ${isLive ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`} />
           <span className="font-medium text-[11px]">{isLive ? "Live" : "Static"}</span>
         </button>
+
+        {/* API Keys Shortcut */}
+        <Link
+          href="/api-keys"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border border-blue-500/30 bg-blue-50/60 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+          title="Manage API Keys"
+        >
+          <KeyRound className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">API Keys</span>
+        </Link>
 
         {/* Light & Dark Mode Switch */}
         <ThemeToggle />

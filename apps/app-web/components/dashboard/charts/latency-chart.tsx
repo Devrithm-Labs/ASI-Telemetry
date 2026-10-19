@@ -46,11 +46,11 @@ const chartConfig = {
 
 export function LatencyChart({ data }: LatencyChartProps) {
   const avgP50 = React.useMemo(
-    () => Math.round(data.reduce((acc, curr) => acc + curr.p50, 0) / (data.length || 1)),
+    () => Math.round(data.reduce((acc, curr) => acc + (curr.p50 ?? 0), 0) / (data.length || 1)),
     [data]
   );
   const maxP99 = React.useMemo(
-    () => (data.length > 0 ? Math.max(...data.map((d) => d.p99)) : 0),
+    () => (data.length > 0 ? Math.max(...data.map((d) => d.p99 ?? 0)) : 0),
     [data]
   );
 
