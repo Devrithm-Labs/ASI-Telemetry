@@ -1,10 +1,3 @@
-"""
-ASI Telemetry SDK
-=================
-Lightweight, high-performance telemetry and distributed tracing SDK for AI agents,
-LLMs, multi-agent systems, and tool monitoring.
-"""
-
 import os
 from typing import Optional
 

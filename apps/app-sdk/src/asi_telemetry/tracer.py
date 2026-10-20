@@ -205,13 +205,13 @@ def end_span(
 
 
 def traceable(
-    name: Optional[str] = None,
+    name: Optional[Any] = None,
     run_type: str = "chain",
     metadata: Optional[Dict[str, Any]] = None,
     agent_address: Optional[str] = None,
 ) -> Callable:
     def decorator(func: Callable) -> Callable:
-        fn_name = name or func.__name__
+        fn_name = (name if isinstance(name, str) else None) or func.__name__
 
         if inspect.iscoroutinefunction(func):
             @functools.wraps(func)
@@ -241,5 +241,10 @@ def traceable(
             finally:
                 end_span(span, token, result=result, error=error)
         return sync_wrapper
+
+    if callable(name):
+        func = name
+        name = None
+        return decorator(func)
 
     return decorator

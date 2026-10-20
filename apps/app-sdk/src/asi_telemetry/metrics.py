@@ -3,6 +3,7 @@ Metrics tracking and runtime performance monitoring for AI agents and tools.
 """
 
 import asyncio
+import inspect
 import json
 import os
 import threading
@@ -10,7 +11,7 @@ import time
 import urllib.request
 from datetime import datetime, timezone
 from functools import wraps
-from typing import Callable, Optional
+from typing import Any, Callable, Optional
 
 
 class MetricsTracker:
@@ -18,13 +19,14 @@ class MetricsTracker:
     def __init__(
         self,
         agent_name: str = "assistant",
-        agent_address: Optional[str] = None,
-        api_key: Optional[str] = None,
-        backend_url: Optional[str] = None,
+        agent_address: str = "",
+        api_key: str = "",
+        backend_url: str = "",
     ):
         self.agent_name = agent_name
         self.agent_address = agent_address
-        self.api_key = api_key or os.getenv("ASI_API_KEY") or os.getenv("ASI_TELEMETRY_API_KEY") or os.getenv("TELEMETRY_API_KEY")
+        self.api_key = api_key or os.getenv("ASI_API_KEY") or os.getenv("ASI_TELEMETRY_API_KEY") or os.getenv("TELEMETRY_API_KEY") or ""
+        
         url = backend_url or os.getenv("TELEMETRY_BACKEND_URL") or "http://127.0.0.1:8080/api/metrics"
         if not url.endswith("/api/metrics"):
             url = url.rstrip("/") + "/api/metrics"
@@ -67,40 +69,73 @@ class MetricsTracker:
 
         threading.Thread(target=_worker, daemon=True).start()
 
-    def track(self, tool_name: Optional[str] = None) -> Callable:
+    def track(self, tool_name: Optional[Any] = None) -> Callable:
+        """
+        Decorator to track function execution time, status, and agent metrics.
+        Can be used as:
+            @monitor.track
+            @monitor.track()
+            @monitor.track("custom_name")
+        Supports both sync and async functions.
+        """
         def decorator(func: Callable) -> Callable:
-            #if in case user not provided the tool_name, then it will use the function name as a tool name.................
-            target_name = tool_name or func.__name__
+            target_name = (tool_name if isinstance(tool_name, str) else None) or func.__name__
 
-            @wraps(func)
-            async def wrapper(*args, **kwargs):
-                start_time = time.perf_counter()
-                status = "success"
+            if inspect.iscoroutinefunction(func):
+                @wraps(func)
+                async def async_wrapper(*args, **kwargs):
+                    start_time = time.perf_counter()
+                    status = "success"
+                    try:
+                        return await func(*args, **kwargs)
+                    except asyncio.CancelledError:
+                        status = "cancelled"
+                        raise
+                    except Exception:
+                        status = "error"
+                        raise
+                    finally:
+                        duration_ms = (time.perf_counter() - start_time) * 1000
+                        payload = {
+                            "agent_name": self.agent_name,
+                            "agent_address": self.agent_address,
+                            "func_name": target_name,
+                            "status": status,
+                            "response_time_ms": round(duration_ms, 2),
+                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                        }
+                        self._dispatch_payload(payload)
 
-                try:
-                    result = await func(*args, **kwargs)
-                    return result
-                except asyncio.CancelledError:
-                    status = "cancelled"
-                    raise
-                except Exception:
-                    status = "error"
-                    raise
-                finally:
-                    duration_ms = (time.perf_counter() - start_time) * 1000
+                return async_wrapper
+            else:
+                @wraps(func)
+                def sync_wrapper(*args, **kwargs):
+                    start_time = time.perf_counter()
+                    status = "success"
+                    try:
+                        return func(*args, **kwargs)
+                    except Exception:
+                        status = "error"
+                        raise
+                    finally:
+                        duration_ms = (time.perf_counter() - start_time) * 1000
+                        payload = {
+                            "agent_name": self.agent_name,
+                            "agent_address": self.agent_address,
+                            "func_name": target_name,
+                            "status": status,
+                            "response_time_ms": round(duration_ms, 2),
+                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                        }
+                        self._dispatch_payload(payload)
 
-                    # Build payload and dispatch directly to backend in background
-                    payload = {
-                        "agent_name": self.agent_name,
-                        "agent_address": self.agent_address,
-                        "func_name": target_name,
-                        "status": status,
-                        "response_time_ms": round(duration_ms, 2),
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                    }
-                    self._dispatch_payload(payload)
+                return sync_wrapper
 
-            return wrapper
+        if callable(tool_name):
+            func = tool_name
+            tool_name = None
+            return decorator(func)
 
         return decorator
+
 
