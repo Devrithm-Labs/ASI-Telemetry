@@ -1,24 +1,24 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import {
   Activity,
   ArrowRight,
-  Bot,
-  Boxes,
+  BarChart3,
   Check,
   CheckCircle2,
+  ChevronDown,
+  Clock,
   Code2,
   Copy,
   Cpu,
   Database,
-  Gauge,
-  KeyRound,
+  ExternalLink,
+  Layers,
   LayoutDashboard,
-  Shield,
   ShieldCheck,
-  Sparkles,
   Terminal,
   Zap,
 } from "lucide-react";
@@ -29,8 +29,8 @@ export default function LandingPage() {
   const [currentUser, setCurrentUser] = React.useState<ReturnType<typeof getStoredUser>>(null);
   const [hasToken, setHasToken] = React.useState(false);
   const [copiedInstall, setCopiedInstall] = React.useState(false);
-  const [copiedKeySnippet, setCopiedKeySnippet] = React.useState(false);
-  const [activeCodeTab, setActiveCodeTab] = React.useState<"tracer" | "metrics" | "init">("tracer");
+  const [copiedSnippet, setCopiedSnippet] = React.useState(false);
+  const [codeTab, setCodeTab] = React.useState<"python" | "env">("python");
 
   React.useEffect(() => {
     setCurrentUser(getStoredUser());
@@ -43,52 +43,67 @@ export default function LandingPage() {
     setTimeout(() => setCopiedInstall(false), 2000);
   };
 
-  const handleCopyKeySnippet = () => {
-    const snippet = `export ASI_API_KEY="asi_live_7a9f8b2c4e1d3f0a"
-export TELEMETRY_BACKEND_URL="http://localhost:8080"`;
-    navigator.clipboard.writeText(snippet);
-    setCopiedKeySnippet(true);
-    setTimeout(() => setCopiedKeySnippet(false), 2000);
+  const handleCopySnippet = () => {
+    const code =
+      codeTab === "python"
+        ? `# 1. Install & import the tracer
+import asi_telemetry
+
+# 2. Initialize with your project API key
+asi_telemetry.init(api_key="asi_live_7a9f8b2c4e1d3f0a")
+
+# 3. Decorate your agent reasoning or tool call
+@asi_telemetry.traceable(name="research_agent", run_type="agent")
+def run_agent(query: str):
+    # Automatic capture: prompt, tokens, latency, tool calls & errors
+    response = call_llm(query)
+    return response`
+        : `# Environment variables (zero-code configuration)
+export ASI_API_KEY="asi_live_7a9f8b2c4e1d3f0a"
+export TELEMETRY_BACKEND_URL="http://localhost:8080"
+export ASI_PROJECT="production-fleet"`;
+
+    navigator.clipboard.writeText(code);
+    setCopiedSnippet(true);
+    setTimeout(() => setCopiedSnippet(false), 2000);
   };
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans selection:bg-foreground selection:text-background">
-      {/* ── Top Navigation Bar ──────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/80 backdrop-blur-md">
+      {/* ── Header ──────────────────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xs group-hover:scale-105 transition-transform">
-              <Activity className="h-5 w-5" />
+          <Link href="/" className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground text-background">
+              <Activity className="h-4 w-4" />
             </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-base tracking-tight text-foreground">
-                  ASI:Telemetry
-                </span>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-muted border border-border text-muted-foreground">
-                  v2.0
-                </span>
-              </div>
-              <span className="text-[10px] text-muted-foreground -mt-0.5 hidden sm:block">
-                AI Observability & Trace Pipeline
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-sm tracking-tight text-foreground">
+                ASI:Telemetry
+              </span>
+              <span className="text-[11px] font-mono px-1.5 py-0.5 rounded border border-border text-muted-foreground bg-muted/40">
+                v2.0
               </span>
             </div>
           </Link>
 
-          {/* Center Links */}
-          <nav className="hidden md:flex items-center gap-6 text-xs font-medium text-muted-foreground">
+          {/* Navigation */}
+          <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
+            <a href="#overview" className="hover:text-foreground transition-colors">
+              Overview
+            </a>
+            <a href="#dashboard-preview" className="hover:text-foreground transition-colors">
+              Dashboard
+            </a>
+            <a href="#sdk" className="hover:text-foreground transition-colors">
+              Quickstart
+            </a>
             <a href="#features" className="hover:text-foreground transition-colors">
               Features
-            </a>
-            <a href="#code-sample" className="hover:text-foreground transition-colors">
-              Python SDK
             </a>
             <a href="#architecture" className="hover:text-foreground transition-colors">
               Architecture
             </a>
-            <Link href="/api-keys" className="hover:text-foreground transition-colors">
-              API Keys
-            </Link>
           </nav>
 
           {/* Right Action Buttons */}
@@ -97,22 +112,22 @@ export TELEMETRY_BACKEND_URL="http://localhost:8080"`;
             {hasToken ? (
               <Link
                 href="/dashboard"
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all shadow-xs"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-md bg-foreground text-background text-xs font-medium hover:opacity-90 transition-opacity"
               >
                 <LayoutDashboard className="h-3.5 w-3.5" />
-                <span>Go to Dashboard</span>
+                <span>Dashboard</span>
               </Link>
             ) : (
               <>
                 <Link
                   href="/login"
-                  className="text-xs font-medium px-3 py-1.5 rounded-md text-foreground hover:bg-muted transition-colors"
+                  className="text-xs font-medium px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  Sign In
+                  Sign in
                 </Link>
                 <Link
                   href="/signup"
-                  className="flex items-center gap-1 px-3.5 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all shadow-xs"
+                  className="flex items-center gap-1 px-3.5 py-1.5 rounded-md bg-foreground text-background text-xs font-medium hover:opacity-90 transition-opacity"
                 >
                   <span>Get Started</span>
                   <ArrowRight className="h-3 w-3" />
@@ -124,473 +139,367 @@ export TELEMETRY_BACKEND_URL="http://localhost:8080"`;
       </header>
 
       {/* ── Hero Section ────────────────────────────────────────────────────── */}
-      <section className="relative pt-20 pb-16 md:pt-28 md:pb-24 overflow-hidden">
-        {/* Subtle background ambient gradients */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-primary/10 rounded-full blur-[120px] pointer-events-none -z-10" />
+      <section id="overview" className="pt-16 pb-12 sm:pt-24 sm:pb-16 max-w-5xl mx-auto px-4 sm:px-6 text-center">
+        {/* Release Tag */}
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-muted/30 text-xs text-muted-foreground mb-6">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+          <span>Production-grade telemetry for AI agents & LLMs</span>
+        </div>
 
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center space-y-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-card/60 backdrop-blur-xs text-xs font-medium text-foreground shadow-xs animate-in fade-in duration-500">
-            <Sparkles className="h-3.5 w-3.5 text-primary" />
-            <span>Multi-Tenant ClickHouse Telemetry for Autonomous AI Swarms</span>
-          </div>
+        {/* Headline */}
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground leading-[1.15] max-w-4xl mx-auto">
+          Observability and traces for AI applications & agents.
+        </h1>
 
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-foreground leading-[1.12]">
-            Full-Stack Observability for{" "}
-            <span className="bg-gradient-to-r from-foreground via-foreground/90 to-muted-foreground bg-clip-text text-transparent">
-              Autonomous AI Agents
-            </span>
-          </h1>
+        {/* Subhead */}
+        <p className="mt-5 max-w-2xl mx-auto text-base sm:text-lg text-muted-foreground leading-relaxed">
+          Understand what your agents are doing in production. Trace step-by-step reasoning,
+          monitor latency percentiles, and track token spend—backed by ClickHouse for real-time scale.
+        </p>
 
-          <p className="max-w-2xl mx-auto text-sm sm:text-base text-muted-foreground leading-relaxed">
-            Trace reasoning chains, step-by-step tool executions, LLM token costs,
-            and sub-millisecond latency percentiles. Isolate data per account with granular
-            scoped API keys.
-          </p>
+        {/* CTA Actions */}
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+          <Link
+            href="/signup"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-md bg-foreground text-background font-medium text-sm hover:opacity-90 transition-all"
+          >
+            <span>Start Tracing Free</span>
+            <ArrowRight className="h-4 w-4" />
+          </Link>
 
-          {/* Hero CTAs */}
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-            <Link
-              href="/signup"
-              className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold text-xs shadow-md hover:bg-primary/90 transition-all active:scale-98"
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-md border border-border bg-card hover:bg-muted/60 font-medium text-sm text-foreground transition-colors"
+          >
+            <LayoutDashboard className="h-4 w-4 text-muted-foreground" />
+            <span>Live Console</span>
+          </Link>
+        </div>
+
+        {/* Terminal Quick Install */}
+        <div className="mt-6 flex items-center justify-center">
+          <div className="flex items-center gap-3 px-4 py-2 rounded-lg border border-border bg-card font-mono text-xs text-muted-foreground shadow-2xs">
+            <span className="text-foreground">$ pip install asi-telemetry</span>
+            <button
+              type="button"
+              onClick={handleCopyInstall}
+              className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 cursor-pointer pl-2 border-l border-border"
+              title="Copy pip install command"
             >
-              <Zap className="h-4 w-4 fill-current" />
-              <span>Start Tracing Free</span>
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-border bg-card hover:bg-muted font-medium text-xs text-foreground transition-all"
-            >
-              <LayoutDashboard className="h-4 w-4" />
-              <span>Explore Live Console</span>
-            </Link>
-          </div>
-
-          {/* Quick Pip Install Snippet */}
-          <div className="pt-4 flex items-center justify-center">
-            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg border border-border bg-card font-mono text-xs shadow-xs text-muted-foreground">
-              <Terminal className="h-3.5 w-3.5 text-foreground" />
-              <span className="text-foreground">$ pip install asi-telemetry</span>
-              <button
-                type="button"
-                onClick={handleCopyInstall}
-                className="ml-2 hover:text-foreground transition-colors p-1"
-                title="Copy install command"
-              >
-                {copiedInstall ? (
+              {copiedInstall ? (
+                <>
                   <Check className="h-3.5 w-3.5 text-emerald-500" />
-                ) : (
+                  <span className="text-[11px] text-emerald-500">Copied</span>
+                </>
+              ) : (
+                <>
                   <Copy className="h-3.5 w-3.5" />
-                )}
-              </button>
-            </div>
+                  <span className="text-[11px]">Copy</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
       </section>
 
-      {/* ── Value Strip (Key Metrics) ────────────────────────────────────────── */}
-      <section className="border-y border-border bg-card/40 py-8">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-          <div className="space-y-1">
-            <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground font-mono">
-              &lt; 0.1ms
-            </div>
-            <div className="text-xs text-muted-foreground font-medium">
-              Ingestion Dispatch Overhead
-            </div>
-          </div>
-          <div className="space-y-1">
-            <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground font-mono">
-              100%
-            </div>
-            <div className="text-xs text-muted-foreground font-medium">
-              ClickHouse Native Analytics
-            </div>
-          </div>
-          <div className="space-y-1">
-            <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground font-mono">
-              p50 / p95 / p99
-            </div>
-            <div className="text-xs text-muted-foreground font-medium">
-              Latency Percentiles Computed
-            </div>
-          </div>
-          <div className="space-y-1">
-            <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground font-mono">
-              Scoped
-            </div>
-            <div className="text-xs text-muted-foreground font-medium">
-              Account-Isolated API Keys
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Interactive Code Showcase ───────────────────────────────────────── */}
-      <section id="code-sample" className="py-20 max-w-6xl mx-auto px-4 sm:px-6 w-full">
-        <div className="text-center space-y-2 mb-10">
-          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-            Connect Any Python Agent in 2 Lines of Code
-          </h2>
-          <p className="text-xs sm:text-sm text-muted-foreground max-w-xl mx-auto">
-            Zero intrusive boilerplate. Non-blocking asynchronous threads send metrics
-            and traces to your account via your secret API key.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-          {/* Left: Code Editor Card */}
-          <div className="lg:col-span-7 rounded-xl border border-border bg-card shadow-md flex flex-col overflow-hidden">
-            {/* Header Tabs */}
-            <div className="flex items-center justify-between border-b border-border bg-muted/30 px-3 py-2">
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setActiveCodeTab("tracer")}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                    activeCodeTab === "tracer"
-                      ? "bg-card text-foreground shadow-xs font-semibold"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  @traceable (LLM)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveCodeTab("metrics")}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                    activeCodeTab === "metrics"
-                      ? "bg-card text-foreground shadow-xs font-semibold"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  @tracker.track (Tools)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveCodeTab("init")}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                    activeCodeTab === "init"
-                      ? "bg-card text-foreground shadow-xs font-semibold"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Env Config
-                </button>
-              </div>
-
-              <div className="flex items-center gap-1 text-[11px] font-mono text-muted-foreground pr-2">
-                <span>python</span>
-              </div>
-            </div>
-
-            {/* Code Body */}
-            <div className="p-4 flex-1 font-mono text-xs overflow-x-auto leading-relaxed bg-card text-foreground/90 selection:bg-muted">
-              {activeCodeTab === "tracer" && (
-                <pre>
-{`import asi_telemetry
-
-# 1. Initialize with your account API key
-asi_telemetry.init(api_key="asi_live_4f89d3a1c028e...")
-
-# 2. Decorate any agent execution, prompt chain, or tool
-@asi_telemetry.traceable(name="research_agent", run_type="agent")
-def run_autonomous_agent(user_prompt: str):
-    # LLM execution is recorded with tokens, cost, and latency
-    response = call_gemini(user_prompt)
-    return response`}
-                </pre>
-              )}
-
-              {activeCodeTab === "metrics" && (
-                <pre>
-{`from asi_telemetry import MetricsTracker
-
-# Scoped to your agent identity & account API Key
-tracker = MetricsTracker(
-    agent_name="market-analyzer",
-    api_key="asi_live_4f89d3a1c028e..."
-)
-
-@tracker.track("fetch_crypto_rates")
-async def fetch_crypto_rates(symbol: str):
-    # Tracks runtime duration, status, memory & percentiles
-    data = await http_client.get(f"/rates/{symbol}")
-    return data`}
-                </pre>
-              )}
-
-              {activeCodeTab === "init" && (
-                <pre>
-{`# Or configure via environment variables (Zero Code Changes)
-export ASI_API_KEY="asi_live_4f89d3a1c028e..."
-export TELEMETRY_BACKEND_URL="http://localhost:8080"
-
-# Now any imported tracker automatically dispatches
-# to your authenticated account partition.`}
-                </pre>
-              )}
-            </div>
-
-            {/* Footer with copy button */}
-            <div className="border-t border-border bg-muted/20 px-4 py-2.5 flex items-center justify-between text-xs text-muted-foreground">
-              <span className="flex items-center gap-1.5">
-                <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
-                <span>Cookies & Bearer Tokens verified on all ingestion calls</span>
-              </span>
-              <button
-                type="button"
-                onClick={handleCopyKeySnippet}
-                className="hover:text-foreground flex items-center gap-1 text-xs cursor-pointer font-medium"
-              >
-                {copiedKeySnippet ? (
-                  <>
-                    <Check className="h-3 w-3 text-emerald-500" />
-                    <span>Copied</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-3 w-3" />
-                    <span>Copy Config</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* Right: Real-time Live Trace Preview Mock */}
-          <div className="lg:col-span-5 rounded-xl border border-border bg-card p-5 shadow-md flex flex-col justify-between space-y-4">
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-muted text-foreground border border-border">
-                  <Bot className="h-4 w-4" />
-                </div>
-                <div>
-                  <div className="text-xs font-semibold text-foreground">
-                    Live Collective Trace Graph
-                  </div>
-                  <div className="text-[10px] text-muted-foreground font-mono">
-                    trace_90d2e81 • 3 spans
-                  </div>
-                </div>
-              </div>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                200 OK
+      {/* ── Main Dashboard Statistics Showcase ──────────────────────────────── */}
+      <section id="dashboard-preview" className="pb-20 max-w-6xl mx-auto px-4 sm:px-6 w-full">
+        {/* Application Window Frame */}
+        <div className="rounded-xl border border-border bg-card shadow-lg overflow-hidden">
+          {/* Window Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
+            <div className="flex items-center gap-2">
+              <span className="h-3 w-3 rounded-full bg-border" />
+              <span className="h-3 w-3 rounded-full bg-border" />
+              <span className="h-3 w-3 rounded-full bg-border" />
+              <span className="ml-2 text-xs font-medium text-muted-foreground hidden sm:inline-block">
+                asi-telemetry.io/analytics · Live Dashboard Statistics
               </span>
             </div>
 
-            {/* Simulated Tree Spans */}
-            <div className="space-y-2.5 font-mono text-xs">
-              <div className="p-2.5 rounded-md border border-border bg-muted/40 space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-foreground text-xs flex items-center gap-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                    research_agent (Root)
-                  </span>
-                  <span className="text-[10px] text-muted-foreground">342 ms</span>
-                </div>
-                <div className="text-[11px] text-muted-foreground font-sans truncate">
-                  Prompt: &quot;Analyze Solana gas spikes&quot;
-                </div>
-              </div>
+            <div className="flex items-center gap-3">
 
-              <div className="ml-4 pl-3 border-l-2 border-border/80 space-y-2">
-                <div className="p-2 rounded-md border border-border bg-card flex items-center justify-between">
-                  <span className="text-xs text-foreground flex items-center gap-1">
-                    <Cpu className="h-3 w-3 text-muted-foreground" />
-                    gemini-2.5-flash
-                  </span>
-                  <span className="text-[10px] text-muted-foreground">185 ms • 412 tok</span>
-                </div>
-                <div className="p-2 rounded-md border border-border bg-card flex items-center justify-between">
-                  <span className="text-xs text-foreground flex items-center gap-1">
-                    <Code2 className="h-3 w-3 text-muted-foreground" />
-                    fetch_crypto_rates (Tool)
-                  </span>
-                  <span className="text-[10px] text-muted-foreground">112 ms • success</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-2 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
-              <span>Owner: alex@devrithm.io</span>
               <Link
-                href="/llm-traces"
-                className="text-foreground font-medium hover:underline flex items-center gap-1"
+                href="/dashboard"
+                className="text-xs text-foreground font-medium hover:underline flex items-center gap-1"
               >
-                <span>View in Trace Explorer</span>
-                <ArrowRight className="h-3 w-3" />
+                <span>Open in App</span>
+                <ExternalLink className="h-3 w-3" />
               </Link>
             </div>
           </div>
+
+          {/* Screenshot Image Container: dynamically switches between Light and Dark mode */}
+          <div className="relative w-full aspect-[1917/1008] bg-muted/20">
+            {/* Light Mode Dashboard Screenshot */}
+            <div className="absolute inset-0 block dark:hidden">
+              <Image
+                src="/imagecopy.png"
+                alt="ASI Telemetry Dashboard Overview - Tool Monitoring (Light Theme)"
+                fill
+                priority
+                className="object-cover object-top"
+                sizes="(max-width: 1200px) 100vw, 1200px"
+              />
+            </div>
+            {/* Dark Mode Dashboard Screenshot */}
+            <div className="absolute inset-0 hidden dark:block">
+              <Image
+                src="/image1.png"
+                alt="ASI Telemetry Dashboard Overview - LLM Monitoring (Dark Theme)"
+                fill
+                priority
+                className="object-cover object-top"
+                sizes="(max-width: 1200px) 100vw, 1200px"
+              />
+            </div>
+          </div>
+
+          {/* Highlights Footer Strip */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 border-t border-border divide-y sm:divide-y-0 sm:divide-x divide-border bg-muted/10 text-left">
+            <div className="p-4 space-y-1">
+              <div className="text-xs text-muted-foreground font-medium">Traces & Runs Tracked</div>
+              <div className="text-xl font-bold font-mono text-foreground">157</div>
+              <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">ClickHouse Synced</div>
+            </div>
+            <div className="p-4 space-y-1">
+              <div className="text-xs text-muted-foreground font-medium">Total Tokens</div>
+              <div className="text-xl font-bold font-mono text-foreground">63,325</div>
+              <div className="text-[11px] text-muted-foreground">Prompt: 45k · Completion: 18k</div>
+            </div>
+            <div className="p-4 space-y-1">
+              <div className="text-xs text-muted-foreground font-medium">Recorded Cost</div>
+              <div className="text-xl font-bold font-mono text-foreground">$0.0399</div>
+              <div className="text-[11px] text-muted-foreground">Multi-Model Inference</div>
+            </div>
+            <div className="p-4 space-y-1">
+              <div className="text-xs text-muted-foreground font-medium">Success Rate</div>
+              <div className="text-xl font-bold font-mono text-foreground">99.4%</div>
+              <div className="text-[11px] text-muted-foreground">156 Successful / 1 Errored</div>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* ── Feature Grid ────────────────────────────────────────────────────── */}
-      <section id="features" className="py-16 border-t border-border bg-card/20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-12">
-          <div className="text-center space-y-2 max-w-2xl mx-auto">
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              Engineered Specifically for AI Agent Fleets
+      {/* ── Key Proof Metrics ───────────────────────────────────────────────── */}
+      <section className="border-y border-border bg-muted/20 py-10">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+          <div>
+            <div className="text-2xl sm:text-3xl font-bold font-mono tracking-tight text-foreground">
+              &lt; 0.2ms
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">In-process tracer overhead</div>
+          </div>
+          <div>
+            <div className="text-2xl sm:text-3xl font-bold font-mono tracking-tight text-foreground">
+              100%
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">ClickHouse columnar analytics</div>
+          </div>
+          <div>
+            <div className="text-2xl sm:text-3xl font-bold font-mono tracking-tight text-foreground">
+              p50 / p95 / p99
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">Real-time latency percentiles</div>
+          </div>
+          <div>
+            <div className="text-2xl sm:text-3xl font-bold font-mono tracking-tight text-foreground">
+              Zero-Lag
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">Async non-blocking dispatch</div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── SDK Integration Section ─────────────────────────────────────────── */}
+      <section id="sdk" className="py-20 max-w-5xl mx-auto px-4 sm:px-6 w-full">
+        <div className="text-center space-y-2 mb-8">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+            Instrument in three lines of Python
+          </h2>
+          <p className="text-sm text-muted-foreground max-w-xl mx-auto">
+            No complicated middleware or proxy servers. Decorate any agent function,
+            prompt chain, or tool with zero performance penalty.
+          </p>
+        </div>
+
+        <div className="max-w-3xl mx-auto rounded-xl border border-zinc-800 bg-black text-left overflow-hidden shadow-2xl">
+          {/* Top Bar */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800/80 bg-black">
+            {/* Left: [PY] / [ENV] Badge + File Name */}
+            <div className="flex items-center gap-2.5">
+              <span className="flex items-center justify-center text-[10px] font-bold font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700/60 leading-none select-none">
+                {codeTab === "python" ? "PY" : "ENV"}
+              </span>
+              <span className="text-xs font-mono text-zinc-300">
+                {codeTab === "python" ? "agent.py" : ".env"}
+              </span>
+            </div>
+
+            {/* Right: Language Selector + Copy Button */}
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setCodeTab(codeTab === "python" ? "env" : "python")}
+                className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 transition-colors font-sans cursor-pointer"
+                title="Switch between Python and .env"
+              >
+                <span>{codeTab === "python" ? "Python" : "Shell / Env"}</span>
+                <ChevronDown className="h-3.5 w-3.5 text-zinc-500" />
+              </button>
+
+              <button
+                type="button"
+                onClick={handleCopySnippet}
+                className="text-zinc-400 hover:text-zinc-200 p-1 rounded-md hover:bg-zinc-800/60 transition-colors cursor-pointer"
+                title="Copy code"
+                aria-label="Copy code"
+              >
+                {copiedSnippet ? (
+                  <Check className="h-4 w-4 text-emerald-400" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Code Area */}
+          <div className="p-6 font-mono text-xs sm:text-[13px] leading-relaxed bg-black text-zinc-200 overflow-x-auto selection:bg-zinc-800 selection:text-white">
+            {codeTab === "python" ? (
+              <pre className="font-mono text-xs sm:text-[13px] leading-6 sm:leading-7 text-zinc-200 whitespace-pre">
+                <div><span className="text-zinc-500"># 1. Install &amp; import the tracer</span></div>
+                <div><span className="text-[#f43f5e]">import</span> asi_telemetry</div>
+                <div>&nbsp;</div>
+                <div><span className="text-zinc-500"># 2. Initialize with your project API key</span></div>
+                <div>asi_telemetry.<span className="text-[#38bdf8]">init</span>(api_key=<span className="text-[#4ade80]">&quot;asi_live_7a9f8b2c4e1d3f0a&quot;</span>)</div>
+                <div>&nbsp;</div>
+                <div><span className="text-zinc-500"># 3. Decorate your agent reasoning or tool call</span></div>
+                <div><span className="text-[#f43f5e]">@</span>asi_telemetry.<span className="text-[#38bdf8]">traceable</span>(name=<span className="text-[#4ade80]">&quot;research_agent&quot;</span>, run_type=<span className="text-[#4ade80]">&quot;agent&quot;</span>)</div>
+                <div><span className="text-[#f43f5e]">def</span> <span className="text-[#38bdf8]">run_agent</span>(query: <span className="text-[#38bdf8]">str</span>):</div>
+                <div>    <span className="text-zinc-500"># Automatic capture: prompt, tokens, latency, tool calls &amp; errors</span></div>
+                <div>    response = <span className="text-[#38bdf8]">call_llm</span>(query)</div>
+                <div>    <span className="text-[#f43f5e]">return</span> response</div>
+              </pre>
+            ) : (
+              <pre className="font-mono text-xs sm:text-[13px] leading-6 sm:leading-7 text-zinc-200 whitespace-pre">
+                <div><span className="text-zinc-500"># Environment variables (zero-code configuration)</span></div>
+                <div><span className="text-[#f43f5e]">export</span> ASI_API_KEY=<span className="text-[#4ade80]">&quot;asi_live_7a9f8b2c4e1d3f0a&quot;</span></div>
+                <div><span className="text-[#f43f5e]">export</span> TELEMETRY_BACKEND_URL=<span className="text-[#4ade80]">&quot;http://localhost:8080&quot;</span></div>
+                <div><span className="text-[#f43f5e]">export</span> ASI_PROJECT=<span className="text-[#4ade80]">&quot;production-fleet&quot;</span></div>
+              </pre>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground max-w-3xl mx-auto px-1">
+          <span className="flex items-center gap-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Non-blocking daemon worker flushes events asynchronously in batches</span>
+          </span>
+          <Link href="/api-keys" className="text-foreground hover:underline font-medium inline-flex items-center gap-1">
+            <span>Manage API Keys</span>
+            <ArrowRight className="h-3 w-3" />
+          </Link>
+        </div>
+      </section>
+
+      {/* ── Features Section ────────────────────────────────────────────────── */}
+      <section id="features" className="py-16 border-t border-border bg-muted/10">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10">
+          <div className="text-center space-y-2 max-w-xl mx-auto">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+              Built specifically for LLM & agent workloads
             </h2>
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              Traditional APM tools fall apart on recursive agent calls, tool invocations,
-              and non-deterministic LLM graphs. ASI:Telemetry was built from the ground up for agent swarms.
+            <p className="text-sm text-muted-foreground">
+              Traditional application performance monitoring breaks down on recursive agent loops,
+              tool invocations, and token-based pricing models.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {/* Feature 1 */}
-            <div className="p-5 rounded-xl border border-border bg-card hover:border-foreground/20 transition-all shadow-xs space-y-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
-                <Bot className="h-4 w-4" />
+            <div className="p-6 rounded-xl border border-border bg-card shadow-2xs space-y-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-foreground border border-border">
+                <Layers className="h-4 w-4" />
               </div>
-              <h3 className="text-sm font-semibold text-foreground">
-                Distributed Swarm Tracing
+              <h3 className="text-base font-semibold text-foreground">
+                Hierarchical Trace Trees
               </h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Connect parent agent reasoning chains to child delegate tools,
-                preserving complete correlation context across decentralized networks.
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                Connect parent agent decision chains to child tool calls, prompt expansions,
+                and sub-agent delegates. Retain full context and causality across the entire lifecycle.
               </p>
             </div>
 
             {/* Feature 2 */}
-            <div className="p-5 rounded-xl border border-border bg-card hover:border-foreground/20 transition-all shadow-xs space-y-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
-                <Database className="h-4 w-4" />
+            <div className="p-6 rounded-xl border border-border bg-card shadow-2xs space-y-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-foreground border border-border">
+                <Clock className="h-4 w-4" />
               </div>
-              <h3 className="text-sm font-semibold text-foreground">
-                ClickHouse Columnar Storage
+              <h3 className="text-base font-semibold text-foreground">
+                Latency Percentiles (p50 / p95 / p99)
               </h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Lightning-fast aggregation queries on millions of metrics with zero lag.
-                Quantile percentiles (p50, p90, p95, p99) computed in milliseconds.
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                Stop relying on misleading average times. Directly query high-percentile latency
+                distributions to pinpoint slow tools, unresponsive APIs, or model generation stalls.
               </p>
             </div>
 
             {/* Feature 3 */}
-            <div className="p-5 rounded-xl border border-border bg-card hover:border-foreground/20 transition-all shadow-xs space-y-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
-                <KeyRound className="h-4 w-4" />
+            <div className="p-6 rounded-xl border border-border bg-card shadow-2xs space-y-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-foreground border border-border">
+                <BarChart3 className="h-4 w-4" />
               </div>
-              <h3 className="text-sm font-semibold text-foreground">
-                Scoped API Keys & Cookie Auth
+              <h3 className="text-base font-semibold text-foreground">
+                Token & Cost Accounting
               </h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Tokens and sessions are securely stored exclusively in HTTP cookies.
-                Generate environment-isolated keys (`asi_live_...`, `asi_stage_...`) with instant revocation.
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                Automatic calculation of prompt tokens, completion tokens, and real dollar costs
+                for Gemini, OpenAI, Claude, and custom local models.
               </p>
             </div>
 
             {/* Feature 4 */}
-            <div className="p-5 rounded-xl border border-border bg-card hover:border-foreground/20 transition-all shadow-xs space-y-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
-                <Gauge className="h-4 w-4" />
+            <div className="p-6 rounded-xl border border-border bg-card shadow-2xs space-y-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-foreground border border-border">
+                <Database className="h-4 w-4" />
               </div>
-              <h3 className="text-sm font-semibold text-foreground">
-                Token & Cost Accounting
+              <h3 className="text-base font-semibold text-foreground">
+                ClickHouse Columnar Storage
               </h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Automatic calculation of prompt vs. completion tokens and dollar costs
-                for Gemini, OpenAI, Anthropic, and custom fine-tuned weights.
-              </p>
-            </div>
-
-            {/* Feature 5 */}
-            <div className="p-5 rounded-xl border border-border bg-card hover:border-foreground/20 transition-all shadow-xs space-y-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
-                <Boxes className="h-4 w-4" />
-              </div>
-              <h3 className="text-sm font-semibold text-foreground">
-                Fleet Discovery & Identity
-              </h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Automatically discover registered agents, uAgent cryptographic wallet addresses,
-                and application function signatures without manual configuration.
-              </p>
-            </div>
-
-            {/* Feature 6 */}
-            <div className="p-5 rounded-xl border border-border bg-card hover:border-foreground/20 transition-all shadow-xs space-y-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
-                <Zap className="h-4 w-4" />
-              </div>
-              <h3 className="text-sm font-semibold text-foreground">
-                Non-Blocking Dispatcher
-              </h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Daemonized background threads ship telemetry payloads asynchronously.
-                Your LLM agents never slow down or wait on monitoring network packets.
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                Fast queries over tens of millions of records. Partitioned by account and project
+                so your queries stay responsive regardless of ingestion volume.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── Architecture Pipeline ────────────────────────────────────────────── */}
-      <section id="architecture" className="py-16 max-w-5xl mx-auto px-4 sm:px-6 w-full">
-        <div className="rounded-2xl border border-border bg-card p-8 shadow-md space-y-6">
-          <div className="text-center space-y-1.5">
-            <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-              High-Velocity Telemetry Pipeline
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              From your agent code to ClickHouse analytics in under 5 milliseconds.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
-            <div className="p-4 rounded-xl border border-border bg-muted/20 space-y-2 text-center sm:text-left">
-              <div className="text-xs font-mono text-muted-foreground">Step 01</div>
-              <div className="font-semibold text-xs text-foreground">SDK Ingestion</div>
-              <p className="text-[11px] text-muted-foreground">
-                `asi_telemetry` hooks into agent functions, attaching API key headers and trace IDs.
-              </p>
-            </div>
-
-            <div className="p-4 rounded-xl border border-border bg-muted/20 space-y-2 text-center sm:text-left">
-              <div className="text-xs font-mono text-muted-foreground">Step 02</div>
-              <div className="font-semibold text-xs text-foreground">FastAPI Edge Gateway</div>
-              <p className="text-[11px] text-muted-foreground">
-                Resolves API key to user account with in-memory TTL cache and validates OpenTelemetry spans.
-              </p>
-            </div>
-
-            <div className="p-4 rounded-xl border border-border bg-muted/20 space-y-2 text-center sm:text-left">
-              <div className="text-xs font-mono text-muted-foreground">Step 03</div>
-              <div className="font-semibold text-xs text-foreground">ClickHouse & Live UI</div>
-              <p className="text-[11px] text-muted-foreground">
-                Stores records partitioned by `user_id`. Instant dashboard aggregation with cookie auth.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* ── Bottom Call To Action ───────────────────────────────────────────── */}
-      <section className="py-20 border-t border-border bg-card/40 text-center">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 space-y-5">
-          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
-            Start observing your autonomous agents today.
+      <section className="py-16 border-t border-border bg-muted/20 text-center">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 space-y-4">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+            Start observing your agent workflows today.
           </h2>
-          <p className="text-xs sm:text-sm text-muted-foreground max-w-lg mx-auto">
-            Create an account in 30 seconds. Generate an API key and begin streaming
-            real-time telemetry directly to your workspace.
+          <p className="text-sm text-muted-foreground">
+            Sign up in seconds, generate your project API key, and begin monitoring traces and tokens.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
             <Link
               href="/signup"
-              className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold text-xs shadow-md hover:bg-primary/90 transition-all active:scale-98"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-md bg-foreground text-background font-medium text-xs hover:opacity-90 transition-opacity"
             >
               <span>Create Free Account</span>
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
             <Link
               href="/login"
-              className="px-5 py-2.5 rounded-lg border border-border bg-card hover:bg-muted font-medium text-xs text-foreground transition-all"
+              className="px-4 py-2.5 rounded-md border border-border bg-card hover:bg-muted font-medium text-xs text-foreground transition-colors"
             >
-              Sign In to Existing Account
+              Sign In
             </Link>
           </div>
         </div>
@@ -600,19 +509,22 @@ export TELEMETRY_BACKEND_URL="http://localhost:8080"
       <footer className="border-t border-border bg-background py-8 text-xs text-muted-foreground">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>ClickHouse Telemetry Ingestion Cluster: Operational</span>
+            <span className="flex h-2 w-2 rounded-full bg-emerald-500" />
+            <span>ClickHouse Telemetry: Operational</span>
           </div>
 
           <div className="flex items-center gap-5">
             <Link href="/dashboard" className="hover:text-foreground transition-colors">
               Dashboard
             </Link>
-            <Link href="/api-keys" className="hover:text-foreground transition-colors">
-              API Keys
+            <Link href="/llm-monitoring" className="hover:text-foreground transition-colors">
+              LLM Metrics
             </Link>
             <Link href="/llm-traces" className="hover:text-foreground transition-colors">
-              LLM Traces
+              Traces
+            </Link>
+            <Link href="/api-keys" className="hover:text-foreground transition-colors">
+              API Keys
             </Link>
             <Link href="/login" className="hover:text-foreground transition-colors">
               Sign In
@@ -620,7 +532,7 @@ export TELEMETRY_BACKEND_URL="http://localhost:8080"
           </div>
 
           <div>
-            &copy; {new Date().getFullYear()} ASI:Telemetry. All rights reserved.
+            &copy; {new Date().getFullYear()} ASI:Telemetry.
           </div>
         </div>
       </footer>

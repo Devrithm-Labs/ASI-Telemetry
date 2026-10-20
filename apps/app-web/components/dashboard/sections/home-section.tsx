@@ -89,6 +89,7 @@ if __name__ == "__main__":
     fontSize: "0.8125rem",
     fontFamily: 'var(--font-mono), Consolas, Monaco, "Courier New", monospace',
     lineHeight: "1.65",
+    color: '#000000'
   };
 
   return (
