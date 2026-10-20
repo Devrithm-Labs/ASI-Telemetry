@@ -34,12 +34,6 @@ export default function AllApplicationsPage() {
         showLiveToggle={false}
         onRefresh={handleRefresh}
         isRefreshing={isRefreshing}
-        extraControls={
-          <span className="flex items-center gap-1.5 rounded-md border border-border bg-secondary px-2.5 py-1 text-xs font-medium text-secondary-foreground">
-            <span className="h-1.5 w-1.5 rounded-full bg-foreground" />
-            <span>{applications.length} Fleets Active</span>
-          </span>
-        }
       />
 
       <main className="flex-1 overflow-y-auto px-6 py-5 space-y-6 scroll-smooth">
@@ -62,13 +56,7 @@ export default function AllApplicationsPage() {
             </p>
           </div>
 
-          <Button
-            size="sm"
-            onClick={() => router.push("/")}
-            className="text-xs font-medium"
-          >
-            + Instrument New App
-          </Button>
+          
         </div>
 
         {/* Applications Grid */}

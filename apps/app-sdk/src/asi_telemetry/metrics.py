@@ -25,12 +25,8 @@ class MetricsTracker:
     ):
         self.agent_name = agent_name
         self.agent_address = agent_address
-        self.api_key = api_key or os.getenv("ASI_API_KEY") or os.getenv("ASI_TELEMETRY_API_KEY") or os.getenv("TELEMETRY_API_KEY") or ""
-        
-        url = backend_url or os.getenv("TELEMETRY_BACKEND_URL") or "http://127.0.0.1:8080/api/metrics"
-        if not url.endswith("/api/metrics"):
-            url = url.rstrip("/") + "/api/metrics"
-        self.backend_url = url
+        self.api_key = api_key
+        self.backend_url = backend_url
 
         # Sync process-level agent identity and API key with tracer
         try:
@@ -44,11 +40,37 @@ class MetricsTracker:
         except Exception:
             pass
 
+    def _get_metrics_url(self) -> str:
+        url = (
+            self.backend_url
+            or os.getenv("TELEMETRY_METRICS_URL")
+            or os.getenv("TELEMETRY_BACKEND_URL")
+            or "http://127.0.0.1:8080"
+        )
+        if "/api/llm/traces" in url:
+            url = url.replace("/api/llm/traces", "/api/metrics")
+        elif not url.endswith("/api/metrics") and not url.endswith("/api/telemetry"):
+            url = f"{url.rstrip('/')}/api/metrics"
+        return url
+
     def _dispatch_payload(self, payload: dict) -> None:
         def _worker():
+            url = self._get_metrics_url()
             try:
                 headers = {"Content-Type": "application/json"}
-                api_key = self.api_key or os.getenv("ASI_API_KEY") or os.getenv("ASI_TELEMETRY_API_KEY") or os.getenv("TELEMETRY_API_KEY")
+                api_key = (
+                    self.api_key
+                    or os.getenv("ASI_API_KEY")
+                    or os.getenv("ASI_TELEMETRY_API_KEY")
+                    or os.getenv("TELEMETRY_API_KEY")
+                )
+                if not api_key:
+                    try:
+                        from .tracer import get_api_key
+                        api_key = get_api_key()
+                    except Exception:
+                        pass
+
                 if api_key:
                     headers["x-api-key"] = api_key
                     headers["Authorization"] = f"Bearer {api_key}"
@@ -56,16 +78,17 @@ class MetricsTracker:
 
                 data = json.dumps(payload, default=str).encode("utf-8")
                 req = urllib.request.Request(
-                    self.backend_url,
+                    url,
                     data=data,
                     headers=headers,
                     method="POST",
                 )
-                with urllib.request.urlopen(req, timeout=2.0):
+                with urllib.request.urlopen(req, timeout=3.0):
                     pass
-            except Exception:
-                # Backend unreachable; fail silently so agent is not affected
-                pass
+            except Exception as e:
+                # Log when debugging is requested
+                if os.getenv("ASI_DEBUG") or os.getenv("TELEMETRY_DEBUG"):
+                    print(f"[ASI-Telemetry Metrics Error] Failed to send metrics to {url}: {e}")
 
         threading.Thread(target=_worker, daemon=True).start()
 

@@ -21,7 +21,7 @@ if SDK_PATH not in sys.path:
 
 from uagents import Agent, Context, Model
 from uagents.resolver import RulesBasedResolver
-from asi_telemetry import MetricsTracker, traceable, create_trace_context, instrument_gemini
+from asi_telemetry import ASI_Telemetry
 from google import genai
 
 
@@ -45,16 +45,20 @@ agent = Agent(
     resolve=local_resolver,
 )
 
-# 4. Telemetry & LLM Setup
-# Initializing MetricsTracker also automatically registers agent identity with the tracer
-monitor = MetricsTracker(agent_name="agent1q", agent_address=agent.address)
+# 4. Telemetry Setup
+# Single initialization with credentials & agent identity:
+observe = ASI_Telemetry(
+    api_key="asi_live_5e22278098f49a31aad59f6e074d6a94",
+    agent_name="test_agent",
+    agent_address=agent.address,
+)
 
 gemini_client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
-instrument_gemini(gemini_client)
+observe.instrument_gemini(gemini_client)
 
 
 # 5. Tracked LLM Call
-@traceable(name="gemini_generate", run_type="llm", metadata={"model": "gemini-3.5-flash"})
+@observe.traceable(name="gemini_generate", run_type="llm", metadata={"model": "gemini-3.5-flash"})
 def call_gemini(prompt: str) -> str:
     """Generates AI response using Gemini with automatic span tracking."""
     response = gemini_client.models.generate_content(
@@ -75,8 +79,8 @@ async def startup(ctx: Context):
 
 # 7. Tracked Message Handler (Receives multi-agent message and continues trace)
 @agent.on_message(model=Greeting)
-@monitor.track("handle_message")
-@traceable(name="handle_message", run_type="tool")
+@observe.tool_monitoring("handle_message")
+@observe.traceable(name="handle_message", run_type="tool")
 async def handle_message(ctx: Context, sender: str, msg: Greeting):
     print(f"\n[Received from {sender[:16]}...]: {msg.text}")
 
@@ -90,7 +94,7 @@ async def handle_message(ctx: Context, sender: str, msg: Greeting):
     # Reply back to sender, attaching active trace context
     await ctx.send(
         sender,
-        Greeting(text=ai_reply, trace_context=create_trace_context())
+        Greeting(text=ai_reply, trace_context=observe.create_trace_context())
     )
     print("[Reply Dispatched]")
 

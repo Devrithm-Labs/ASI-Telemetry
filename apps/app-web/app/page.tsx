@@ -47,13 +47,13 @@ export default function LandingPage() {
     const code =
       codeTab === "python"
         ? `# 1. Install & import the tracer
-import asi_telemetry
+from asi_telemetry import ASI_Telemetry
 
 # 2. Initialize with your project API key
-asi_telemetry.init(api_key="asi_live_7a9f8b2c4e1d3f0a")
+observe = ASI_Telemetry(api_key="asi_live_7a9f8b2c4e1d3f0a", agent_name="research_agent")
 
 # 3. Decorate your agent reasoning or tool call
-@asi_telemetry.traceable(name="research_agent", run_type="agent")
+@observe.traceable(name="research_agent", run_type="agent")
 def run_agent(query: str):
     # Automatic capture: prompt, tokens, latency, tool calls & errors
     response = call_llm(query)

@@ -5,7 +5,6 @@ import Link from "next/link";
 import { KeyRound } from "lucide-react";
 import { useDashboard } from "../context/dashboard-context";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Button } from "@/components/ui/button";
 
 interface DashboardHeaderProps {
   activeTab?: "Monitoring" | "Dashboards" | "Alerts";
@@ -35,23 +34,6 @@ export function DashboardHeader({
 
       {/* Global Controls: Last updated, Live stream toggle, and Theme Switcher */}
       <div className="flex items-center gap-2">
-        {lastUpdated && (
-          <span className="text-[11px] text-muted-foreground font-mono hidden md:inline">
-            Updated {lastUpdated.toLocaleTimeString()}
-          </span>
-        )}
-
-        {/* Live / Static indicator */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setIsLive(!isLive)}
-          className="h-8 gap-1.5 px-2.5 text-xs font-medium"
-          title={isLive ? "Live telemetry stream active" : "Static mode"}
-        >
-          <span className={`h-2 w-2 rounded-full ${isLive ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground"}`} />
-          <span className="text-xs">{isLive ? "Live" : "Static"}</span>
-        </Button>
 
         {/* API Keys Shortcut */}
         <Link

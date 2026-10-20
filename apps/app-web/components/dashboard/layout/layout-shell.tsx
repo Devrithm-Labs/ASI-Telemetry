@@ -59,7 +59,7 @@ function DashboardShellInner({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground font-sans selection:bg-foreground selection:text-background">
+    <div className="flex h-screen w-full max-w-full overflow-hidden bg-background text-foreground font-sans selection:bg-foreground selection:text-background">
       {/* Persistent Sidebar Navigation */}
       <DashboardSidebar
         collapsed={sidebarCollapsed}
@@ -67,7 +67,7 @@ function DashboardShellInner({ children }: { children: React.ReactNode }) {
       />
 
       {/* Main Workspace Frame */}
-      <div className="flex flex-1 flex-col overflow-hidden bg-background">
+      <div className="flex flex-1 min-w-0 flex-col overflow-hidden bg-background">
         {/* Persistent Top Header */}
         <DashboardHeader
           activeTab={activeHeaderTab}
@@ -77,7 +77,7 @@ function DashboardShellInner({ children }: { children: React.ReactNode }) {
         />
 
         {/* Page Specific Content */}
-        <div className="flex flex-1 flex-col overflow-hidden">
+        <div className="flex flex-1 min-w-0 flex-col overflow-hidden">
           {children}
         </div>
       </div>

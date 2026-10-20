@@ -518,11 +518,11 @@ export default function LLMTracingPage() {
 
                     <td className="px-2 py-2.5 text-center font-mono text-[11px]">
                       {trace.status === "success" ? (
-                        <span className="rounded bg-emerald-950/40 px-1.5 py-0.5 text-emerald-400 border border-emerald-800/40">
+                        <span className="rounded px-1.5 py-0.5 font-medium border bg-emerald-500/10 text-emerald-700 border-emerald-500/20 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/40">
                           success
                         </span>
                       ) : (
-                        <span className="rounded bg-rose-950/40 px-1.5 py-0.5 text-rose-400 border border-rose-800/40">
+                        <span className="rounded px-1.5 py-0.5 font-medium border bg-rose-500/10 text-rose-700 border-rose-500/20 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-800/40">
                           failed
                         </span>
                       )}
@@ -531,12 +531,12 @@ export default function LLMTracingPage() {
                     {/* Run Type Badge (Distinguish LLM vs Tool calling) */}
                     <td className="px-2 py-2.5 text-center font-mono text-[11px] whitespace-nowrap">
                       {trace.run_type === "tool" ? (
-                        <span className="inline-flex items-center gap-1 rounded bg-amber-500/10 px-2 py-0.5 text-amber-500 border border-amber-500/20 font-semibold text-[10px] uppercase">
+                        <span className="inline-flex items-center gap-1 rounded bg-amber-500/10 px-2 py-0.5 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-semibold text-[10px] uppercase">
                           <Terminal className="h-3 w-3" />
                           <span>tool</span>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 rounded bg-purple-500/10 px-2 py-0.5 text-purple-400 border border-purple-500/20 font-semibold text-[10px] uppercase">
+                        <span className="inline-flex items-center gap-1 rounded bg-purple-500/10 px-2 py-0.5 text-purple-600 dark:text-purple-400 border border-purple-500/20 font-semibold text-[10px] uppercase">
                           <Sparkles className="h-3 w-3" />
                           <span>llm</span>
                         </span>
@@ -544,48 +544,49 @@ export default function LLMTracingPage() {
                     </td>
 
                     {/* Branch Hierarchy Name Column */}
-                    <td className="px-3 py-2.5 font-mono font-medium whitespace-nowrap">
+                    <td className="px-3 py-2.5 font-mono text-xs whitespace-nowrap">
                       {isParentRoot ? (
                         <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground font-bold select-none text-xs">└─</span>
-                         
-                          <span className="font-semibold text-foreground">{trace.name} |  {agentDisplayName}</span>
+                          <span className="text-muted-foreground/60 select-none font-mono text-xs">└─</span>
+                          <span className="font-semibold text-foreground">{trace.name}</span>
+                          <span className="text-muted-foreground/40 font-normal">|</span>
+                          <span className="text-xs font-medium text-muted-foreground">{agentDisplayName}</span>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2 pl-7">
-                          <span className="text-muted-foreground/70 font-bold select-none text-xs">└─</span>
-                          <span className="inline-flex items-center rounded bg-muted/60 border border-border px-1.5 py-0.5 text-[9px] font-semibold text-muted-foreground font-mono">
+                        <div className="flex items-center gap-2 pl-6">
+                          <span className="text-muted-foreground/50 select-none font-mono text-xs">└─</span>
+                          <span className="inline-flex items-center rounded bg-muted border border-border px-1.5 py-0.5 text-[9px] font-semibold text-muted-foreground font-mono">
                             child
                           </span>
-                          <span className="font-normal text-muted-foreground">{trace.name}</span>
+                          <span className="font-medium text-foreground/90">{trace.name}</span>
                         </div>
                       )}
                     </td>
 
-                    <td className="px-3 py-2.5 max-w-[200px] truncate text-slate-400">
-                      {trace.input || <span className="text-slate-600">-</span>}
+                    <td className="px-3 py-2.5 max-w-[220px] truncate text-foreground/80 dark:text-slate-300 font-mono text-[11px]">
+                      {trace.input || <span className="text-muted-foreground/40">-</span>}
                     </td>
 
-                    <td className="px-3 py-2.5 max-w-[260px] truncate font-mono text-[11px] text-slate-300">
-                      {trace.output || <span className="text-slate-600">-</span>}
+                    <td className="px-3 py-2.5 max-w-[280px] truncate font-mono text-[11px] text-foreground dark:text-slate-200">
+                      {trace.output || <span className="text-muted-foreground/40">-</span>}
                     </td>
 
-                    <td className="px-3 py-2.5 max-w-[220px] truncate font-mono text-[11px] text-rose-400">
-                      {trace.error ? <span title={trace.error}>{trace.error}</span> : <span className="text-slate-600">-</span>}
+                    <td className="px-3 py-2.5 max-w-[220px] truncate font-mono text-[11px] text-rose-600 dark:text-rose-400">
+                      {trace.error ? <span title={trace.error}>{trace.error}</span> : <span className="text-muted-foreground/40">-</span>}
                     </td>
 
-                    <td className="px-3 py-2.5 whitespace-nowrap font-mono text-[11px] text-slate-400">
+                    <td className="px-3 py-2.5 whitespace-nowrap font-mono text-[11px] text-muted-foreground">
                       {formatTime(trace.start_time)}
                     </td>
 
                     <td className="px-3 py-2.5 whitespace-nowrap">
                       <span
-                        className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-mono text-[11px] font-semibold ${
+                        className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-mono text-[11px] font-semibold border ${
                           trace.status === "error"
-                            ? "bg-rose-950/40 text-rose-400 border border-rose-800/40"
+                            ? "bg-rose-500/10 text-rose-700 border-rose-500/20 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-800/40"
                             : isSlow
-                            ? "bg-amber-950/40 text-amber-300 border border-amber-800/40"
-                            : "bg-emerald-950/40 text-emerald-300 border border-emerald-800/40"
+                            ? "bg-amber-500/10 text-amber-700 border-amber-500/20 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/40"
+                            : "bg-emerald-500/10 text-emerald-700 border-emerald-500/20 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/40"
                         }`}
                       >
                         <Clock className="h-2.5 w-2.5" />
@@ -593,13 +594,13 @@ export default function LLMTracingPage() {
                       </span>
                     </td>
 
-                    <td className="px-3 py-2.5 whitespace-nowrap font-mono text-[11px] text-slate-400">
+                    <td className="px-3 py-2.5 whitespace-nowrap font-mono text-[11px] text-muted-foreground">
                       <div className="flex items-center gap-1.5">
-                        <span className="font-medium text-slate-300">
+                        <span className="font-medium text-foreground dark:text-slate-200">
                           {(trace.total_tokens || 0).toLocaleString()} token
                         </span>
-                        <span className="text-slate-600">·</span>
-                        <span className="text-emerald-400 font-semibold">
+                        <span className="text-muted-foreground/40">·</span>
+                        <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
                           ${(trace.cost_usd || 0).toFixed(6)}
                         </span>
                       </div>

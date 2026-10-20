@@ -18,7 +18,7 @@ if SDK_PATH not in sys.path:
 from typing import Optional
 from uagents import Agent, Context, Model
 from uagents.resolver import RulesBasedResolver
-from asi_telemetry import MetricsTracker, traceable, create_trace_context
+from asi_telemetry import ASI_Telemetry
 
 
 class Greeting(Model):
@@ -40,15 +40,19 @@ sender = Agent(
     resolve=local_resolver
 )
 
-# Initialize telemetry monitor for the sender agent
-monitor = MetricsTracker(agent_name="sender", agent_address=sender.address)
+# Initialize telemetry for the sender agent
+observe = ASI_Telemetry(
+    api_key="asi_live_5e22278098f49a31aad59f6e074d6a94",
+    agent_name="sender",
+    agent_address=sender.address,
+)
 
-@monitor.track("send_greeting")
-@traceable(name="send_greeting", run_type="tool")
+@observe.track("send_greeting")
+@observe.traceable(name="send_greeting", run_type="tool")
 async def send_greeting(ctx: Context, text: str):
     """Tracked dispatch of messages to the receiver agent with trace propagation."""
     print(f"\n[Sending to Assistant]: {text}")
-    await ctx.send(RECEIVER_ADDRESS, Greeting(text=text, trace_context=create_trace_context()))
+    await ctx.send(RECEIVER_ADDRESS, Greeting(text=text, trace_context=observe.create_trace_context()))
 
 
 @sender.on_event("startup")
@@ -74,8 +78,8 @@ async def startup(ctx: Context):
     asyncio.create_task(console_listener())
 
 @sender.on_message(model=Greeting)
-@monitor.track("handle_reply")
-@traceable(name="handle_reply", run_type="tool")
+@observe.track("handle_reply")
+@observe.traceable(name="handle_reply", run_type="tool")
 async def handle_reply(ctx: Context, sender_address: str, msg: Greeting):
     print(f"[Received Gemini Reply from Assistant]:")
     print(msg.text)

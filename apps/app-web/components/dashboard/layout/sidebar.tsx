@@ -85,44 +85,46 @@ export function DashboardSidebar({
     <aside
       className={cn(
         "relative flex flex-col border-r border-border bg-sidebar text-sidebar-foreground transition-all duration-300 ease-in-out shrink-0 select-none",
-        collapsed ? "w-16" : "w-64"
+        collapsed ? "w-16" : "w-64 min-w-[16rem]"
       )}
     >
       {/* Brand & Workspace Switcher Header */}
       <div className="flex h-14 items-center justify-between border-b border-border px-3.5">
-        {!collapsed && (
-          <div className="flex items-center gap-2.5 overflow-hidden">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs shrink-0">
-              <Activity className="h-4 w-4" />
-            </div>
-            <div className="flex flex-col truncate">
-              <div className="flex items-center gap-1.5 font-bold text-sm tracking-tight text-foreground">
-                <span className="font-semibold text-sm">ASI:Telemetry</span>
+        {collapsed ? (
+          <div className="flex w-full items-center justify-center">
+            <button
+              onClick={onToggleCollapse}
+              className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              title="Expand sidebar"
+            >
+              <PanelLeftOpen className="h-4 w-4" />
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-2.5 overflow-hidden">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs shrink-0">
+                <Activity className="h-4 w-4" />
               </div>
-              <span className="text-[10px] text-muted-foreground -mt-0.5">
-                Observability Platform
-              </span>
+              <div className="flex flex-col truncate">
+                <div className="flex items-center gap-1.5 font-bold text-sm tracking-tight text-foreground">
+                  <span className="font-semibold text-sm">ASI:Telemetry</span>
+                </div>
+                <span className="text-[10px] text-muted-foreground -mt-0.5">
+                  Observability Platform
+                </span>
+              </div>
             </div>
-          </div>
-        )}
 
-        {collapsed && (
-          <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
-            <Activity className="h-4 w-4" />
-          </div>
+            <button
+              onClick={onToggleCollapse}
+              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              title="Collapse sidebar"
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </button>
+          </>
         )}
-
-        <button
-          onClick={onToggleCollapse}
-          className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {collapsed ? (
-            <PanelLeftOpen className="h-4 w-4" />
-          ) : (
-            <PanelLeftClose className="h-4 w-4" />
-          )}
-        </button>
       </div>
 
       {/* Quick Search */}
@@ -226,18 +228,8 @@ export function DashboardSidebar({
       </div>
 
       {/* Footer / System Status & Settings */}
-      <div className="border-t border-border p-2 space-y-1 bg-sidebar">
-        <button
-          onClick={() => onNavChange?.("Settings")}
-          className={cn(
-            "flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors",
-            activeNav === "Settings" && "bg-primary text-primary-foreground"
-          )}
-          title={collapsed ? "Settings" : undefined}
-        >
-          <Settings className="h-4 w-4" />
-          {!collapsed && <span>Settings</span>}
-        </button>
+      <div className="border-border p-2 space-y-1 bg-sidebar">
+        
 
         {!collapsed && (
           <div className="flex items-center justify-between gap-2 px-2 py-1.5 border-t border-border pt-2">
