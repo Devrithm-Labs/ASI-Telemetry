@@ -1,0 +1,22 @@
+{
+    "$schema": "https://openapi.vercel.sh/vercel.json",
+    "services": {
+        "app-backend": {
+            "root": "apps/app-backend",
+            "framework": "fastapi"
+        },
+        "app-sdk": {
+            "root": "apps/app-sdk",
+            "runtime": "python"
+        },
+        "app-web": {
+            "root": "apps/app-web",
+            "framework": "nextjs"
+        },
+        "testing": {
+            "root": "apps/testing",
+            "framework": "fastapi"
+        }
+    },
+    "rewrites": []
+}
