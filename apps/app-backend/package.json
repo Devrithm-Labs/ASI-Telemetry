@@ -6,6 +6,7 @@
   "author": "Ujjwal Katiyar",
   "main": "run.py",
   "scripts": {
+    "build": "pip install -r requirements.txt",
     "dev": "python run.py --local"
   }
 }
