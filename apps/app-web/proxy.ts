@@ -17,7 +17,7 @@ const STATIC_EXTENSIONS = [
   ".js",
 ];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // 1. Allow internal assets, static assets and favicon
