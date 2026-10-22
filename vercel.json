@@ -5,10 +5,6 @@
             "root": "apps/app-backend",
             "framework": "fastapi"
         },
-        "app-sdk": {
-            "root": "apps/app-sdk",
-            "runtime": "python"
-        },
         "app-web": {
             "root": "apps/app-web",
             "framework": "nextjs"
