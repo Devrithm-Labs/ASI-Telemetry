@@ -309,15 +309,6 @@ if __name__ == "__main__":
       <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-b from-card via-card to-muted/20 p-6 sm:p-7 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-3 py-1 text-xs font-medium text-foreground">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              SDK v0.2.0 Active
-              <span className="text-muted-foreground">•</span>
-              <span className="text-muted-foreground">ClickHouse Ingestion Ready</span>
-            </div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
               Quickstart & Telemetry Setup
             </h1>
