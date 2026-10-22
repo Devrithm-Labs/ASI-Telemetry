@@ -24,7 +24,7 @@ export interface ApiKeyItem {
   expiresAt: string | null;
 }
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8080";
+import { getBackendUrl } from "./api-config";
 
 function mapBackendKeyToFrontend(raw: any): ApiKeyItem {
   let env: KeyEnvironment = "production";
@@ -52,7 +52,7 @@ function mapBackendKeyToFrontend(raw: any): ApiKeyItem {
  */
 export async function fetchBackendApiKeys(): Promise<ApiKeyItem[]> {
   try {
-    const res = await fetch(`${BACKEND_URL}/api/api-keys`, {
+    const res = await fetch(`${getBackendUrl()}/api/api-keys`, {
       method: "GET",
       headers: getAuthHeaders(),
     });
@@ -79,7 +79,7 @@ export async function createBackendApiKey(
   expiresAt: string = "90 days"
 ): Promise<{ success: boolean; key?: ApiKeyItem; error?: string }> {
   try {
-    const res = await fetch(`${BACKEND_URL}/api/api-keys`, {
+    const res = await fetch(`${getBackendUrl()}/api/api-keys`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify({
@@ -110,7 +110,7 @@ export async function createBackendApiKey(
  */
 export async function deleteBackendApiKey(keyId: string): Promise<boolean> {
   try {
-    const res = await fetch(`${BACKEND_URL}/api/api-keys/${keyId}`, {
+    const res = await fetch(`${getBackendUrl()}/api/api-keys/${keyId}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
     });

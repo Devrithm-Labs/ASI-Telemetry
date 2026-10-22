@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getAuthHeaders } from "@/lib/auth";
+import { getBackendUrl } from "@/lib/api-config";
 
 export interface LLMTraceItem {
   id: string;
@@ -69,7 +70,7 @@ export default function LLMTracingPage() {
       if (statusFilter !== "all") params.append("status", statusFilter);
       params.append("limit", "100");
 
-      const res = await fetch(`http://127.0.0.1:8080/api/llm/traces?${params.toString()}`, {
+      const res = await fetch(`${getBackendUrl()}/api/llm/traces?${params.toString()}`, {
         headers: getAuthHeaders(),
       });
       if (res.ok) {
@@ -95,7 +96,7 @@ export default function LLMTracingPage() {
   const handleClearTraces = async () => {
     if (!confirm("Are you sure you want to clear all LLM traces from ClickHouse?")) return;
     try {
-      const res = await fetch("http://127.0.0.1:8080/api/llm/traces", {
+      const res = await fetch(`${getBackendUrl()}/api/llm/traces`, {
         method: "DELETE",
         headers: getAuthHeaders(),
       });

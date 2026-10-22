@@ -12,6 +12,7 @@ import {
   ApplicationMetadata,
 } from "./dashboard-types";
 import { getAuthHeaders } from "@/lib/auth";
+import { getBackendUrl } from "@/lib/api-config";
 
 interface DashboardContextType {
   selectedProject: string;
@@ -100,7 +101,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         params.set("func_name", selectedFunction);
       }
 
-      const res = await fetch(`http://localhost:8080/api/dashboard?${params.toString()}`, {
+      const res = await fetch(`${getBackendUrl()}/api/dashboard?${params.toString()}`, {
         headers: getAuthHeaders(),
       });
       if (res.ok) {
@@ -147,7 +148,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
   const clearAllTraces = React.useCallback(async () => {
     try {
-      const res = await fetch("http://localhost:8080/api/traces", {
+      const res = await fetch(`${getBackendUrl()}/api/traces`, {
         method: "DELETE",
         headers: getAuthHeaders(),
       });
@@ -173,7 +174,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       }
       try {
         const params = new URLSearchParams({ ids: traceIds.join(",") });
-        const res = await fetch(`http://localhost:8080/api/traces?${params.toString()}`, {
+        const res = await fetch(`${getBackendUrl()}/api/traces?${params.toString()}`, {
           method: "DELETE",
           headers: getAuthHeaders(),
         });

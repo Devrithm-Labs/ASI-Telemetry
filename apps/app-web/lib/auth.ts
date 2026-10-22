@@ -99,16 +99,15 @@ export function getAuthHeaders(extraHeaders: Record<string, string> = {}): Recor
   return headers;
 }
 
-// ── API Authentication Calls ──────────────────────────────────────────────────
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8080";
+import { getBackendUrl } from "./api-config";
 
 export async function loginUser(
   email: string,
   password: string
 ): Promise<{ success: boolean; error?: string; user?: AuthUser; token?: string }> {
   try {
-    const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
+    const backendUrl = getBackendUrl();
+    const res = await fetch(`${backendUrl}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: email.trim(), password }),
@@ -149,7 +148,8 @@ export async function signupUser(
   password: string
 ): Promise<{ success: boolean; error?: string; user?: AuthUser; token?: string }> {
   try {
-    const res = await fetch(`${BACKEND_URL}/api/auth/signup`, {
+    const backendUrl = getBackendUrl();
+    const res = await fetch(`${backendUrl}/api/auth/signup`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: name.trim(), email: email.trim(), password }),

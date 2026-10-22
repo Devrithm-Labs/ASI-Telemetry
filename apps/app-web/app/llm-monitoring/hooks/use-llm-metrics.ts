@@ -3,6 +3,7 @@
 import * as React from "react";
 import { LLMMetricsSummary, TimeRange } from "../types";
 import { getAuthHeaders } from "@/lib/auth";
+import { getBackendUrl } from "@/lib/api-config";
 
 const INITIAL_SUMMARY: LLMMetricsSummary = {
   totalCount: 0,
@@ -52,9 +53,10 @@ export function useLLMMetrics() {
         }
 
         const qs = params.toString();
+        const baseUrl = getBackendUrl();
         const url = qs
-          ? `http://127.0.0.1:8080/api/llm/monitoring?${qs}`
-          : "http://127.0.0.1:8080/api/llm/monitoring";
+          ? `${baseUrl}/api/llm/monitoring?${qs}`
+          : `${baseUrl}/api/llm/monitoring`;
 
         const res = await fetch(url, {
           headers: getAuthHeaders(),
