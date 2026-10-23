@@ -12,6 +12,7 @@ modifications.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import datetime, timezone
 from typing import Optional, Tuple
@@ -73,12 +74,19 @@ def build_agent(
         service = TelemetryService(client)
         processor = ChatProcessor(service, links)
 
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
     agent = Agent(
         name=settings.agent_name,
         seed=seed,
         port=settings.agent_port,
         endpoint=settings.agent_endpoint,
         mailbox=settings.agent_mailbox,
+        loop=loop,
     )
 
     chat_proto = Protocol(spec=chat_protocol_spec)
