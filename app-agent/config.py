@@ -75,7 +75,7 @@ class Settings:
         """Build settings from the environment and validate them."""
         name = os.getenv("AGENT_NAME", "asi_telemetry_agent").strip() or "asi_telemetry_agent"
         seed = os.getenv("AGENT_SEED_PHRASE", "").strip() or None
-        port = _env_int("AGENT_PORT", 8200)
+        port = _env_int("AGENT_PORT", _env_int("PORT", 8200))
         mailbox = _env_bool("AGENT_MAILBOX", False)
 
         base_url = os.getenv("TELEMETRY_API_BASE_URL", "http://localhost:8080").strip()
