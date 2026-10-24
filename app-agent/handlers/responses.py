@@ -82,10 +82,8 @@ def format_oauth_prompt(auth_url: str, connect_url: Optional[str] = None) -> str
     return (
         "🔐 **ASI-Telemetry Account Authorization**\n\n"
         "To securely connect your ASI-Telemetry account, complete Google sign-in "
-        "using the authorization link below. You will not need to share an API key "
-        "in this chat:\n\n"
-        f"👉 [Connect with Google]({portal_url})\n"
-        f"{portal_url}\n\n"
+        "using the button below. You will not need to share an API key in this chat:\n\n"
+        f"👉 **[ 🔐 Connect with Google ]({portal_url})**\n\n"
         "Once authorized, you will see a single-use authorization code (e.g. AUTH-...). "
         "Return here and paste the code to link your session."
     )

@@ -585,13 +585,7 @@ def render_connect_page(
                 Continue with Google
             </a>
 
-            <!-- Auto-forward countdown -->
-            <div class="countdown-wrap" id="countdown-bar">
-                <span>Redirecting to Google in <strong id="seconds-left">3</strong>s...</span>
-                <span class="countdown-link" id="cancel-redirect">[Pause]</span>
-            </div>
-
-            <div class="security-badge">
+            <div class="security-badge" style="margin-top: 1.5rem;">
                 <svg viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.35-.166-2.001A11.954 11.954 0 0110 1.944zM11 14a1 1 0 11-2 0 1 1 0 012 0zm0-7a1 1 0 10-2 0v3a1 1 0 102 0V7z" clip-rule="evenodd"/>
                 </svg>
@@ -599,41 +593,6 @@ def render_connect_page(
             </div>
         </div>
     </div>
-
-    <script>
-        (function() {
-            var seconds = 3;
-            var countdownEl = document.getElementById('seconds-left');
-            var cancelBtn = document.getElementById('cancel-redirect');
-            var bar = document.getElementById('countdown-bar');
-            var timer = null;
-            var authUrl = "__ESCAPED_AUTH_URL__";
-
-            function startTimer() {
-                timer = setInterval(function() {
-                    seconds--;
-                    if (seconds <= 0) {
-                        clearInterval(timer);
-                        window.location.href = authUrl;
-                    } else if (countdownEl) {
-                        countdownEl.textContent = seconds;
-                    }
-                }, 1000);
-            }
-
-            if (cancelBtn) {
-                cancelBtn.addEventListener('click', function() {
-                    if (timer) {
-                        clearInterval(timer);
-                        timer = null;
-                        bar.innerHTML = '<span>Auto-forward paused. Click the button above to proceed.</span>';
-                    }
-                });
-            }
-
-            startTimer();
-        })();
-    </script>
 </body>
 </html>"""
     return (
