@@ -28,7 +28,7 @@ class UserResponse(BaseModel):
     id: str
     name: str
     email: EmailStr
-    created_at: str
+    created_at: Optional[str] = None
 
 
 class AuthResponse(BaseModel):
@@ -72,6 +72,7 @@ class OAuthInitResponse(BaseModel):
     session_id: str
     state: str
     authorization_url: str
+    connect_url: Optional[str] = None
     expires_in_seconds: int
     sender_address: str
 

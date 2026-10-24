@@ -1,16 +1,24 @@
 import logging
+import secrets
+import threading
+import time
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 from config.database import db_connection
 
 logger = logging.getLogger("backend.auth.database")
 
+# Thread-safe lock for in-memory fallbacks
+_db_lock = threading.Lock()
+
 # In-memory fallback if ClickHouse is temporarily offline
 _memory_users: Dict[str, Dict[str, Any]] = {}
+_memory_refresh_tokens: Dict[str, Dict[str, Any]] = {}
+_memory_oauth_sessions: Dict[str, Dict[str, Any]] = {}
 
 
 def initialize_auth_database() -> None:
-    """Initializes the users table in ClickHouse."""
+    """Initializes the users, refresh_tokens, and oauth_sessions tables in ClickHouse."""
     if not db_connection.is_connected or not db_connection.client:
         logger.warning("ClickHouse not connected during auth init; in-memory auth fallback active.")
         return
@@ -38,10 +46,30 @@ def initialize_auth_database() -> None:
     ) ENGINE = MergeTree()
     ORDER BY (token_hash, user_id);
     """
+    create_oauth_sessions_sql = """
+    CREATE TABLE IF NOT EXISTS oauth_sessions (
+        session_id String,
+        sender_address String,
+        state_hash String,
+        code_verifier String,
+        redirect_uri String,
+        created_at DateTime64(3, 'UTC'),
+        expires_at DateTime64(3, 'UTC'),
+        status String,
+        handoff_code String,
+        handoff_code_hash String,
+        user_id String,
+        access_token String,
+        refresh_token String,
+        updated_at DateTime64(3, 'UTC')
+    ) ENGINE = ReplacingMergeTree(updated_at)
+    ORDER BY (session_id);
+    """
     try:
         db_connection.safe_command(create_table_sql)
         db_connection.safe_command(create_tokens_sql)
-        logger.info("ClickHouse users and refresh_tokens tables initialized.")
+        db_connection.safe_command(create_oauth_sessions_sql)
+        logger.info("ClickHouse users, refresh_tokens, and oauth_sessions tables initialized.")
     except Exception as e:
         logger.error(f"Failed to initialize ClickHouse auth tables: {e}")
 
@@ -150,9 +178,7 @@ def insert_user(user_id: str, name: str, email: str, password_hash: str, created
 
 
 # In-memory storage for refresh tokens: token_hash -> record
-_memory_refresh_tokens: Dict[str, Dict[str, Any]] = {}
-import threading
-_tokens_lock = threading.Lock()
+_tokens_lock = _db_lock
 
 
 def insert_refresh_token(
@@ -327,4 +353,161 @@ def get_or_create_google_user(google_id: str, email: str, name: str) -> Dict[str
     with _tokens_lock:
         _memory_users[new_id] = created
     return created
+
+
+def insert_or_update_oauth_session(
+    session_id: str,
+    sender_address: str,
+    state_hash: str,
+    code_verifier: str,
+    redirect_uri: str,
+    expires_at_timestamp: float,
+    status: str,
+    handoff_code: Optional[str] = None,
+    handoff_code_hash: Optional[str] = None,
+    user_id: Optional[str] = None,
+    access_token: Optional[str] = None,
+    refresh_token: Optional[str] = None,
+) -> None:
+    """Persists or updates an agent OAuth session in ClickHouse and memory."""
+    now = datetime.now(timezone.utc)
+    expires_dt = datetime.fromtimestamp(expires_at_timestamp, tz=timezone.utc)
+
+    rec = {
+        "session_id": str(session_id),
+        "sender_address": str(sender_address or ""),
+        "state_hash": str(state_hash or ""),
+        "code_verifier": str(code_verifier or ""),
+        "redirect_uri": str(redirect_uri or ""),
+        "created_at": now,
+        "expires_at": expires_at_timestamp,
+        "status": str(status),
+        "handoff_code": str(handoff_code or "") if handoff_code else None,
+        "handoff_code_hash": str(handoff_code_hash or "") if handoff_code_hash else None,
+        "user_id": str(user_id or "") if user_id else None,
+        "access_token": str(access_token or "") if access_token else None,
+        "refresh_token": str(refresh_token or "") if refresh_token else None,
+        "updated_at": now,
+    }
+
+    with _db_lock:
+        _memory_oauth_sessions[str(session_id)] = rec
+
+    if db_connection.is_connected and db_connection.client:
+        try:
+            db_connection.safe_insert(
+                "oauth_sessions",
+                [[
+                    str(session_id),
+                    str(sender_address or ""),
+                    str(state_hash or ""),
+                    str(code_verifier or ""),
+                    str(redirect_uri or ""),
+                    now,
+                    expires_dt,
+                    str(status),
+                    str(handoff_code or ""),
+                    str(handoff_code_hash or ""),
+                    str(user_id or ""),
+                    str(access_token or ""),
+                    str(refresh_token or ""),
+                    now,
+                ]],
+                column_names=[
+                    "session_id", "sender_address", "state_hash", "code_verifier",
+                    "redirect_uri", "created_at", "expires_at", "status",
+                    "handoff_code", "handoff_code_hash", "user_id", "access_token",
+                    "refresh_token", "updated_at",
+                ],
+            )
+        except Exception as e:
+            logger.warning(f"ClickHouse insert error in insert_or_update_oauth_session: {e}")
+
+
+def _parse_oauth_session_row(row: list) -> Dict[str, Any]:
+    expires_at = row[6]
+    if hasattr(expires_at, "timestamp"):
+        expires_timestamp = expires_at.timestamp()
+    elif isinstance(expires_at, (int, float)):
+        expires_timestamp = float(expires_at)
+    else:
+        expires_timestamp = time.time() + 600
+
+    rec = {
+        "session_id": str(row[0]),
+        "sender_address": str(row[1]),
+        "state_hash": str(row[2]),
+        "code_verifier": str(row[3]),
+        "redirect_uri": str(row[4]),
+        "created_at": row[5],
+        "expires_at": expires_timestamp,
+        "status": str(row[7]),
+        "handoff_code": str(row[8]) if row[8] else None,
+        "handoff_code_hash": str(row[9]) if row[9] else None,
+        "user_id": str(row[10]) if row[10] else None,
+        "access_token": str(row[11]) if row[11] else None,
+        "refresh_token": str(row[12]) if row[12] else None,
+    }
+    with _db_lock:
+        _memory_oauth_sessions[rec["session_id"]] = rec
+    return rec
+
+
+def get_oauth_session(
+    session_id: Optional[str] = None,
+    state_hash: Optional[str] = None,
+    handoff_code_hash: Optional[str] = None,
+) -> Optional[Dict[str, Any]]:
+    """Retrieves an active OAuth session by session_id, state_hash, or handoff_code_hash."""
+    # 1. In-memory check first
+    with _db_lock:
+        if session_id and session_id in _memory_oauth_sessions:
+            return dict(_memory_oauth_sessions[session_id])
+        if state_hash:
+            for s in _memory_oauth_sessions.values():
+                if secrets.compare_digest(s.get("state_hash", ""), state_hash):
+                    return dict(s)
+        if handoff_code_hash:
+            for s in _memory_oauth_sessions.values():
+                if secrets.compare_digest(s.get("handoff_code_hash") or "", handoff_code_hash):
+                    return dict(s)
+
+    # 2. ClickHouse check
+    if db_connection.is_connected and db_connection.client:
+        query = ""
+        params = {}
+        if session_id:
+            query = (
+                "SELECT session_id, sender_address, state_hash, code_verifier, redirect_uri, "
+                "created_at, expires_at, status, handoff_code, handoff_code_hash, user_id, "
+                "access_token, refresh_token, updated_at FROM oauth_sessions "
+                "WHERE session_id = %(val)s ORDER BY updated_at DESC LIMIT 1"
+            )
+            params = {"val": str(session_id)}
+        elif handoff_code_hash:
+            query = (
+                "SELECT session_id, sender_address, state_hash, code_verifier, redirect_uri, "
+                "created_at, expires_at, status, handoff_code, handoff_code_hash, user_id, "
+                "access_token, refresh_token, updated_at FROM oauth_sessions "
+                "WHERE handoff_code_hash = %(val)s ORDER BY updated_at DESC LIMIT 1"
+            )
+            params = {"val": str(handoff_code_hash)}
+        elif state_hash:
+            query = (
+                "SELECT session_id, sender_address, state_hash, code_verifier, redirect_uri, "
+                "created_at, expires_at, status, handoff_code, handoff_code_hash, user_id, "
+                "access_token, refresh_token, updated_at FROM oauth_sessions "
+                "WHERE state_hash = %(val)s ORDER BY updated_at DESC LIMIT 1"
+            )
+            params = {"val": str(state_hash)}
+
+        if query:
+            try:
+                res = db_connection.safe_query(query, parameters=params)
+                if res.result_rows:
+                    return _parse_oauth_session_row(res.result_rows[0])
+            except Exception as e:
+                logger.warning(f"ClickHouse query error in get_oauth_session: {e}")
+
+    return None
 

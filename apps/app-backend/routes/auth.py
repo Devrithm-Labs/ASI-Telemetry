@@ -1,14 +1,22 @@
+import logging
+import time
 from typing import Optional
-from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import HTMLResponse
 
 from auth.dependencies import get_current_user
 from auth.oauth_service import (
     create_agent_oauth_session,
     exchange_agent_oauth_session,
+    get_oauth_session,
     handle_google_oauth_callback,
     logout_session,
     refresh_application_tokens,
+)
+from auth.templates import (
+    render_callback_page,
+    render_connect_page,
+    render_error_page,
 )
 from auth.schemas import (
     AuthResponse,
@@ -65,7 +73,61 @@ def oauth_agent_init_endpoint(payload: OAuthInitRequest):
     )
 
 
-@router.get("/oauth/callback")
+logger = logging.getLogger("backend.routes.auth")
+
+
+@router.get("/connect", response_class=HTMLResponse)
+def connect_portal_endpoint(session_id: Optional[str] = Query(None)):
+    """
+    Renders the modern ASI-Telemetry Account Connection Portal.
+    Validates the agent session and provides a seamless 1-click Google sign-in UI.
+    """
+    if not session_id:
+        return HTMLResponse(
+            content=render_error_page(
+                title="Invalid Connection Link",
+                detail="No session ID was provided. Please use the connection link provided in your agent chat.",
+                error_code="ERR_MISSING_SESSION",
+            ),
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    session = get_oauth_session(session_id)
+    if not session:
+        return HTMLResponse(
+            content=render_error_page(
+                title="Session Expired or Not Found",
+                detail="This authorization session has expired or is invalid. Please request a new link by typing 'connect my account' in chat.",
+                error_code="ERR_SESSION_EXPIRED",
+            ),
+            status_code=status.HTTP_404_NOT_FOUND,
+        )
+
+    if session.get("status") != "pending":
+        return HTMLResponse(
+            content=render_error_page(
+                title="Session Already Completed",
+                detail="This authorization session has already been completed or exchanged. Please start a new session if you wish to reconnect.",
+                error_code="ERR_SESSION_USED",
+            ),
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    now = time.time()
+    remaining = max(0, int(session.get("expires_at", now) - now))
+
+    return HTMLResponse(
+        content=render_connect_page(
+            session_id=session_id,
+            sender_address=session.get("sender_address", ""),
+            auth_url=session.get("auth_url", ""),
+            expires_in=remaining,
+        ),
+        status_code=status.HTTP_200_OK,
+    )
+
+
+@router.get("/oauth/callback", response_class=HTMLResponse)
 async def oauth_callback_endpoint(
     request: Request,
     code: Optional[str] = Query(None),
@@ -75,77 +137,44 @@ async def oauth_callback_endpoint(
     """
     Handles Google OAuth callback.
     Validates state, exchanges code for Google tokens, verifies OpenID Connect identity,
-    and creates application access & refresh tokens bound to the agent session.
+    and renders a beautiful confirmation page with 1-click code copying.
     """
-    result = await handle_google_oauth_callback(code=code or "", state=state or "", error=error)
+    try:
+        result = await handle_google_oauth_callback(code=code or "", state=state or "", error=error)
+    except HTTPException as exc:
+        logger.warning("OAuth callback rejected: %s", exc.detail)
+        return HTMLResponse(
+            content=render_error_page(
+                title="Authorization Failed",
+                detail=str(exc.detail),
+                error_code=f"HTTP_{exc.status_code}",
+            ),
+            status_code=exc.status_code,
+        )
+    except Exception as exc:
+        logger.error("Unhandled error during OAuth callback: %s", exc)
+        return HTMLResponse(
+            content=render_error_page(
+                title="Authorization Error",
+                detail="An unexpected error occurred while completing authentication with Google. Please try again.",
+                error_code="ERR_INTERNAL_AUTH",
+            ),
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
-    # Return friendly HTML for browser users
-    html_content = f"""
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>ASI-Telemetry | Account Connected</title>
-        <style>
-            body {{
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-                background-color: #09090b;
-                color: #f4f4f5;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                height: 100vh;
-                margin: 0;
-            }}
-            .card {{
-                background: #18181b;
-                border: 1px solid #27272a;
-                border-radius: 1rem;
-                padding: 2.5rem;
-                max-width: 440px;
-                text-align: center;
-                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-            }}
-            .badge {{
-                display: inline-block;
-                background: rgba(16, 185, 129, 0.1);
-                color: #10b981;
-                border: 1px solid rgba(16, 185, 129, 0.2);
-                border-radius: 9999px;
-                padding: 0.25rem 0.75rem;
-                font-size: 0.8rem;
-                font-weight: 600;
-                margin-bottom: 1rem;
-            }}
-            h1 {{ font-size: 1.5rem; margin-bottom: 0.5rem; font-weight: 700; }}
-            p {{ color: #a1a1aa; font-size: 0.95rem; line-height: 1.5; }}
-            .code-box {{
-                background: #09090b;
-                border: 1px dashed #3f3f46;
-                border-radius: 0.5rem;
-                padding: 0.75rem;
-                font-family: monospace;
-                font-size: 1.1rem;
-                color: #38bdf8;
-                margin: 1.25rem 0;
-                letter-spacing: 2px;
-            }}
-        </style>
-    </head>
-    <body>
-        <div class="card">
-            <div class="badge">Google Sign-in Successful</div>
-            <h1>Account Connected</h1>
-            <p>Your ASI-Telemetry account has been authorized for <strong>{result['user']['email']}</strong>.</p>
-            <p style="font-size: 0.85rem; margin-top: 1rem;">Confirmation Code (Optional):</p>
-            <div class="code-box">{result['handoff_code']}</div>
-            <p style="font-size: 0.85rem;">You may now close this tab and return to your ASI:One chat.</p>
-        </div>
-    </body>
-    </html>
-    """
-    return HTMLResponse(content=html_content, status_code=status.HTTP_200_OK)
+    user = result.get("user", {})
+    handoff_code = result.get("handoff_code", "")
+    email = user.get("email", "")
+    name = user.get("name", "")
+
+    return HTMLResponse(
+        content=render_callback_page(
+            handoff_code=handoff_code,
+            email=email,
+            name=name,
+        ),
+        status_code=status.HTTP_200_OK,
+    )
 
 
 @router.post("/oauth/agent-exchange", response_model=TokenResponse)

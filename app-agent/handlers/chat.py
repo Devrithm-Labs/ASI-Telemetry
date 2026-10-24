@@ -226,9 +226,10 @@ class ChatProcessor:
         oauth_init = await self._service.init_oauth(sender)
         session_id = oauth_init.get("session_id") if isinstance(oauth_init, dict) else oauth_init.session_id
         auth_url = oauth_init.get("authorization_url") if isinstance(oauth_init, dict) else oauth_init.authorization_url
+        connect_url = oauth_init.get("connect_url") if isinstance(oauth_init, dict) else getattr(oauth_init, "connect_url", None)
         self._links.set_pending_session(sender, session_id)
         logger.info("Initiated OAuth flow for %s, session %s", sender, session_id)
-        return responses.format_oauth_prompt(auth_url)
+        return responses.format_oauth_prompt(auth_url, connect_url=connect_url)
 
     async def _link(self, intent: Intent, sender: str) -> str:
         """Complete account linking via either single-use handoff code or legacy API key."""

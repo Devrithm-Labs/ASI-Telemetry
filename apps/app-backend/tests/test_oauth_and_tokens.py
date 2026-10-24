@@ -333,3 +333,54 @@ async def test_logout_revokes_refresh_token():
     with pytest.raises(HTTPException) as exc_info:
         refresh_application_tokens(tokens["refresh_token"])
     assert exc_info.value.status_code == 401
+
+
+# =====================================================================
+# 7. UI Portal & Callback HTML Rendering
+# =====================================================================
+
+def test_connect_portal_and_callback_ui():
+    from fastapi.testclient import TestClient
+    from main import app
+
+    test_client = TestClient(app)
+
+    # 1. Initiate session
+    init_res = create_agent_oauth_session(sender_address="agent1qui11111111111111111111111111111111111111111111111")
+    session_id = init_res["session_id"]
+    state = init_res["state"]
+    connect_url = init_res["connect_url"]
+
+    assert "session_id=" in connect_url
+    assert "/api/auth/connect" in connect_url
+
+    # 2. Test Connect Portal UI
+    portal_resp = test_client.get(f"/api/auth/connect?session_id={session_id}")
+    assert portal_resp.status_code == 200
+    assert "text/html" in portal_resp.headers["content-type"]
+    assert "Connect Account" in portal_resp.text
+    assert "Continue with Google" in portal_resp.text
+    assert "agent1qui" in portal_resp.text
+
+    # 3. Test Missing or Invalid Session handling on Portal
+    missing_resp = test_client.get("/api/auth/connect")
+    assert missing_resp.status_code == 400
+    assert "Invalid Connection Link" in missing_resp.text
+
+    invalid_resp = test_client.get("/api/auth/connect?session_id=invalid_nonexistent")
+    assert invalid_resp.status_code == 404
+    assert "Session Expired or Not Found" in invalid_resp.text
+
+    # 4. Test Callback Success UI
+    cb_resp = test_client.get(f"/api/auth/oauth/callback?code=mock_code&state={state}")
+    assert cb_resp.status_code == 200
+    assert "text/html" in cb_resp.headers["content-type"]
+    assert "Account Linked" in cb_resp.text
+    assert "AUTH-" in cb_resp.text
+    assert "Copy Code" in cb_resp.text
+
+    # 5. Test Callback Error UI (e.g. user denied consent)
+    err_resp = test_client.get("/api/auth/oauth/callback?error=access_denied")
+    assert err_resp.status_code == 400
+    assert "Authorization Failed" in err_resp.text
+

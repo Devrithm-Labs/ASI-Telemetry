@@ -16,9 +16,11 @@ import httpx
 
 from config import settings
 from auth.database import (
+    get_oauth_session,
     get_or_create_google_user,
     get_refresh_token_record,
     get_user_by_id,
+    insert_or_update_oauth_session,
     insert_refresh_token,
     revoke_all_user_tokens,
     revoke_refresh_token,
@@ -98,6 +100,16 @@ def create_agent_oauth_session(
             "handoff_code_hash": None,
         }
 
+    insert_or_update_oauth_session(
+        session_id=session_id,
+        sender_address=clean_sender,
+        state_hash=hash_token(state),
+        code_verifier=code_verifier,
+        redirect_uri=target_redirect,
+        expires_at_timestamp=expires_at,
+        status="pending",
+    )
+
     # Construct Google OAuth Authorization URL
     if settings.GOOGLE_CLIENT_ID:
         params = {
@@ -116,14 +128,37 @@ def create_agent_oauth_session(
         # Development / Sandbox mock authorize URL when Google client ID is pending configuration
         auth_url = f"{settings.FRONTEND_BASE_URL}/auth/oauth/mock?session_id={session_id}&state={state}"
 
+    # Construct clean branded Connect Portal URL
+    if "/api/auth/" in target_redirect:
+        base_backend = target_redirect.split("/api/auth/")[0]
+    else:
+        base_backend = settings.FRONTEND_BASE_URL.rstrip("/")
+    connect_url = f"{base_backend}/api/auth/connect?session_id={session_id}"
+
+    with _sessions_lock:
+        if session_id in _oauth_sessions:
+            _oauth_sessions[session_id]["auth_url"] = auth_url
+            _oauth_sessions[session_id]["connect_url"] = connect_url
+
     logger.info("Created OAuth session %s for sender %s", session_id, clean_sender)
     return {
         "session_id": session_id,
         "state": state,
         "authorization_url": auth_url,
+        "connect_url": connect_url,
         "expires_in_seconds": SESSION_TTL_SECONDS,
         "sender_address": clean_sender,
     }
+
+
+def get_oauth_session(session_id: str) -> Optional[Dict[str, Any]]:
+    """Retrieves an active OAuth session by ID, pruning expired sessions first."""
+    with _sessions_lock:
+        _prune_expired_sessions()
+        session = _oauth_sessions.get(session_id)
+        if session:
+            return dict(session)
+        return None
 
 
 async def handle_google_oauth_callback(
@@ -161,12 +196,24 @@ async def handle_google_oauth_callback(
         session = _oauth_sessions.get(session_id)
 
     if not session:
+        session = get_oauth_session(session_id=session_id)
+        if session:
+            with _sessions_lock:
+                _oauth_sessions[session["session_id"]] = session
+
+    if not session:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="OAuth session not found or expired. Please initiate linking again.",
         )
 
-    if session.get("state") != state:
+    expected_state = session.get("state")
+    if expected_state and expected_state != state:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="OAuth state mismatch (potential CSRF attempt).",
+        )
+    elif not expected_state and session.get("state_hash") != hash_token(state):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="OAuth state mismatch (potential CSRF attempt).",
@@ -278,6 +325,21 @@ async def handle_google_oauth_callback(
         session["handoff_code"] = handoff_code
         session["handoff_code_hash"] = hash_token(handoff_code)
 
+    insert_or_update_oauth_session(
+        session_id=session_id,
+        sender_address=session.get("sender_address", ""),
+        state_hash=session.get("state_hash") or hash_token(session.get("state", "")),
+        code_verifier=session.get("code_verifier", ""),
+        redirect_uri=session.get("redirect_uri", ""),
+        expires_at_timestamp=session.get("expires_at", time.time() + 600),
+        status="authorized",
+        handoff_code=handoff_code,
+        handoff_code_hash=hash_token(handoff_code),
+        user_id=user["id"],
+        access_token=access_token,
+        refresh_token=refresh_token,
+    )
+
     logger.info("OAuth completed for user %s. Bound to agent sender %s", user["id"], session.get("sender_address"))
 
     return {
@@ -319,6 +381,13 @@ def exchange_agent_oauth_session(
                 if s.get("handoff_code_hash") == code_hash:
                     target_session = s
                     break
+
+    if not target_session:
+        code_hash = hash_token(handoff_code.strip().upper()) if handoff_code else None
+        target_session = get_oauth_session(session_id=session_id, handoff_code_hash=code_hash)
+        if target_session:
+            with _sessions_lock:
+                _oauth_sessions[target_session["session_id"]] = target_session
 
     if not target_session:
         raise HTTPException(
@@ -363,6 +432,21 @@ def exchange_agent_oauth_session(
         target_session["handoff_code"] = None
         target_session["handoff_code_hash"] = None
 
+    insert_or_update_oauth_session(
+        session_id=target_session["session_id"],
+        sender_address=target_session.get("sender_address", ""),
+        state_hash=target_session.get("state_hash", ""),
+        code_verifier=target_session.get("code_verifier", ""),
+        redirect_uri=target_session.get("redirect_uri", ""),
+        expires_at_timestamp=target_session.get("expires_at", time.time() + 600),
+        status="exchanged",
+        handoff_code=None,
+        handoff_code_hash=None,
+        user_id=user_id,
+        access_token=None,
+        refresh_token=None,
+    )
+
     user = get_user_by_id(user_id)
     if not user:
         raise HTTPException(
@@ -380,6 +464,7 @@ def exchange_agent_oauth_session(
             "id": user["id"],
             "name": user["name"],
             "email": user["email"],
+            "created_at": str(user.get("created_at") or datetime.now(timezone.utc).isoformat()),
         },
     }
 
@@ -471,6 +556,12 @@ def refresh_application_tokens(refresh_token: str) -> Dict[str, Any]:
         "refresh_token": new_refresh_token,
         "token_type": "bearer",
         "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        "user": {
+            "id": user["id"],
+            "name": user["name"],
+            "email": user["email"],
+            "created_at": str(user.get("created_at") or datetime.now(timezone.utc).isoformat()),
+        },
     }
 
 
