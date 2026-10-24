@@ -40,6 +40,9 @@ HELP_TEXT = (
     "- errors & performance: 'error rate and latency this week'\n"
     "- recent traces: 'show me the last 5 traces'\n"
     "- diagnose runtime error: 'diagnose' or 'why did it fail'\n"
+    "- select GitHub repo: 'select repo <owner/repo>'\n"
+    "- link GitHub account: 'link github <token> <owner/repo>' or 'connect github'\n"
+    "- check active repo: 'repo status'\n"
     "- approve PR fix: 'approve pr'\n"
     "- disconnect/logout: 'unlink' or 'logout'\n"
     "Time ranges: last hour, 24 hours/today, 7 days/this week, "
@@ -116,8 +119,8 @@ def format_auth_revoked(already_unlinked: bool = False) -> str:
     return "Account unlinked. Your session credentials and refresh tokens have been revoked."
 
 
-def format_diagnostic_report(diag) -> str:  # noqa: ANN001
-    """Format sanitized diagnostic report with human approval notice."""
+def format_diagnostic_report(diag, selected_repo: Optional[str] = None) -> str:  # noqa: ANN001
+    """Format sanitized diagnostic report with human approval notice and repository context."""
     lines = [
         "🔍 Runtime Diagnostic Report:",
         f"- Diagnostic ID: {diag.id}",
@@ -138,13 +141,53 @@ def format_diagnostic_report(diag) -> str:  # noqa: ANN001
         lines.append(f"Explanation: {patch.explanation}")
         lines.append(f"Intended Tests: {', '.join(patch.tests_to_run)}")
         lines.append(f"Risks: {', '.join(patch.risks)}")
-        lines.append(
-            "\n⚠️ Developer Approval Required: To create a feature branch and "
-            "open a GitHub pull request with this patch, reply 'approve pr'. "
-            "To discard, reply 'cancel'."
-        )
+
+        if selected_repo:
+            lines.append(f"\n🎯 Target Repository: `{selected_repo}`")
+            lines.append(
+                f"\n⚠️ Developer Approval Required: To create a feature branch and "
+                f"open a GitHub pull request on '{selected_repo}' with this patch, reply 'approve pr'. "
+                "To discard, reply 'cancel'."
+            )
+        else:
+            lines.append(
+                "\n⚠️ Developer Approval Required: Please select the target GitHub repository for this fix by replying: "
+                "`select repo <owner/repo>` or `link github <token> <owner/repo>`. Once selected, reply 'approve pr' to create the pull request."
+            )
     else:
         lines.append("\nNo automatic code patch proposed for this operational or network error.")
+    return "\n".join(lines)
+
+
+def format_repo_selected(repo: str) -> str:
+    """Format confirmation that user's target repository is set."""
+    return (
+        f"🎯 **Target Repository Selected:** `{repo}`\n\n"
+        "Approved patches and diagnostic fixes will now create isolated branches "
+        f"and pull requests on `{repo}`. Reply 'approve pr' when ready."
+    )
+
+
+def format_github_linked(repo: Optional[str], has_token: bool) -> str:
+    """Format confirmation of GitHub linking."""
+    lines = ["🔗 **GitHub Integration Linked Successfully:**"]
+    if repo:
+        lines.append(f"• **Target Repository**: `{repo}`")
+    else:
+        lines.append("• **Target Repository**: Not selected yet (reply `select repo <owner/repo>`)")
+    lines.append(f"• **Credentials**: {'[SECURELY LINKED]' if has_token else 'Sandbox Mode'}")
+    lines.append("\nYou can now diagnose runtime errors and automatically push fixes via 'approve pr'.")
+    return "\n".join(lines)
+
+
+def format_repo_status(repo: Optional[str], has_token: bool) -> str:
+    """Format current repository and GitHub connection status."""
+    lines = ["📋 **GitHub Integration & Repository Status:**"]
+    if repo:
+        lines.append(f"• **Active Target Repository**: `{repo}`")
+    else:
+        lines.append("• **Active Target Repository**: None selected. (Reply `select repo <owner/repo>` to set one)")
+    lines.append(f"• **GitHub Token**: {'🟢 Connected' if has_token else '⚪ Unconfigured / Mock Sandbox'}")
     return "\n".join(lines)
 
 

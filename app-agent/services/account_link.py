@@ -57,6 +57,8 @@ class AccountLinkStore:
         self._bindings: Dict[str, Dict[str, Any]] = {}
         # sender -> session_id (pending OAuth session)
         self._pending_sessions: Dict[str, str] = {}
+        # sender -> { "token": Optional[str], "repo": Optional[str] }
+        self._github_bindings: Dict[str, Dict[str, Any]] = {}
         self._lock = threading.Lock()
 
     def link(
@@ -100,7 +102,36 @@ class AccountLinkStore:
         """Unlinks a sender address and drops all stored credentials."""
         with self._lock:
             self._pending_sessions.pop(sender, None)
+            self._github_bindings.pop(sender, None)
             return self._bindings.pop(sender, None) is not None
+
+    def set_github(self, sender: str, token: Optional[str] = None, repo: Optional[str] = None) -> None:
+        """Stores or updates GitHub credentials and repository for a chat sender."""
+        with self._lock:
+            entry = self._github_bindings.setdefault(sender, {"token": None, "repo": None})
+            if token is not None:
+                entry["token"] = token.strip() if token else None
+            if repo is not None:
+                entry["repo"] = repo.strip() if repo else None
+
+    def set_selected_repo(self, sender: str, repo: str) -> None:
+        """Sets the active target repository for PR creation."""
+        with self._lock:
+            entry = self._github_bindings.setdefault(sender, {"token": None, "repo": None})
+            entry["repo"] = repo.strip()
+
+    def get_github(self, sender: str) -> tuple[Optional[str], Optional[str]]:
+        """Returns (github_token, target_repo) for the sender."""
+        with self._lock:
+            entry = self._github_bindings.get(sender)
+            if not entry:
+                return (None, None)
+            return (entry.get("token"), entry.get("repo"))
+
+    def get_selected_repo(self, sender: str) -> Optional[str]:
+        """Returns the active target repository for the sender."""
+        _, repo = self.get_github(sender)
+        return repo
 
     def get_key(self, sender: str) -> Optional[str]:
         """Returns the active access token or API key for the sender."""

@@ -29,6 +29,9 @@ class IntentName(str, Enum):
     TRACES = "traces"
     DIAGNOSE = "diagnose"
     APPROVE_PR = "approve_pr"
+    SELECT_REPO = "select_repo"
+    LINK_GITHUB = "link_github"
+    REPO_STATUS = "repo_status"
     UNSUPPORTED = "unsupported"
 
 
@@ -41,6 +44,8 @@ class Intent:
     api_key: Optional[str] = None
     handoff_code: Optional[str] = None
     error_id: Optional[str] = None
+    repo: Optional[str] = None
+    github_token: Optional[str] = None
 
 
 # Backend API keys: asi_<env>_<hex> (see apps/app-backend/auth/api_keys.py).
@@ -48,6 +53,15 @@ _API_KEY_RE = re.compile(r"\b(asi_[a-z0-9]+_[0-9a-fA-F]{16,64})\b")
 
 # Single-use OAuth handoff codes (e.g. AUTH-A1B2C3D4 or AUTH-1234567890abcdef)
 _HANDOFF_CODE_RE = re.compile(r"\b(AUTH-[0-9a-zA-Z]{6,32})\b", re.IGNORECASE)
+
+# GitHub repository & token patterns
+_REPO_SELECT_RE = re.compile(
+    r"\b(?:select|set|use|switch to|target)\s+(?:repo|repository)\s+([a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+)\b",
+    re.IGNORECASE,
+)
+_BARE_REPO_RE = re.compile(r"^(?:repo|repository)\s+([a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+)$", re.IGNORECASE)
+_GH_TOKEN_RE = re.compile(r"\b(gh[pousr]_[A-Za-z0-9_]{16,255}|github_pat_[A-Za-z0-9_]{22,255})\b")
+_ANY_REPO_RE = re.compile(r"\b([a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+)\b")
 
 # Explicit durations such as "last 24 hours", "past 3 days", "last 1h".
 _DURATION_RE = re.compile(
@@ -181,6 +195,25 @@ def parse_intent(text: str) -> Intent:
     # Explicit GitHub pull request approval: "approve pr", "confirm pr"
     if _contains_any(lowered, _APPROVE_PR_WORDS):
         return Intent(IntentName.APPROVE_PR)
+
+    # GitHub repository status check
+    if any(phrase in lowered for phrase in ("repo status", "current repo", "my repo", "which repo")):
+        return Intent(IntentName.REPO_STATUS)
+
+    # Link / Connect GitHub: "link github <token> <repo>", "connect github"
+    if "connect github" in lowered or ("link" in lowered and "github" in lowered):
+        gh_token_match = _GH_TOKEN_RE.search(raw)
+        repo_match = _ANY_REPO_RE.search(raw)
+        return Intent(
+            IntentName.LINK_GITHUB,
+            github_token=gh_token_match.group(1) if gh_token_match else None,
+            repo=repo_match.group(1) if repo_match else None,
+        )
+
+    # Select / Set target repository: "select repo owner/repo", "repo owner/repo", "set repo owner/repo"
+    repo_sel_match = _REPO_SELECT_RE.search(raw) or _BARE_REPO_RE.match(raw.strip())
+    if repo_sel_match:
+        return Intent(IntentName.SELECT_REPO, repo=repo_sel_match.group(1))
 
     # Runtime error diagnosis: "diagnose error", "why did it fail"
     if _contains_any(lowered, _DIAGNOSE_WORDS):

@@ -10,6 +10,7 @@ from routes import (
     health_router,
     auth_router,
     api_keys_router,
+    integrations_router,
 )
 from auth.database import initialize_auth_database
 
@@ -45,6 +46,7 @@ app.include_router(llm_router)
 app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(api_keys_router)
+app.include_router(integrations_router)
 
 
 @app.get("/")

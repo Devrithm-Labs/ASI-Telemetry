@@ -15,10 +15,11 @@ _db_lock = threading.Lock()
 _memory_users: Dict[str, Dict[str, Any]] = {}
 _memory_refresh_tokens: Dict[str, Dict[str, Any]] = {}
 _memory_oauth_sessions: Dict[str, Dict[str, Any]] = {}
+_memory_github_integrations: Dict[str, Dict[str, Any]] = {}
 
 
 def initialize_auth_database() -> None:
-    """Initializes the users, refresh_tokens, and oauth_sessions tables in ClickHouse."""
+    """Initializes the users, refresh_tokens, oauth_sessions, and user_github_integrations tables in ClickHouse."""
     if not db_connection.is_connected or not db_connection.client:
         logger.warning("ClickHouse not connected during auth init; in-memory auth fallback active.")
         return
@@ -65,11 +66,23 @@ def initialize_auth_database() -> None:
     ) ENGINE = ReplacingMergeTree(updated_at)
     ORDER BY (session_id);
     """
+    create_github_integrations_sql = """
+    CREATE TABLE IF NOT EXISTS user_github_integrations (
+        user_id String,
+        github_username String,
+        access_token String,
+        default_repository String,
+        created_at DateTime64(3, 'UTC'),
+        updated_at DateTime64(3, 'UTC')
+    ) ENGINE = ReplacingMergeTree(updated_at)
+    ORDER BY (user_id);
+    """
     try:
         db_connection.safe_command(create_table_sql)
         db_connection.safe_command(create_tokens_sql)
         db_connection.safe_command(create_oauth_sessions_sql)
-        logger.info("ClickHouse users, refresh_tokens, and oauth_sessions tables initialized.")
+        db_connection.safe_command(create_github_integrations_sql)
+        logger.info("ClickHouse auth and user_github_integrations tables initialized.")
     except Exception as e:
         logger.error(f"Failed to initialize ClickHouse auth tables: {e}")
 
@@ -510,4 +523,102 @@ def get_oauth_session(
                 logger.warning(f"ClickHouse query error in get_oauth_session: {e}")
 
     return None
+
+
+def save_user_github_integration(
+    user_id: str,
+    access_token: str,
+    default_repository: str,
+    github_username: str = "",
+) -> Dict[str, Any]:
+    """Saves or updates a user's GitHub integration (token and default repo)."""
+    clean_uid = str(user_id).strip()
+    clean_repo = default_repository.strip()
+    clean_token = access_token.strip()
+    clean_user = github_username.strip()
+    now = datetime.now(timezone.utc)
+
+    record = {
+        "user_id": clean_uid,
+        "github_username": clean_user,
+        "access_token": clean_token,
+        "default_repository": clean_repo,
+        "created_at": now.isoformat(),
+        "updated_at": now.isoformat(),
+    }
+
+    if db_connection.is_connected and db_connection.client:
+        try:
+            db_connection.safe_command(
+                "INSERT INTO user_github_integrations (user_id, github_username, access_token, default_repository, created_at, updated_at) "
+                "VALUES (%(uid)s, %(user)s, %(token)s, %(repo)s, %(created)s, %(updated)s)",
+                parameters={
+                    "uid": clean_uid,
+                    "user": clean_user,
+                    "token": clean_token,
+                    "repo": clean_repo,
+                    "created": now,
+                    "updated": now,
+                },
+            )
+        except Exception as e:
+            logger.warning(f"ClickHouse insert error in save_user_github_integration: {e}")
+
+    with _db_lock:
+        _memory_github_integrations[clean_uid] = record
+
+    return record
+
+
+def get_user_github_integration(user_id: str) -> Optional[Dict[str, Any]]:
+    """Retrieves a user's GitHub integration details."""
+    clean_uid = str(user_id).strip()
+
+    with _db_lock:
+        if clean_uid in _memory_github_integrations:
+            return dict(_memory_github_integrations[clean_uid])
+
+    if db_connection.is_connected and db_connection.client:
+        try:
+            res = db_connection.safe_query(
+                "SELECT user_id, github_username, access_token, default_repository, created_at, updated_at "
+                "FROM user_github_integrations WHERE user_id = %(uid)s ORDER BY updated_at DESC LIMIT 1",
+                parameters={"uid": clean_uid},
+            )
+            if res.result_rows:
+                row = res.result_rows[0]
+                rec = {
+                    "user_id": str(row[0]),
+                    "github_username": str(row[1]),
+                    "access_token": str(row[2]),
+                    "default_repository": str(row[3]),
+                    "created_at": row[4].isoformat() if hasattr(row[4], "isoformat") else str(row[4]),
+                    "updated_at": row[5].isoformat() if hasattr(row[5], "isoformat") else str(row[5]),
+                }
+                with _db_lock:
+                    _memory_github_integrations[clean_uid] = rec
+                return rec
+        except Exception as e:
+            logger.warning(f"ClickHouse query error in get_user_github_integration: {e}")
+
+    return None
+
+
+def delete_user_github_integration(user_id: str) -> bool:
+    """Removes a user's GitHub integration."""
+    clean_uid = str(user_id).strip()
+    with _db_lock:
+        existed = clean_uid in _memory_github_integrations
+        _memory_github_integrations.pop(clean_uid, None)
+
+    if db_connection.is_connected and db_connection.client:
+        try:
+            db_connection.safe_command(
+                "ALTER TABLE user_github_integrations DELETE WHERE user_id = %(uid)s",
+                parameters={"uid": clean_uid},
+            )
+        except Exception as e:
+            logger.warning(f"ClickHouse delete error in delete_user_github_integration: {e}")
+
+    return existed
 

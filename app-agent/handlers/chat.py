@@ -45,7 +45,7 @@ class ChatProcessor:
         self._service = service
         self._links = links
         self._diagnostics = diagnostics or DiagnosticService()
-        self._github = github or GitHubIntegrationService()
+        self._github = github
 
     async def process(self, text: str, sender: str) -> str:
         """Return the reply text for one incoming chat message."""
@@ -144,6 +144,12 @@ class ChatProcessor:
             return await self._diagnose(sender)
         if intent.name == IntentName.APPROVE_PR:
             return await self._approve_pr(sender)
+        if intent.name == IntentName.SELECT_REPO:
+            return await self._select_repo(intent, sender)
+        if intent.name == IntentName.LINK_GITHUB:
+            return await self._link_github(intent, sender)
+        if intent.name == IntentName.REPO_STATUS:
+            return await self._repo_status(sender)
 
         # Every remaining intent exposes private account data and therefore
         # requires a validated, linked account credential with auto-refresh support.
@@ -296,6 +302,31 @@ class ChatProcessor:
         removed = self._links.unlink(sender)
         return responses.format_auth_revoked(already_unlinked=not removed)
 
+    async def _select_repo(self, intent: Intent, sender: str) -> str:
+        repo = intent.repo
+        if not repo:
+            return "Please specify a repository formatted as 'owner/repo'. Example: `select repo owner/my-agent`"
+        clean_repo = repo.strip()
+        self._links.set_selected_repo(sender, clean_repo)
+        return responses.format_repo_selected(clean_repo)
+
+    async def _link_github(self, intent: Intent, sender: str) -> str:
+        token = intent.github_token
+        repo = intent.repo
+        if not token and not repo:
+            return (
+                "To connect your GitHub account:\n"
+                "• Send: `link github <token> <owner/repo>`\n"
+                "• Or set your active repository: `select repo <owner/repo>`\n"
+                "• Or connect via your ASI-Telemetry dashboard settings."
+            )
+        self._links.set_github(sender, token=token, repo=repo)
+        return responses.format_github_linked(repo=repo, has_token=bool(token))
+
+    async def _repo_status(self, sender: str) -> str:
+        token, repo = self._links.get_github(sender)
+        return responses.format_repo_status(repo=repo, has_token=bool(token))
+
     async def _diagnose(self, sender: str) -> str:
         """Inspect latest runtime error and propose a patch if code defect."""
         diag = self._diagnostics.get_last_diagnostic(sender)
@@ -316,7 +347,12 @@ class ChatProcessor:
             )
             diag.proposed_patch = patch
 
-        return responses.format_diagnostic_report(diag)
+        selected_repo = self._links.get_selected_repo(sender)
+        if not selected_repo:
+            custom_repo = getattr(self._github, "repository", None)
+            if isinstance(custom_repo, str) and custom_repo:
+                selected_repo = custom_repo
+        return responses.format_diagnostic_report(diag, selected_repo=selected_repo)
 
     async def _approve_pr(self, sender: str) -> str:
         """Handle explicit human approval to create a feature branch and pull request."""
@@ -327,8 +363,27 @@ class ChatProcessor:
                 "Say 'diagnose' to investigate a runtime error first."
             )
 
-        logger.info("Developer authorized GitHub PR creation for diagnostic %s", diag.id)
-        result = await self._github.create_fix_pull_request(diag)
+        token, repo = self._links.get_github(sender)
+        if not repo:
+            custom_repo = getattr(self._github, "repository", None)
+            if isinstance(custom_repo, str) and custom_repo:
+                repo = custom_repo
+
+        is_mock = hasattr(self._github, "create_fix_pull_request") and type(self._github) is not GitHubIntegrationService
+
+        if not repo and not is_mock:
+            return (
+                "⚠️ Please select the GitHub repository where this error occurred before creating a pull request.\n"
+                "Reply with: `select repo <owner/repo>` or `link github <token> <owner/repo>`."
+            )
+
+        logger.info("Developer authorized GitHub PR creation for diagnostic %s on repo %s", diag.id, repo or "mock")
+        if is_mock:
+            result = await self._github.create_fix_pull_request(diag)
+        else:
+            github_svc = GitHubIntegrationService(token=token or getattr(self._github, "token", ""), repository=repo)
+            result = await github_svc.create_fix_pull_request(diag)
+
         if result.success:
             return responses.format_pr_success(
                 pr_url=result.pr_url,

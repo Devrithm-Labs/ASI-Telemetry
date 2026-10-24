@@ -43,10 +43,14 @@ class PullRequestResult:
             return default
 
 
+_REPO_PATTERN = re.compile(r"^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+$")
+
+
 class GitHubIntegrationService:
     """
     Manages GitHub interactions (branch creation, patches, and pull requests).
     Strictly enforces human approval before any remote write operations.
+    Multi-tenant: operates on user-selected repository and user's connected token.
     """
 
     def __init__(
@@ -62,13 +66,11 @@ class GitHubIntegrationService:
             or os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
             or os.getenv("GH_TOKEN")
             or ""
-        )
-        self.repository = (
-            repository
-            or repo
-            or os.getenv("GITHUB_REPOSITORY")
-            or "ujjwalkat07/ASI-Telemetry"
         ).strip()
+        raw_repo = (repository or repo or "").strip()
+        if raw_repo and not _REPO_PATTERN.match(raw_repo):
+            raise ValueError(f"Invalid repository format '{raw_repo}'. Expected 'owner/repo'.")
+        self.repository = raw_repo
         self.base_branch = os.getenv("GITHUB_BASE_BRANCH", base_branch).strip()
 
     @property
@@ -124,6 +126,9 @@ Fix for runtime exception **{sanitize_text(error_category)}**.
         Creates a fix feature branch and opens a pull request with standardized documentation.
         MUST ONLY be called after explicit developer approval.
         """
+        if not self.repository:
+            raise ValueError("No target GitHub repository is configured. Please select or link a repository.")
+
         clean_branch = branch_name or f"fix/{diagnostic.error_id}"
 
         # Prevent writing directly to main or default branch
