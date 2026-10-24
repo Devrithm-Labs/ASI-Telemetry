@@ -250,6 +250,7 @@ class ChatProcessor:
             refresh_token = token_resp.get("refresh_token") if isinstance(token_resp, dict) else token_resp.refresh_token
             user_info = token_resp.get("user", {}) if isinstance(token_resp, dict) else getattr(token_resp, "user", {})
             user_email = user_info.get("email") if isinstance(user_info, dict) else getattr(token_resp, "user_email", "")
+            user_name = user_info.get("name") if isinstance(user_info, dict) else getattr(token_resp, "user_name", "")
 
             self._links.link(
                 sender,
@@ -257,7 +258,7 @@ class ChatProcessor:
                 refresh_token=refresh_token,
                 user_email=user_email,
             )
-            return responses.format_oauth_success(user_email or "authorized user")
+            return responses.format_oauth_success(user_email or "authorized user", name=user_name)
 
         # 2. Legacy API key branch
         api_key = intent.api_key

@@ -92,10 +92,21 @@ def format_oauth_prompt(auth_url: str, connect_url: Optional[str] = None) -> str
 def format_oauth_success(email: str, name: Optional[str] = None) -> str:
     masked_email = _mask_email(email)
     user_str = f" {name}" if name else ""
+    user_name = name or "Developer"
     return (
-        f"Your ASI-Telemetry account{user_str} ({masked_email}) is connected successfully. "
-        "You can now request usage summaries, investigate supported telemetry, and inspect "
-        "available execution details."
+        f"Your ASI-Telemetry account{user_str} ({masked_email}) is connected successfully.\n\n"
+        "🎉 **Account Successfully Connected**\n\n"
+        "📋 **Session Profile:**\n"
+        f"• **User**: {user_name}\n"
+        f"• **Email**: {masked_email}\n"
+        "• **Auth Method**: Google OAuth 2.0 (PKCE)\n"
+        "• **Session Status**: 🟢 Active & Auto-Renewing\n\n"
+        "🚀 **What you can ask now:**\n"
+        "• `account overview` — view system health & profile\n"
+        "• `token usage` — check prompt & completion tokens\n"
+        "• `cost summary` — review estimated LLM spending\n"
+        "• `recent traces` — inspect live execution logs\n"
+        "• `unlink` — revoke session & logout"
     )
 
 
@@ -162,12 +173,16 @@ def _time_range_label(time_range: Optional[str]) -> str:
 def format_link_success(user: UserProfile) -> str:
     email = user.email or ""
     masked_email = _mask_email(email)
-    return (
-        f"Account linked. Welcome, {user.name or 'developer'} "
-        f"(account #{user.id}, {masked_email}).\n"
-        "Your ASI:ONE address now maps to this account until you send "
-        "'unlink' or the agent restarts. Ask me anything from the 'help' list."
-    )
+    lines = [
+        f"Account linked. Welcome, {user.name or 'developer'} (account #{user.id}, {masked_email}).\n",
+        "👤 **Account Profile:**",
+        f"• **User**: {user.name or 'developer'}",
+        f"• **Account ID**: `{user.id}`",
+        f"• **Email**: {masked_email}",
+        "• **Status**: 🟢 Active\n",
+        "Your ASI:ONE address now maps to this account until you send 'unlink' or the agent restarts. Ask me anything from the 'help' list.",
+    ]
+    return "\n".join(lines)
 
 
 def _mask_email(email: str) -> str:
@@ -185,12 +200,19 @@ def format_link_removed(already_unlinked: bool) -> str:
 
 def format_overview(user: UserProfile, health, time_range: Optional[str] = None) -> str:  # noqa: ANN001
     """Format account identity + backend availability."""
+    storage_desc = "telemetry storage connected" if health.clickhouse_connected else "telemetry storage offline"
     lines = [
-        "Account overview:",
-        f"- Account: {user.name or 'developer'} (id {user.id})",
-        f"- Email: {_mask_email(user.email)}",
-        f"- Backend: {health.status}"
-        + (" (telemetry storage connected)" if health.clickhouse_connected else " (telemetry storage offline)"),
+        "📊 **ASI-Telemetry Account Overview**\n",
+        "👤 **Account Profile:**",
+        f"• **Account**: {user.name or 'developer'} (id {user.id})",
+        f"• **Email**: {_mask_email(user.email)}",
+        f"• **Backend: {health.status}** ({storage_desc})\n",
+        "💡 **Available Commands:**",
+        "• `token usage` — view prompt and completion tokens",
+        "• `cost summary` — track estimated LLM spending",
+        "• `project summary` — summarize active applications",
+        "• `recent traces` — view recent agent execution logs",
+        "• `unlink` — disconnect this chat session\n",
         "Usage numbers: ask 'token usage', 'estimated cost', 'project summary', or 'recent traces'.",
     ]
     return "\n".join(lines)
