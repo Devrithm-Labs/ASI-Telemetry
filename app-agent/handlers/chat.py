@@ -21,7 +21,7 @@ from handlers import responses
 from handlers.intents import Intent, IntentName, parse_intent
 from services.account_link import AccountLinkStore, InvalidKeyFormatError
 from services.diagnostics import DiagnosticService
-from services.github_service import GitHubIntegrationService
+from services.github_service import GitHubIntegrationService, normalize_repo_name
 from services.telemetry import TelemetryService
 
 
@@ -306,13 +306,13 @@ class ChatProcessor:
         repo = intent.repo
         if not repo:
             return "Please specify a repository formatted as 'owner/repo'. Example: `select repo owner/my-agent`"
-        clean_repo = repo.strip()
+        clean_repo = normalize_repo_name(repo)
         self._links.set_selected_repo(sender, clean_repo)
         return responses.format_repo_selected(clean_repo)
 
     async def _link_github(self, intent: Intent, sender: str) -> str:
         token = intent.github_token
-        repo = intent.repo
+        repo = normalize_repo_name(intent.repo) if intent.repo else None
         if not token and not repo:
             return (
                 "To connect your GitHub account:\n"

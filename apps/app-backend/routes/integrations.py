@@ -18,9 +18,18 @@ router = APIRouter(prefix="/api/integrations", tags=["Integrations"])
 _REPO_PATTERN = re.compile(r"^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+$")
 
 
+def normalize_repo_name(raw: str) -> str:
+    """Extracts 'owner/repo' from raw strings, full GitHub URLs, or SSH git URLs."""
+    clean = (raw or "").strip()
+    clean = re.sub(r"^(?:https?://)?(?:www\.)?github\.com/", "", clean)
+    clean = re.sub(r"^git@github\.com:", "", clean)
+    clean = re.sub(r"\.git$", "", clean)
+    return clean.strip("/")
+
+
 class GitHubLinkRequest(BaseModel):
     access_token: str = Field(..., min_length=1, description="GitHub Personal Access Token or OAuth token")
-    default_repository: str = Field(..., description="Target repository formatted as 'owner/repo'")
+    default_repository: str = Field(..., description="Target repository formatted as 'owner/repo' or GitHub URL")
     github_username: Optional[str] = Field(default="", description="Optional GitHub username")
 
 
@@ -37,18 +46,20 @@ def link_github_endpoint(
     current_user: UserResponse = Depends(get_current_user),
 ):
     """Links or updates the authenticated user's GitHub repository and access token."""
-    repo = payload.default_repository.strip()
+    repo = normalize_repo_name(payload.default_repository)
     if not _REPO_PATTERN.match(repo):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid repository format. Must be formatted as 'owner/repo'.",
+            detail="Invalid repository format. Please enter 'owner/repo' or a GitHub URL (e.g. https://github.com/owner/repo).",
         )
+
+    inferred_user = payload.github_username.strip() if payload.github_username else repo.split("/")[0]
 
     rec = save_user_github_integration(
         user_id=current_user.id,
         access_token=payload.access_token,
         default_repository=repo,
-        github_username=payload.github_username or "",
+        github_username=inferred_user,
     )
 
     return GitHubIntegrationResponse(

@@ -69,3 +69,26 @@ def test_github_integration_lifecycle():
     res_after = client.get("/api/integrations/github", headers=headers)
     assert res_after.status_code == 200
     assert res_after.json()["connected"] is False
+
+
+def test_github_url_normalization():
+    email = "norm_user@example.com"
+    pwd = "ValidPassword123!"
+    auth_resp = signup(SignupRequest(email=email, password=pwd, name="Norm Developer"))
+    headers = {"Authorization": f"Bearer {auth_resp.access_token}"}
+
+    # Pass full browser URL: https://github.com/ujjwalkat07/ASI-Telemetry
+    res = client.post(
+        "/api/integrations/github",
+        headers=headers,
+        json={
+            "access_token": "ghp_mocktoken123",
+            "default_repository": "https://github.com/ujjwalkat07/ASI-Telemetry",
+        },
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert data["connected"] is True
+    assert data["default_repository"] == "ujjwalkat07/ASI-Telemetry"
+    assert data["github_username"] == "ujjwalkat07"
+

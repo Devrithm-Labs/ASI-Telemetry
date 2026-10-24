@@ -46,6 +46,15 @@ class PullRequestResult:
 _REPO_PATTERN = re.compile(r"^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+$")
 
 
+def normalize_repo_name(raw: str) -> str:
+    """Extracts 'owner/repo' from full GitHub URLs, SSH URLs, or plain strings."""
+    clean = (raw or "").strip()
+    clean = re.sub(r"^(?:https?://)?(?:www\.)?github\.com/", "", clean)
+    clean = re.sub(r"^git@github\.com:", "", clean)
+    clean = re.sub(r"\.git$", "", clean)
+    return clean.strip("/")
+
+
 class GitHubIntegrationService:
     """
     Manages GitHub interactions (branch creation, patches, and pull requests).
@@ -67,7 +76,7 @@ class GitHubIntegrationService:
             or os.getenv("GH_TOKEN")
             or ""
         ).strip()
-        raw_repo = (repository or repo or "").strip()
+        raw_repo = normalize_repo_name(repository or repo or "")
         if raw_repo and not _REPO_PATTERN.match(raw_repo):
             raise ValueError(f"Invalid repository format '{raw_repo}'. Expected 'owner/repo'.")
         self.repository = raw_repo

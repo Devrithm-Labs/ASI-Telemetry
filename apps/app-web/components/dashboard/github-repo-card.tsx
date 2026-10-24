@@ -41,6 +41,14 @@ function GitHubIcon({ className }: { className?: string }) {
   );
 }
 
+function normalizeRepoInput(val: string): string {
+  let clean = val.trim();
+  clean = clean.replace(/^(?:https?:\/\/)?(?:www\.)?github\.com\//i, "");
+  clean = clean.replace(/^git@github\.com:/i, "");
+  clean = clean.replace(/\.git$/i, "");
+  return clean.replace(/^\/+|\/+$/g, "");
+}
+
 export function GitHubRepoCard() {
   const [data, setData] = React.useState<GitHubIntegration | null>(null);
   const [loading, setLoading] = React.useState(true);
@@ -73,11 +81,22 @@ export function GitHubRepoCard() {
     loadData();
   }, [loadData]);
 
+  const handleRepoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    setRepoInput(raw);
+    const clean = normalizeRepoInput(raw);
+    const parts = clean.split("/");
+    if (parts.length > 1 && parts[0] && !usernameInput) {
+      setUsernameInput(parts[0]);
+    }
+  };
+
   const handleConnect = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!repoInput.trim()) {
-      setError("Please specify a target repository (owner/repo).");
+    const cleanRepo = normalizeRepoInput(repoInput);
+    if (!cleanRepo || !cleanRepo.includes("/")) {
+      setError("Please specify a target repository formatted as 'owner/repo' or paste a GitHub URL.");
       return;
     }
     if (!tokenInput.trim() && !data?.connected) {
@@ -88,11 +107,12 @@ export function GitHubRepoCard() {
     setSaving(true);
     try {
       const res = await connectGitHubIntegration({
-        repository: repoInput.trim(),
+        repository: cleanRepo,
         accessToken: tokenInput.trim(),
         username: usernameInput.trim() || undefined,
       });
       setData(res);
+      setRepoInput(cleanRepo);
       setIsModalOpen(false);
       setTokenInput("");
     } catch (err: unknown) {
@@ -300,14 +320,14 @@ export function GitHubRepoCard() {
                 </label>
                 <input
                   type="text"
-                  placeholder="owner/repository-name (e.g. acme-org/telemetry-agent)"
+                  placeholder="owner/repo or https://github.com/owner/repo"
                   value={repoInput}
-                  onChange={(e) => setRepoInput(e.target.value)}
+                  onChange={handleRepoChange}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-2 focus:ring-primary/20 focus:border-primary font-mono"
                   required
                 />
                 <p className="text-[11px] text-muted-foreground">
-                  Must follow standard <code className="font-mono">owner/repo</code> syntax.
+                  Accepts <code className="font-mono text-primary font-semibold">owner/repo</code> or full URL (e.g. <code className="font-mono text-muted-foreground">https://github.com/ujjwalkat07/ASI-Telemetry</code>).
                 </p>
               </div>
 
