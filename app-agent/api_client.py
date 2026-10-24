@@ -268,38 +268,3 @@ class TelemetryApiClient:
             params["agent_name"] = agent_name
         payload = await self._get("/api/dashboard", api_key=api_key, params=params)
         return self._validate(payload, DashboardResponse)
-
-    async def _post(self, path: str, json_data: Dict[str, Any], api_key: Optional[str] = None) -> Any:
-        headers: Dict[str, str] = {}
-        if api_key:
-            headers["Authorization"] = f"Bearer {api_key}"
-        url = f"{self._base_url}{path}"
-        try:
-            response = await self._client.post(url, json=json_data, headers=headers)
-        except httpx.TimeoutException as exc:
-            logger.warning("Backend request timed out: %s", path)
-            raise BackendUnavailableError(f"Request to {path} timed out") from exc
-        except httpx.HTTPError as exc:
-            logger.warning("Backend request failed: %s (%s)", path, type(exc).__name__)
-            raise BackendUnavailableError(f"Could not reach backend at {path}") from exc
-
-        if response.status_code in (401, 403):
-            raise AuthenticationError("The request was rejected by the backend.")
-        if response.status_code >= 400:
-            detail = ""
-            try:
-                detail = response.json().get("detail", "")
-            except Exception:
-                pass
-            raise BackendHttpError(response.status_code, detail=detail)
-
-        try:
-            return response.json()
-        except ValueError as exc:
-            logger.warning("Backend returned non-JSON response for %s", path)
-            raise BackendResponseError(f"Backend returned invalid JSON for {path}") from exc
-
-    async def verify_agent_link(self, token: str, sender_address: str) -> Dict[str, Any]:
-        """Verify one-time pairing token and exchange for a scoped session token."""
-        return await self._post("/api/auth/verify-agent-link", {"token": token, "sender_address": sender_address})
-

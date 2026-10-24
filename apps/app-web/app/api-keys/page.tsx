@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import {
-  Bot,
   Check,
   Copy,
   KeyRound,
@@ -29,7 +28,6 @@ import {
   createBackendApiKey,
   deleteBackendApiKey,
 } from "@/lib/api-keys";
-import { ConnectAgentModal } from "@/components/dashboard/modals/connect-agent-modal";
 
 export default function ApiKeysPage() {
   const [keys, setKeys] = React.useState<ApiKeyItem[]>([]);
@@ -39,7 +37,6 @@ export default function ApiKeysPage() {
 
   // Create key modal state
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
-  const [isConnectAgentOpen, setIsConnectAgentOpen] = React.useState(false);
   const [keyName, setKeyName] = React.useState("");
   const [keyEnv, setKeyEnv] = React.useState<KeyEnvironment>("production");
   const [keyExpires, setKeyExpires] = React.useState("90 days");
@@ -137,16 +134,7 @@ export default function ApiKeysPage() {
             Manage secret keys for authenticating API and SDK requests.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2.5">
-          <Button
-            variant="outline"
-            onClick={() => setIsConnectAgentOpen(true)}
-            className="gap-2 font-medium border-primary/30 hover:border-primary text-foreground hover:bg-primary/5 shadow-xs"
-          >
-            <Bot className="h-4 w-4 text-primary" />
-            <span>Connect ASI:One Agent</span>
-          </Button>
-
+        <div>
           <Button onClick={handleStartCreate} className="gap-2 font-medium">
             <Plus className="h-4 w-4" />
             <span>Create new secret key</span>
@@ -507,14 +495,6 @@ export default function ApiKeysPage() {
           </div>
         </div>
       )}
-      {/* CONNECT AGENT MODAL */}
-      <ConnectAgentModal
-        open={isConnectAgentOpen}
-        onClose={() => {
-          setIsConnectAgentOpen(false);
-          loadKeys();
-        }}
-      />
     </div>
   );
 }

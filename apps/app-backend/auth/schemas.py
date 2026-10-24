@@ -61,24 +61,3 @@ class ApiKeyResponse(BaseModel):
     created_at: str
     last_used_at: Optional[str] = None
     expires_at: Optional[str] = None
-
-
-class AgentLinkTokenResponse(BaseModel):
-    token: str
-    expires_in_seconds: int
-    expires_at: str
-    instruction: str
-
-
-class VerifyAgentLinkRequest(BaseModel):
-    token: str
-    sender_address: str = ""
-
-
-class VerifyAgentLinkResponse(BaseModel):
-    status: str = "success"
-    message: str
-    user: UserResponse
-    session_token: str
-    sender_address: str
-
