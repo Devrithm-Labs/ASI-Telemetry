@@ -8,10 +8,11 @@ returned as ``UNSUPPORTED`` and answered with a help message.
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
+from typing import Any, Dict, Optional
 
 
 class IntentName(str, Enum):
@@ -30,9 +31,11 @@ class IntentName(str, Enum):
     DIAGNOSE = "diagnose"
     APPROVE_PR = "approve_pr"
     SELECT_REPO = "select_repo"
+    SELECT_REPO_PROMPT = "select_repo_prompt"
     LINK_GITHUB = "link_github"
     REPO_STATUS = "repo_status"
     SIMULATE_ERROR = "simulate_error"
+    OPEN_LINK_FORM = "open_link_form"
     UNSUPPORTED = "unsupported"
 
 
@@ -180,13 +183,120 @@ def _parse_model(text: str) -> Optional[str]:
     return None
 
 
+def _parse_card_selection_intent(payload: Dict[str, Any]) -> Optional[Intent]:
+    """Parse JSON selection or form submission payload from ASI:One Interactive Cards."""
+    # Flatten possible nested 'selection' object
+    action = payload.get("action")
+    if not action and isinstance(payload.get("selection"), dict):
+        selection = payload["selection"]
+        action = selection.get("action")
+        payload = {**selection, **payload}
+
+    time_range = payload.get("time_range")
+    model = payload.get("model")
+    limit = payload.get("limit")
+    if limit is not None:
+        try:
+            limit = int(limit)
+        except (ValueError, TypeError):
+            limit = 5
+
+    handoff_code = payload.get("handoff_code")
+    api_key = payload.get("api_key")
+    repo = payload.get("repo")
+    github_token = payload.get("github_token")
+
+    if action == "link" or (handoff_code or api_key):
+        if handoff_code and str(handoff_code).strip():
+            return Intent(IntentName.LINK, handoff_code=str(handoff_code).strip().upper())
+        if api_key and str(api_key).strip():
+            return Intent(IntentName.LINK, api_key=str(api_key).strip())
+        return Intent(IntentName.OPEN_LINK_FORM)
+
+    if action == "select_repo" or (repo and not action):
+        if repo and str(repo).strip():
+            return Intent(IntentName.SELECT_REPO, repo=str(repo).strip(), github_token=github_token)
+        return Intent(IntentName.SELECT_REPO_PROMPT)
+
+    if action == "select_repo_prompt":
+        return Intent(IntentName.SELECT_REPO_PROMPT)
+
+    if action == "open_link_form":
+        return Intent(IntentName.OPEN_LINK_FORM)
+
+    if action == "overview":
+        return Intent(IntentName.OVERVIEW, time_range=time_range)
+
+    if action == "token_usage":
+        return Intent(IntentName.TOKEN_USAGE, time_range=time_range or "7d", model=model)
+
+    if action == "cost_summary":
+        return Intent(IntentName.COST_SUMMARY, time_range=time_range or "7d", model=model)
+
+    if action == "applications":
+        return Intent(IntentName.APPLICATIONS, time_range=time_range)
+
+    if action == "traces":
+        return Intent(IntentName.TRACES, time_range=time_range, limit=limit or 5, model=model)
+
+    if action == "errors_performance":
+        return Intent(IntentName.ERRORS_PERFORMANCE, time_range=time_range, model=model)
+
+    if action == "diagnose":
+        return Intent(IntentName.DIAGNOSE)
+
+    if action == "approve_pr":
+        return Intent(IntentName.APPROVE_PR)
+
+    if action == "link_github":
+        return Intent(IntentName.LINK_GITHUB, repo=repo, github_token=github_token)
+
+    if action == "repo_status":
+        return Intent(IntentName.REPO_STATUS)
+
+    if action == "simulate_error":
+        return Intent(IntentName.SIMULATE_ERROR)
+
+    if action in ("unlink", "logout"):
+        return Intent(IntentName.UNLINK)
+
+    if action == "connect":
+        return Intent(IntentName.CONNECT)
+
+    if action in ("help", "capabilities"):
+        return Intent(IntentName.HELP)
+
+    if action == "welcome":
+        return Intent(IntentName.WELCOME)
+
+    return None
+
+
 def parse_intent(text: str) -> Intent:
     """Classify a chat message into a supported intent."""
     raw = (text or "").strip()
     if not raw:
         return Intent(IntentName.UNSUPPORTED)
 
+    # 1. Parse JSON card selection payload from ASI:One Interactive Cards
+    if raw.startswith("{") and raw.endswith("}"):
+        try:
+            parsed = json.loads(raw)
+            if isinstance(parsed, dict):
+                card_intent = _parse_card_selection_intent(parsed)
+                if card_intent is not None:
+                    return card_intent
+        except json.JSONDecodeError:
+            pass
+
     lowered = raw.lower()
+
+    # Direct card text triggers
+    if any(phrase in lowered for phrase in ("open link form", "enter key", "enter code", "paste code", "paste key")):
+        return Intent(IntentName.OPEN_LINK_FORM)
+
+    if lowered in ("select repo", "set repo", "choose repo", "target repo"):
+        return Intent(IntentName.SELECT_REPO_PROMPT)
 
     # OAuth handoff code received from user: "AUTH-12345678" or "code AUTH-..."
     handoff_match = _HANDOFF_CODE_RE.search(raw)

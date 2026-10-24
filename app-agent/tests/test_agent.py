@@ -6,12 +6,14 @@ import pytest
 from uagents_core.contrib.protocols.chat import (
     ChatAcknowledgement,
     ChatMessage,
+    MetadataContent,
     StartSessionContent,
     TextContent,
     chat_protocol_spec,
 )
 
 from agent import _extract_text, build_agent
+from cards import ChatReply
 from config import ConfigError, Settings
 
 TEST_SEED = "test-only-seed-phrase-not-a-real-credential-1234"
@@ -78,3 +80,51 @@ def test_extract_text_collects_text_content():
 def test_extract_text_ignores_non_text_content():
     msg = ChatMessage(content=[StartSessionContent(type="start-session")])
     assert _extract_text(msg) == ""
+
+
+async def test_agent_message_handler_attaches_interactive_card():
+    class DummyContext:
+        def __init__(self):
+            self.sent = []
+            self.logger = type("Logger", (), {"warning": lambda *a, **k: None, "exception": lambda *a, **k: None, "debug": lambda *a, **k: None})()
+
+        async def send(self, destination, message):
+            self.sent.append((destination, message))
+
+    class DummyProcessor:
+        async def process(self, text, sender):
+            return ChatReply(
+                "Overview data",
+                card_kind="detail",
+                card_payload={"title": "Account Overview", "summary_rows": []},
+            )
+
+    agent, client = build_agent(make_settings(), processor=DummyProcessor())
+    try:
+        # Find the message handler for ChatMessage on chat_proto
+        handler = None
+        for proto in agent.protocols.values():
+            for digest, model_cls in proto.models.items():
+                if model_cls is ChatMessage and digest in proto.signed_message_handlers:
+                    handler = proto.signed_message_handlers[digest]
+                    break
+            if handler:
+                break
+
+        assert handler is not None
+        ctx = DummyContext()
+        incoming = ChatMessage(content=[TextContent(type="text", text="overview")])
+        await handler(ctx, "sender123", incoming)
+
+        # First was ack, second was reply
+        assert len(ctx.sent) == 2
+        reply_msg = ctx.sent[1][1]
+        assert isinstance(reply_msg, ChatMessage)
+        assert len(reply_msg.content) == 2
+        assert isinstance(reply_msg.content[0], TextContent)
+        assert reply_msg.content[0].text == "Overview data"
+        assert isinstance(reply_msg.content[1], MetadataContent)
+        assert reply_msg.content[1].metadata["card_kind"] == "detail"
+        assert reply_msg.content[1].metadata["card_protocol_version"] == "1"
+    finally:
+        await client.aclose()

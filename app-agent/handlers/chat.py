@@ -55,7 +55,7 @@ class ChatProcessor:
         try:
             reply = await self._dispatch(intent, sender)
         except _NotLinkedError:
-            return responses.LINK_INSTRUCTIONS
+            return responses.format_link_instructions()
         except AuthenticationError as exc:
             logger.warning("Backend rejected the credential for sender %s", sender)
             self._diagnostics.capture_exception(
@@ -129,11 +129,16 @@ class ChatProcessor:
 
     async def _dispatch(self, intent: Intent, sender: str) -> str:
         if intent.name == IntentName.WELCOME:
-            return responses.WELCOME_TEXT
+            return responses.format_welcome_reply()
         if intent.name == IntentName.HELP:
-            return responses.HELP_TEXT
+            return responses.format_help_reply()
         if intent.name == IntentName.UNSUPPORTED:
-            return responses.UNSUPPORTED_TEXT
+            return responses.format_unsupported_reply()
+        if intent.name == IntentName.SELECT_REPO_PROMPT:
+            token, current_repo = self._links.get_github(sender)
+            return responses.format_select_repo_form(current_repo=current_repo)
+        if intent.name == IntentName.OPEN_LINK_FORM:
+            return responses.format_connect_form()
         if intent.name == IntentName.CONNECT:
             return await self._init_connect(sender)
         if intent.name == IntentName.LINK:

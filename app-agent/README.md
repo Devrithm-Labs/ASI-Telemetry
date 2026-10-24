@@ -30,20 +30,23 @@ ASI-Telemetry backend** — never fabricated values.
 ## Architecture
 
 ```
-ASI:ONE / ACP client
-        │  Agent Chat Protocol (ChatMessage / ChatAcknowledgement)
+ASI:ONE / ACP client (Drawer UI with Interactive Cards)
+        │  Agent Chat Protocol (ChatMessage: TextContent + MetadataContent)
         ▼
 app-agent/agent.py          uAgent runtime: identity (seed), port/endpoint/mailbox,
-        │                   ACP manifest publishing, ack + reply wiring
+        │                   ACP manifest publishing, ack + card attachment wiring
         ▼
 app-agent/handlers/chat.py  ChatProcessor: intent routing, account-link enforcement,
-        │                   safe error handling (backend down, bad data, auth failure)
-        ├── handlers/intents.py   keyword/regex intent + time-range parsing (no LLM)
-        └── handlers/responses.py formatting of validated backend data into chat text
+        │                   direct selection JSON handling, safe error handling
+        ├── cards.py              ASI:One Interactive Card schemas, wire protocol, and ChatReply
+        ├── handlers/intents.py   intent & selection parsing (JSON payloads + natural language)
+        └── handlers/responses.py formatting of backend data into chat text + Interactive Cards
         ▼
 app-agent/services/
         ├── telemetry.py    read-only capability facade (tokens, cost, apps, errors, traces)
-        └── account_link.py in-memory sender-address → API-key bindings (never logged/disk)
+        ├── diagnostics.py  self-healing runtime error diagnostics & patch proposals
+        ├── github_service.py automated GitHub feature branch & pull request creation
+        └── account_link.py in-memory sender-address → credentials/OAuth tokens
         ▼
 app-agent/api_client.py     async httpx client: timeouts, schema validation,
         │                   typed errors, Bearer API-key auth
@@ -52,6 +55,26 @@ apps/app-backend (existing) account-scoped aggregation + authorization
         ▼
 ClickHouse (existing)
 ```
+
+## ASI:One Interactive Cards Integration
+
+`app-agent` supports **Fetch.ai ASI:One Interactive Cards**, rendering rich, drawer-based UI components directly inside ASI:One conversations instead of plain text replies:
+
+- **Carousel (`card_kind: "carousel"`)**: Horizontally scrollable item cards for feature discovery, active uAgents/applications, and execution traces with quick-action CTAs.
+- **Detail (`card_kind: "detail"`)**: Focused detail cards with hero summary rows, radio sub-options (e.g. time ranges: `24h`, `7d`, `30d`, `all`), and primary/secondary CTAs.
+- **Form (`card_kind: "form"`)**: Structured interactive forms for account linking (Google OAuth code / API key input) and GitHub repository target selection.
+- **Review (`card_kind: "review"`)**: Approval and verification cards for reviewing diagnostic reports and proposed code patches with one-click **"Approve & Create Pull Request"** CTAs.
+
+### Interactive Selection Flow
+
+When the user interacts with a card in ASI:One:
+1. **Direct selection JSON** is delivered back as a chat message:
+   ```json
+   {"action": "token_usage", "time_range": "30d"}
+   ```
+2. `handlers/intents.py` parses the JSON interaction payload, mapping it to the target capability.
+3. The processor returns a card-enhanced response (`ChatReply`) attached as ACP `MetadataContent` alongside the narration `TextContent`.
+4. Non-card clients and legacy ACP chats automatically receive the narration plain text with full backward compatibility.
 
 Design rules:
 

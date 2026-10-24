@@ -26,6 +26,7 @@ from uagents_core.contrib.protocols.chat import (
 )
 
 from api_client import TelemetryApiClient
+from cards import ChatReply
 from config import Settings, ConfigError
 from handlers.chat import ChatProcessor
 from services.account_link import AccountLinkStore
@@ -135,17 +136,22 @@ def build_agent(
                 "I can only process plain-text questions about your "
                 "ASI-Telemetry account. Please send your question as text."
             )
+            out_msg = ChatMessage(
+                timestamp=datetime.now(timezone.utc),
+                content=[TextContent(type="text", text=reply_text)],
+            )
         else:
-            reply_text = await processor.process(text, sender)
+            reply = await processor.process(text, sender)
+            if isinstance(reply, ChatReply) and reply.has_card():
+                out_msg = reply.to_chat_message()
+            else:
+                out_msg = ChatMessage(
+                    timestamp=datetime.now(timezone.utc),
+                    content=[TextContent(type="text", text=str(reply))],
+                )
 
         try:
-            await ctx.send(
-                sender,
-                ChatMessage(
-                    timestamp=datetime.now(timezone.utc),
-                    content=[TextContent(type="text", text=reply_text)],
-                ),
-            )
+            await ctx.send(sender, out_msg)
         except Exception:  # noqa: BLE001 - a send failure must not crash the agent
             ctx.logger.exception("Failed to send reply to %s", sender)
 
