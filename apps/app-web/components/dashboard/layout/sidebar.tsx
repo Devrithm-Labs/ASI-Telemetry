@@ -106,14 +106,16 @@ export function DashboardSidebar({
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs shrink-0">
                 <Activity className="h-4 w-4" />
               </div>
-              <div className="flex flex-col truncate">
-                <div className="flex items-center gap-1.5 font-bold text-sm tracking-tight text-foreground">
-                  <span className="font-semibold text-sm">ASI:Telemetry</span>
+              <Link href="/">
+                <div className="flex flex-col truncate">
+                  <div className="flex items-center gap-1.5 font-bold text-sm tracking-tight text-foreground">
+                    <span className="font-semibold text-sm">ASI:Telemetry</span>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground -mt-0.5">
+                    Observability Platform
+                  </span>
                 </div>
-                <span className="text-[10px] text-muted-foreground -mt-0.5">
-                  Observability Platform
-                </span>
-              </div>
+              </Link>
             </div>
 
             <button
@@ -229,7 +231,7 @@ export function DashboardSidebar({
 
       {/* Footer / System Status & Settings */}
       <div className="border-border p-2 space-y-1 bg-sidebar">
-        
+
 
         {!collapsed && (
           <div className="flex items-center justify-between gap-2 px-2 py-1.5 border-t border-border pt-2">
@@ -241,11 +243,11 @@ export function DashboardSidebar({
               <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold text-xs shrink-0 shadow-xs">
                 {currentUser?.name
                   ? currentUser.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")
-                      .slice(0, 2)
-                      .toUpperCase()
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase()
                   : "U"}
               </div>
               <div className="flex flex-col truncate">
