@@ -35,7 +35,11 @@ class Intent:
     limit: Optional[int] = None
     model: Optional[str] = None
     api_key: Optional[str] = None
+    pairing_code: Optional[str] = None
 
+
+# Secure pairing codes generated from Dashboard (e.g. ASI-PAIR-A1B2C3)
+_PAIRING_CODE_RE = re.compile(r"\b(ASI-PAIR-[0-9A-Za-z]{4,16}|asi_pair_[0-9a-zA-Z]{6,32})\b", re.IGNORECASE)
 
 # Backend API keys: asi_<env>_<hex> (see apps/app-backend/auth/api_keys.py).
 _API_KEY_RE = re.compile(r"\b(asi_[a-z0-9]+_[0-9a-fA-F]{16,64})\b")
@@ -130,10 +134,16 @@ def parse_intent(text: str) -> Intent:
 
     lowered = raw.lower()
 
-    # Account linking: "link account asi_dev_..." (key captured from raw text).
+    # 1. Secure pairing code: e.g. "link ASI-PAIR-1A2B3C", "/link ASI-PAIR-1A2B3C", or bare "ASI-PAIR-..."
+    pair_match = _PAIRING_CODE_RE.search(raw)
+    if pair_match and "unlink" not in lowered:
+        return Intent(IntentName.LINK, pairing_code=pair_match.group(1).upper())
+
+    # 2. Legacy account linking with raw API key: "link account asi_dev_..."
     key_match = _API_KEY_RE.search(raw)
     if key_match and "unlink" not in lowered and "link" in lowered:
         return Intent(IntentName.LINK, api_key=key_match.group(1))
+
 
     if _contains_any(lowered, _UNLINK_WORDS):
         return Intent(IntentName.UNLINK)

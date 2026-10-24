@@ -51,6 +51,18 @@ class TelemetryService:
         """Validate a candidate API key against the backend identity endpoint."""
         return await self._client.get_current_user(api_key)
 
+    async def verify_pairing_token(self, token: str, sender_address: str) -> Tuple[UserProfile, str]:
+        """Verify temporary pairing token with backend, returning user profile and session token."""
+        result = await self._client.verify_agent_link(token, sender_address)
+        user = UserProfile(
+            id=result["user"]["id"],
+            name=result["user"].get("name", ""),
+            email=result["user"].get("email", ""),
+        )
+        session_token = result.get("session_token", "")
+        return user, session_token
+
+
     async def account_overview(self, api_key: str) -> Tuple[UserProfile, "object"]:
         """Return the linked account's identity and the backend health status."""
         user = await self._client.get_current_user(api_key)

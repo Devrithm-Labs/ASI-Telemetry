@@ -118,6 +118,23 @@ class ChatProcessor:
         return key
 
     async def _link(self, intent: Intent, sender: str) -> str:
+        # Preferred: Secure single-use pairing code (e.g. ASI-PAIR-...)
+        if intent.pairing_code:
+            try:
+                user, session_token = await self._service.verify_pairing_token(
+                    intent.pairing_code, sender
+                )
+                self._links.link(sender, session_token)
+                logger.info("Linked sender %s via pairing token to account id %s", sender, user.id)
+                return responses.format_link_success(user)
+            except BackendHttpError as e:
+                logger.warning("Pairing token rejected for sender %s: %s", sender, e)
+                return "Linking failed: Invalid, expired, or already-used pairing token. Please generate a fresh code in your ASI-Telemetry dashboard."
+            except Exception as e:
+                logger.exception("Failed to verify pairing token for %s", sender)
+                return f"Linking error: {e}. Please ensure your backend is reachable and try again."
+
+        # Fallback: Raw API key
         api_key = intent.api_key
         if not api_key:
             return responses.INVALID_KEY_TEXT
@@ -125,3 +142,4 @@ class ChatProcessor:
         self._links.link(sender, api_key)
         logger.info("Linked sender %s to account id %s", sender, user.id)
         return responses.format_link_success(user)
+

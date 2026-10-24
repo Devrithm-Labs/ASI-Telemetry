@@ -18,20 +18,18 @@ COST_CAVEAT = (
 
 LINK_INSTRUCTIONS = (
     "Your ASI:ONE address is not linked to an ASI-Telemetry account yet, "
-    "so I can't show private telemetry.\n"
-    "To link your account:\n"
-    "1. Sign in to the ASI-Telemetry dashboard and create an API key "
-    "(Settings -> API Keys), or run POST /api/api-keys while logged in.\n"
-    "2. Send: link account <your-api-key>  (key looks like asi_dev_...)\n"
-    "3. The key is validated against your account and kept in memory only; "
-    "it is never logged or shared. Use 'unlink' to remove it at any time.\n"
-    "Never share passwords or long-lived production keys in chat."
+    "so I can't show private telemetry.\n\n"
+    "To link your account securely (without sharing permanent API keys):\n"
+    "1. Sign in to your ASI-Telemetry Web Dashboard -> API Keys.\n"
+    "2. Click 'Connect ASI:One Agent' to generate a temporary single-use code (e.g. ASI-PAIR-A1B2C3, valid for 5 min).\n"
+    "3. Reply here with: link <pairing-code>\n\n"
+    "Your account will be verified instantly and securely!"
 )
 
 HELP_TEXT = (
     "I answer read-only questions about your ASI-Telemetry account.\n"
-    "Link your account first: 'link account <api-key>' (create the key in "
-    "the ASI-Telemetry dashboard).\n"
+    "Link your account first: 'link <pairing-code>' (click 'Connect ASI:One Agent' in "
+    "the ASI-Telemetry dashboard to generate your code).\n"
     "Supported questions:\n"
     "- account overview: 'account overview'\n"
     "- token usage: 'token usage for the last 7 days'\n"
@@ -47,8 +45,9 @@ WELCOME_TEXT = (
     "Hello! I'm the ASI-Telemetry agent. Ask me about your account's token "
     "usage, estimated costs, application activity, errors, latency, or recent "
     "traces. Type 'help' for examples. If you haven't linked your account "
-    "yet, send 'link account <api-key>'."
+    "yet, generate a pairing code in your dashboard and send 'link <pairing-code>'."
 )
+
 
 UNSUPPORTED_TEXT = (
     "Sorry, I didn't understand that. I only answer read-only questions "
