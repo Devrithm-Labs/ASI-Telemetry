@@ -12,7 +12,8 @@ not confirmed billing figures, and are always labeled as such in responses.
 
 from __future__ import annotations
 
-from typing import Tuple
+from typing import Any, Dict, Optional, Tuple
+
 
 from api_client import (
     DashboardResponse,
@@ -47,9 +48,35 @@ class TelemetryService:
     def __init__(self, client: TelemetryApiClient):
         self._client = client
 
+    async def init_oauth(self, sender_address: str, redirect_uri: Optional[str] = None) -> Dict[str, Any]:
+        """Initiate OAuth session for an agent sender."""
+        return await self._client.init_oauth_session(sender_address=sender_address, redirect_uri=redirect_uri)
+
+    async def exchange_oauth(
+        self,
+        sender_address: str,
+        session_id: Optional[str] = None,
+        handoff_code: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Exchange authorized session or handoff code for tokens."""
+        return await self._client.exchange_oauth_session(
+            sender_address=sender_address,
+            session_id=session_id,
+            handoff_code=handoff_code,
+        )
+
+    async def refresh_tokens(self, refresh_token: str) -> Dict[str, Any]:
+        """Refresh application access token."""
+        return await self._client.refresh_application_token(refresh_token)
+
+    async def logout(self, refresh_token: Optional[str] = None) -> Dict[str, Any]:
+        """Logout and revoke session."""
+        return await self._client.logout_session(refresh_token)
+
     async def validate_api_key(self, api_key: str) -> UserProfile:
         """Validate a candidate API key against the backend identity endpoint."""
         return await self._client.get_current_user(api_key)
+
 
     async def account_overview(self, api_key: str) -> Tuple[UserProfile, "object"]:
         """Return the linked account's identity and the backend health status."""

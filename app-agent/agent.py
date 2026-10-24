@@ -29,6 +29,8 @@ from api_client import TelemetryApiClient
 from config import Settings, ConfigError
 from handlers.chat import ChatProcessor
 from services.account_link import AccountLinkStore
+from services.diagnostics import DiagnosticService
+from services.github_service import GitHubIntegrationService
 from services.telemetry import TelemetryService
 
 logger = logging.getLogger("asi_telemetry.agent")
@@ -72,7 +74,9 @@ def build_agent(
     if processor is None:
         links = AccountLinkStore()
         service = TelemetryService(client)
-        processor = ChatProcessor(service, links)
+        diagnostics = DiagnosticService()
+        github = GitHubIntegrationService()
+        processor = ChatProcessor(service, links, diagnostics=diagnostics, github=github)
 
     try:
         loop = asyncio.get_event_loop()

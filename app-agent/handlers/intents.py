@@ -17,14 +17,18 @@ from typing import Optional
 class IntentName(str, Enum):
     WELCOME = "welcome"
     HELP = "help"
+    CONNECT = "connect"
     LINK = "link"
     UNLINK = "unlink"
+    LOGOUT = "logout"
     OVERVIEW = "overview"
     TOKEN_USAGE = "token_usage"
     COST_SUMMARY = "cost_summary"
     APPLICATIONS = "applications"
     ERRORS_PERFORMANCE = "errors_performance"
     TRACES = "traces"
+    DIAGNOSE = "diagnose"
+    APPROVE_PR = "approve_pr"
     UNSUPPORTED = "unsupported"
 
 
@@ -35,10 +39,15 @@ class Intent:
     limit: Optional[int] = None
     model: Optional[str] = None
     api_key: Optional[str] = None
+    handoff_code: Optional[str] = None
+    error_id: Optional[str] = None
 
 
 # Backend API keys: asi_<env>_<hex> (see apps/app-backend/auth/api_keys.py).
 _API_KEY_RE = re.compile(r"\b(asi_[a-z0-9]+_[0-9a-fA-F]{16,64})\b")
+
+# Single-use OAuth handoff codes (e.g. AUTH-A1B2C3D4 or AUTH-1234567890abcdef)
+_HANDOFF_CODE_RE = re.compile(r"\b(AUTH-[0-9a-zA-Z]{6,32})\b", re.IGNORECASE)
 
 # Explicit durations such as "last 24 hours", "past 3 days", "last 1h".
 _DURATION_RE = re.compile(
@@ -54,7 +63,41 @@ _GREETING_START_RE = re.compile(
     r"^(?:hi|hello|hey|yo|namaste|good (?:morning|evening|afternoon))\b", re.IGNORECASE
 )
 _HELP_RE = re.compile(r"\b(help|capabilities|commands|options)\b", re.IGNORECASE)
-_UNLINK_WORDS = ("unlink", "un-link", "disconnect account", "remove account", "logout account")
+_CONNECT_WORDS = (
+    "connect account",
+    "connect my account",
+    "connect asi",
+    "oauth",
+    "google sign in",
+    "google login",
+    "sign in with google",
+    "connect",
+)
+_APPROVE_PR_WORDS = (
+    "approve pr",
+    "confirm pr",
+    "open pr",
+    "create pr",
+    "yes open pr",
+    "yes create pr",
+    "open pull request",
+    "create pull request",
+    "proceed with pr",
+    "submit pr",
+)
+_DIAGNOSE_WORDS = (
+    "diagnose",
+    "investigate",
+    "why did it fail",
+    "debug error",
+    "inspect error",
+    "analyze error",
+    "check error",
+    "troubleshoot",
+    "what went wrong",
+)
+_LOGOUT_WORDS = ("logout", "revoke session", "revoke token", "log out")
+_UNLINK_WORDS = ("unlink", "un-link", "disconnect account", "remove account", "disconnect")
 _OVERVIEW_WORDS = ("overview", "who am i", "account status", "account summary", "my account", "health check")
 _APPLICATION_WORDS = ("project", "projects", "application", "applications", "apps", "my agents", "agent list")
 _ERROR_WORDS = ("error", "errors", "error rate", "latency", "performance", "reliability", "success rate", "p99")
@@ -130,10 +173,32 @@ def parse_intent(text: str) -> Intent:
 
     lowered = raw.lower()
 
-    # Account linking: "link account asi_dev_..." (key captured from raw text).
+    # OAuth handoff code received from user: "AUTH-12345678" or "code AUTH-..."
+    handoff_match = _HANDOFF_CODE_RE.search(raw)
+    if handoff_match:
+        return Intent(IntentName.LINK, handoff_code=handoff_match.group(1).upper())
+
+    # Explicit GitHub pull request approval: "approve pr", "confirm pr"
+    if _contains_any(lowered, _APPROVE_PR_WORDS):
+        return Intent(IntentName.APPROVE_PR)
+
+    # Runtime error diagnosis: "diagnose error", "why did it fail"
+    if _contains_any(lowered, _DIAGNOSE_WORDS):
+        return Intent(IntentName.DIAGNOSE)
+
+    # Session revocation: "logout", "revoke session"
+    if _contains_any(lowered, _LOGOUT_WORDS):
+        return Intent(IntentName.LOGOUT)
+
+    # Legacy account linking: "link account asi_dev_..." (key captured from raw text).
     key_match = _API_KEY_RE.search(raw)
     if key_match and "unlink" not in lowered and "link" in lowered:
         return Intent(IntentName.LINK, api_key=key_match.group(1))
+
+    # OAuth Connect intent: "connect my account", "login", "authenticate"
+    # or "link account" without a key
+    if _contains_any(lowered, _CONNECT_WORDS) or lowered in ("link", "link account", "connect"):
+        return Intent(IntentName.CONNECT)
 
     if _contains_any(lowered, _UNLINK_WORDS):
         return Intent(IntentName.UNLINK)
@@ -170,3 +235,4 @@ def parse_intent(text: str) -> Intent:
         return Intent(IntentName.OVERVIEW, time_range=time_range)
 
     return Intent(IntentName.UNSUPPORTED)
+

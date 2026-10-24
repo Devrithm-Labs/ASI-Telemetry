@@ -61,3 +61,39 @@ class ApiKeyResponse(BaseModel):
     created_at: str
     last_used_at: Optional[str] = None
     expires_at: Optional[str] = None
+
+
+class OAuthInitRequest(BaseModel):
+    sender_address: str
+    redirect_uri: Optional[str] = None
+
+
+class OAuthInitResponse(BaseModel):
+    session_id: str
+    state: str
+    authorization_url: str
+    expires_in_seconds: int
+    sender_address: str
+
+
+class OAuthHandoffExchangeRequest(BaseModel):
+    session_id: Optional[str] = None
+    handoff_code: Optional[str] = None
+    sender_address: str
+
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    expires_in: int
+    user: Optional[UserResponse] = None
+
+
+class LogoutRequest(BaseModel):
+    refresh_token: Optional[str] = None
+

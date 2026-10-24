@@ -48,7 +48,7 @@ agent = Agent(
 # 4. Telemetry Setup
 # Single initialization with credentials & agent identity:
 observe = ASI_Telemetry(
-    api_key="asi_live_5e22278098f49a31aad59f6e074d6a94",
+    api_key="asi_live_a1afc159d68e03e04fb9feba36e36de0",
     agent_name="test_agent",
     agent_address=agent.address,
 )

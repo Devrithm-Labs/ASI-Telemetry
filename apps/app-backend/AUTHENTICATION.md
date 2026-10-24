@@ -227,33 +227,63 @@ This separation keeps HTTP details, business rules, persistence, and cryptograph
 | POST | `/api/auth/signup` | No | Create account and return token |
 | POST | `/api/auth/login` | No | Verify credentials and return token |
 | GET | `/api/auth/me` | Yes | Return current account |
+| POST | `/api/auth/oauth/agent-init` | No | Initiate OAuth 2.0 PKCE session bound to agent |
+| GET | `/api/auth/oauth/callback` | No | Google OAuth callback & handoff code generation |
+| POST | `/api/auth/oauth/agent-exchange`| No | Single-use handoff code exchange for tokens |
+| POST | `/api/auth/refresh` | No | 15-minute access token renewal with rotation |
+| POST | `/api/auth/logout` | No | Revoke refresh token family session |
 | POST | `/api/metrics` | No | Existing SDK telemetry ingestion |
 | POST | `/api/telemetry` | No | Existing alias for telemetry ingestion |
-| GET | `/api/dashboard` | No, currently | Existing dashboard data endpoint |
+| GET | `/api/dashboard` | Optional / Key | Dashboard telemetry overview |
 | GET | `/api/health` | No | Existing health status |
 
-Signup and login are public by design: a user cannot be required to be logged in before signing up or logging in.
+Signup, login, and OAuth callbacks are public by design.
 
-## 9. Frontend integration outline
+## 9. Google OAuth 2.0 & Token Lifecycle Architecture
 
-The Next.js frontend is separate from this Python API. A frontend login form should:
+### OAuth 2.0 Authorization Code Flow with PKCE
+To prevent pasting long-lived API keys or credentials directly into ASI:ONE chat conversations, authentication uses Google OAuth 2.0 with PKCE (RFC 7636):
 
-1. Send JSON to `http://localhost:8080/api/auth/login`.
-2. Check `response.ok` before treating login as successful.
-3. Keep the access token in memory where possible and attach it as `Authorization: Bearer ${token}` to protected API calls.
-4. Handle `401` by asking the user to log in again.
+1. **Session Initiation (`POST /api/auth/oauth/agent-init`)**:
+   - The agent sends its Fetch.ai sender address (`agent1q...`).
+   - The backend creates an in-memory session record, generates a cryptographically random code verifier (64 bytes URL-safe), derives the SHA-256 code challenge (`S256`), and generates an OAuth state parameter bound to the session (`{session_id}.{nonce}`).
+   - Returns a Google sign-in URL requesting only minimal identity scopes (`openid email profile`).
 
-For a production browser app, prefer a backend-for-frontend or secure `HttpOnly`, `Secure`, `SameSite` cookie design rather than storing long-lived credentials in `localStorage`. If using cookies, add CSRF protection and configure CORS to allow only the exact frontend origin. Do not use `allow_origins=["*"]` together with credentials in production.
+2. **Google Sign-In & Callback (`GET /api/auth/oauth/callback`)**:
+   - The user opens the link in their browser and authorizes ASI-Telemetry.
+   - Google redirects to `/api/auth/oauth/callback` with `code` and `state`.
+   - The backend validates the `state` against active pending sessions, preventing state forgery and replay.
+   - Google's token endpoint exchanges the authorization code using the verified PKCE `code_verifier`.
+   - Google's ID token signature, issuer, audience, and expiry are verified using `google.oauth2.id_token.verify_oauth2_token`.
+   - The user is created or linked according to existing account uniqueness rules (`users` table).
+   - ASI-Telemetry issues its own 15-minute access token and 30-day refresh token.
+   - A single-use, cryptographically random handoff code (`AUTH-XXXXXX`, 10-minute expiry) is returned to the user in a clean browser landing page.
 
-## 10. Before production / hackathon demo checklist
+3. **Secure Agent Session Handoff (`POST /api/auth/oauth/agent-exchange`)**:
+   - The user returns to chat and sends their handoff code (or confirms).
+   - The agent calls `/api/auth/oauth/agent-exchange` presenting `sender_address` and `handoff_code`.
+   - The backend confirms that `sender_address` matches the session that initiated the flow.
+   - The session and handoff code are immediately burned and invalidated (single-use constraint).
+   - The agent receives the access token and refresh token into memory.
 
-- [ ] Replace the development JWT secret with a randomly generated secret stored in deployment environment variables.
-- [ ] Use persistent storage for SQLite, or move accounts to PostgreSQL if deploying multiple backend instances.
-- [ ] Wire the Next.js signup/login screens to these endpoints.
-- [ ] Add `Depends(get_current_user)` to dashboard endpoints that should be private, and make sure the frontend sends the token.
-- [ ] Keep SDK telemetry ingestion separately authenticated (for example, per-project SDK keys) if public ingestion would allow spam or data poisoning.
-- [ ] Restrict CORS to the frontend origin.
-- [ ] Add login/signup rate limiting, password reset, email verification, and automated tests.
-- [ ] Decide whether access tokens need refresh-token rotation and logout/revocation support.
+### Application Token Lifecycle
+- **Access Token**:
+  - Signed JWT (HS256) with 15-minute expiry (`ACCESS_TOKEN_EXPIRE_MINUTES = 15`).
+  - Standard RFC 7519 claims: `sub` (user_id), `email`, `iss` (`asi-telemetry`), `aud` (`asi-telemetry-api`), `iat`, `exp`, `jti`, `type` (`access`).
+  - Strict validation of signature, expiry, issuer, and audience.
+- **Refresh Token & Rotation**:
+  - High-entropy opaque string (`asi_rf_...`, 48 bytes URL-safe).
+  - 30-day expiry (`REFRESH_TOKEN_EXPIRE_DAYS = 30`).
+  - Only SHA-256 hash stored in ClickHouse / in-memory cache (`refresh_tokens` table).
+  - **Rotation**: Every successful refresh invalidates the old refresh token and issues a new one.
+  - **Reuse Detection**: If an already replaced or revoked refresh token is presented, the backend identifies token reuse and immediately revokes the entire `family_id`, neutralizing compromised sessions.
+  - **Logout**: Explicit revocation invalidates the token family and terminates active sessions.
 
-This is a useful hackathon-ready baseline, not a complete production identity platform.
+## 10. Frontend & Agent Integration
+
+The Next.js frontend and ASI1 Agent communicate via these application tokens:
+1. Agent stores tokens in memory only (`AccountLinkStore`).
+2. When telemetry queries receive `401 Unauthorized`, the agent automatically calls `/api/auth/refresh` to renew the access token and retries once.
+3. If refresh fails (revoked or expired), the session drops and the agent prompts the developer to reconnect via Google sign-in.
+4. HTTP 403 Forbidden is treated as an authorization failure and does NOT trigger token refresh.
+

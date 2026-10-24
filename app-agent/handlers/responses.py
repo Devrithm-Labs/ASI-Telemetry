@@ -19,42 +19,45 @@ COST_CAVEAT = (
 LINK_INSTRUCTIONS = (
     "Your ASI:ONE address is not linked to an ASI-Telemetry account yet, "
     "so I can't show private telemetry.\n"
-    "To link your account:\n"
-    "1. Sign in to the ASI-Telemetry dashboard and create an API key "
-    "(Settings -> API Keys), or run POST /api/api-keys while logged in.\n"
-    "2. Send: link account <your-api-key>  (key looks like asi_dev_...)\n"
-    "3. The key is validated against your account and kept in memory only; "
-    "it is never logged or shared. Use 'unlink' to remove it at any time.\n"
-    "Never share passwords or long-lived production keys in chat."
+    "To securely connect your account without pasting keys into chat:\n"
+    "1. Send: connect my account\n"
+    "2. Open the secure Google authorization link in your browser.\n"
+    "3. Sign in with Google to authorize ASI-Telemetry.\n"
+    "4. Return here and send your authorization handoff code (AUTH-...). "
+    "Or send: link account <your-api-key> as a fallback."
 )
 
 HELP_TEXT = (
-    "I answer read-only questions about your ASI-Telemetry account.\n"
-    "Link your account first: 'link account <api-key>' (create the key in "
-    "the ASI-Telemetry dashboard).\n"
+    "I answer questions about your ASI-Telemetry account and help diagnose errors.\n"
+    "Connect your account first: send 'connect my account' to sign in with Google securely, "
+    "or send 'link account <api-key>' as fallback.\n"
     "Supported questions:\n"
+    "- connect account: 'connect my account'\n"
     "- account overview: 'account overview'\n"
     "- token usage: 'token usage for the last 7 days'\n"
     "- estimated cost: 'estimated cost for the last 30 days'\n"
     "- applications/agents: 'project summary' or 'which applications are active'\n"
     "- errors & performance: 'error rate and latency this week'\n"
     "- recent traces: 'show me the last 5 traces'\n"
+    "- diagnose runtime error: 'diagnose' or 'why did it fail'\n"
+    "- approve PR fix: 'approve pr'\n"
+    "- disconnect/logout: 'unlink' or 'logout'\n"
     "Time ranges: last hour, 24 hours/today, 7 days/this week, "
     "30 days/this month, all time."
 )
 
 WELCOME_TEXT = (
     "Hello! I'm the ASI-Telemetry agent. Ask me about your account's token "
-    "usage, estimated costs, application activity, errors, latency, or recent "
-    "traces. Type 'help' for examples. If you haven't linked your account "
-    "yet, send 'link account <api-key>'."
+    "usage, estimated costs, application activity, errors, latency, recent "
+    "traces, or runtime error diagnosis. Type 'help' for examples. "
+    "To connect your account securely, send 'connect my account'."
 )
 
 UNSUPPORTED_TEXT = (
-    "Sorry, I didn't understand that. I only answer read-only questions "
-    "about your ASI-Telemetry telemetry: account overview, token usage, "
-    "estimated cost, application summaries, error/performance stats, and "
-    "recent traces. Type 'help' for examples."
+    "Sorry, I didn't understand that. I answer questions about your "
+    "ASI-Telemetry telemetry: account overview, token usage, estimated cost, "
+    "application summaries, error/performance stats, recent traces, and "
+    "runtime diagnostics. Type 'help' for examples."
 )
 
 BACKEND_DOWN_TEXT = (
@@ -63,16 +66,86 @@ BACKEND_DOWN_TEXT = (
 )
 
 AUTH_FAILED_TEXT = (
-    "Your linked API key was rejected by the ASI-Telemetry backend "
+    "Your linked session or API key was rejected by the ASI-Telemetry backend "
     "(it may have been revoked or expired). Please send "
-    "'link account <new-api-key>' to relink your account."
+    "'connect my account' to securely reconnect with Google."
 )
 
 INVALID_KEY_TEXT = (
-    "That doesn't look like a valid ASI-Telemetry API key. Keys look like "
-    "asi_dev_... or asi_live_... and are created in the ASI-Telemetry "
-    "dashboard under Settings -> API Keys."
+    "That doesn't look like a valid ASI-Telemetry API key or authorization code. "
+    "Keys look like asi_dev_... and authorization codes look like AUTH-..."
 )
+
+
+def format_oauth_prompt(auth_url: str) -> str:
+    return (
+        "To securely connect your ASI-Telemetry account, complete Google sign-in "
+        "using the authorization link below. You will not need to share an API key "
+        "in this chat:\n\n"
+        f"{auth_url}\n\n"
+        "Once authorized, you will see a single-use authorization code (e.g. AUTH-...). "
+        "Return here and paste the code to link your session."
+    )
+
+
+def format_oauth_success(email: str, name: Optional[str] = None) -> str:
+    masked_email = _mask_email(email)
+    user_str = f" {name}" if name else ""
+    return (
+        f"Your ASI-Telemetry account{user_str} ({masked_email}) is connected successfully. "
+        "You can now request usage summaries, investigate supported telemetry, and inspect "
+        "available execution details."
+    )
+
+
+def format_auth_revoked(already_unlinked: bool = False) -> str:
+    if already_unlinked:
+        return "No account was linked for this chat, so there was nothing to remove."
+    return "Account unlinked. Your session credentials and refresh tokens have been revoked."
+
+
+def format_diagnostic_report(diag) -> str:  # noqa: ANN001
+    """Format sanitized diagnostic report with human approval notice."""
+    lines = [
+        "🔍 Runtime Diagnostic Report:",
+        f"- Diagnostic ID: {diag.id}",
+        f"- Timestamp: {diag.timestamp}",
+        f"- Error Category: {diag.category}",
+        f"- Status Code: {diag.status_code or 'N/A'}",
+        f"- Endpoint / Operation: {diag.endpoint or diag.operation or 'N/A'}",
+        f"- Sanitized Error: {diag.sanitized_message}",
+    ]
+    if diag.root_cause_analysis:
+        lines.append(f"\n💡 Root Cause Analysis:\n{diag.root_cause_analysis}")
+    if diag.proposed_patch:
+        patch = diag.proposed_patch
+        lines.append(f"\n🛠️ Proposed Patch ({patch.target_file}):")
+        lines.append("```diff")
+        lines.append(patch.diff)
+        lines.append("```")
+        lines.append(f"Explanation: {patch.explanation}")
+        lines.append(f"Intended Tests: {', '.join(patch.tests_to_run)}")
+        lines.append(f"Risks: {', '.join(patch.risks)}")
+        lines.append(
+            "\n⚠️ Developer Approval Required: To create a feature branch and "
+            "open a GitHub pull request with this patch, reply 'approve pr'. "
+            "To discard, reply 'cancel'."
+        )
+    else:
+        lines.append("\nNo automatic code patch proposed for this operational or network error.")
+    return "\n".join(lines)
+
+
+def format_pr_success(pr_url: str, branch: str, title: str) -> str:
+    return (
+        "✅ Pull Request Created Successfully:\n"
+        f"- Title: {title}\n"
+        f"- Branch: {branch}\n"
+        f"- Pull Request: {pr_url}\n\n"
+        "Security Note: No credentials, tokens, or sensitive production logs were included. "
+        "The change is isolated to the feature branch and requires code review before merging."
+    )
+
 
 
 def _time_range_label(time_range: Optional[str]) -> str:

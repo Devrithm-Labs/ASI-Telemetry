@@ -130,54 +130,53 @@ schema-mismatch/auth-failure behavior, account-link lifecycle, missing
 analytics data, backend outages, and **cross-account isolation** (one
 sender can never see another account's numbers).
 
-## Supported questions
+## Supported questions & commands
 
-Link your account first: `link account <api-key>`.
+Link your account first: send `connect my account` to sign in with Google (recommended), or `link account <api-key>` as fallback.
 
-| Question example | Answer |
+| Command / Question | Action / Answer |
 |---|---|
+| `connect my account` | Initiates Google OAuth 2.0 PKCE flow and returns browser authorization link |
+| `AUTH-XXXXXX` | Exchanges single-use handoff code for 15-min access token & 30-day refresh token |
 | `account overview` | Account identity + backend/storage health |
 | `token usage for the last 7 days` | Total/prompt/completion tokens, trace counts |
 | `what did I spend in the last 30 days` | **Estimated** cost from telemetry + per-trace average |
 | `project summary` / `which applications are active` | Applications reporting telemetry + request stats |
 | `error rate and latency this week` | Error counts, success rate, avg/p99 latency, 30-day uptime |
 | `show me the last 5 traces` | Most recent LLM traces (model, tokens, latency, est. cost) |
-| `help`, `hello`, `unlink account` | Guidance / account unlinking |
+| `diagnose` / `why did it fail` | AI-assisted runtime error investigation, root cause hypothesis, and patch |
+| `approve pr` | Explicit human approval to create feature branch and GitHub PR for proposed patch |
+| `unlink` / `logout` | Drops in-memory credentials and revokes backend refresh token session |
+| `help`, `hello` | Guidance / welcome text |
 
 Time ranges: `last hour`, `today`/`24 hours`, `this week`/`7 days`,
-`this month`/`30 days`, `all time`. Anything else gets a graceful
-"didn't understand" reply with examples.
+`this month`/`30 days`, `all time`.
 
-## Backend integration
+## Secure Account Linking & Token Renewal
 
-Only existing, account-scoped endpoints are used — nothing in
-`apps/app-backend` was changed:
+### 1. Google OAuth 2.0 PKCE Flow (No API Key in Chat)
+Developers do **not** need to paste long-lived API keys into ASI1 chat:
+1. Developer sends: `connect my account`.
+2. Agent calls `POST /api/auth/oauth/agent-init` and returns a secure Google authorization URL with PKCE (`S256`).
+3. Developer signs in with Google in their browser.
+4. Google redirects to `GET /api/auth/oauth/callback`. The backend verifies the Google ID token and issues ASI-Telemetry's own 15-minute access token and 30-day rotating refresh token.
+5. The browser displays a single-use handoff code (`AUTH-XXXXXX`).
+6. Developer returns to chat and sends the code. The agent calls `POST /api/auth/oauth/agent-exchange` to receive tokens into memory. The handoff code is immediately burned/invalidated.
 
-| Capability | Backend endpoint | Notes |
-|---|---|---|
-| Account identity | `GET /api/auth/me` | Validates linked keys |
-| Backend health | `GET /api/health` | Public status |
-| Tokens, estimated cost, error/performance KPIs | `GET /api/llm/monitoring?time_range=` | Aggregated backend-side |
-| Recent execution traces | `GET /api/llm/traces?limit=` | Filtered backend-side |
-| Application/tool summaries | `GET /api/dashboard?time_range=` | Grouped by agent name |
+### 2. Automatic Token Renewal
+- Protected telemetry requests send `Authorization: Bearer <access_token>`.
+- If an access token expires (HTTP 401), the agent automatically calls `POST /api/auth/refresh` using the rotating refresh token, updates stored credentials, and retries the request seamlessly.
+- **Refresh Token Rotation**: Each refresh generates a new refresh token and revokes the old one. If reuse of an old token is detected, the entire token family is revoked immediately.
+- **HTTP 403 Forbidden**: Treated strictly as an authorization policy violation and does not trigger token refresh.
 
-**Documented gaps**
+## AI-Assisted Error Diagnosis & GitHub Workflow
 
-- *No "projects" entity* exists in the backend; the closest concept is
-  `applications` (grouped by `agent_name`) from `/api/dashboard`. The agent
-  labels these as application summaries. A real projects feature would need
-  a backend change (out of scope, requires approval).
-- *No confirmed billing data*: `cost_usd` values are SDK-computed per-trace
-  estimates stored with telemetry. All cost replies say so explicitly.
-- *No address→account binding endpoint*: see below.
+When an error or backend failure occurs:
+1. **Sanitized Diagnostic Capture**: The agent automatically captures a sanitized diagnostic record (`err_...`), redacting Authorization headers, Bearer tokens, API keys, passwords, and database connection strings.
+2. **Diagnosis (`diagnose`)**: Developer asks the agent to investigate. The agent outputs the error category, sanitized stack trace, root cause hypothesis, and proposes a code patch.
+3. **Strict Human Approval Gate**: The agent **never** creates remote branches, commits code, or opens pull requests without explicit confirmation.
+4. **Pull Request Creation (`approve pr`)**: Once approved, the agent creates an isolated feature branch (`fix/err-...`), runs validation tests, and opens a structured PR targeting the base branch. Direct writes to default branches (`main`/`master`) are strictly prohibited.
 
-## Account authentication and linking
-
-ACP identifies a chat participant only by their **agent address**
-(`agent1q...`), which is **not** proof of an ASI-Telemetry account. The
-agent therefore requires explicit linking:
-
-1. The developer signs up / logs in to the ASI-Telemetry dashboard (or
    `POST /api/auth/signup|login`) and creates a dedicated API key via the
    dashboard's **Settings → API Keys** UI or `POST /api/api-keys`
    (keys look like `asi_dev_...`).

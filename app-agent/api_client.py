@@ -39,10 +39,15 @@ class BackendUnavailableError(TelemetryApiError):
 
 
 class AuthenticationError(TelemetryApiError):
-    """The backend rejected the supplied account credential (401/403)."""
+    """The backend rejected the supplied account credential with 401 Unauthorized (expired or invalid)."""
+
+
+class AuthorizationError(TelemetryApiError):
+    """The backend rejected the request with 403 Forbidden (authorization policy violation)."""
 
 
 class BackendHttpError(TelemetryApiError):
+
     """The backend answered with an unexpected non-success status code."""
 
     def __init__(self, status_code: int, detail: str = ""):
@@ -195,12 +200,53 @@ class TelemetryApiClient:
             logger.warning("Backend request failed: %s (%s)", path, type(exc).__name__)
             raise BackendUnavailableError(f"Could not reach backend at {path}") from exc
 
-        if response.status_code in (401, 403):
+        if response.status_code == 401:
             raise AuthenticationError(
-                "The linked API key was rejected by the backend. It may be revoked or expired."
+                "The linked access token or API key was rejected with 401 Unauthorized (expired or invalid)."
+            )
+        if response.status_code == 403:
+            raise AuthorizationError(
+                "The backend rejected the request with 403 Forbidden (authorization policy violation)."
             )
         if response.status_code >= 400:
             raise BackendHttpError(response.status_code)
+
+        try:
+            return response.json()
+        except ValueError as exc:
+            logger.warning("Backend returned non-JSON response for %s", path)
+            raise BackendResponseError(f"Backend returned invalid JSON for {path}") from exc
+
+    async def _post(
+        self,
+        path: str,
+        json_data: Dict[str, Any],
+        api_key: Optional[str] = None,
+    ) -> Any:
+        headers: Dict[str, str] = {}
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+        url = f"{self._base_url}{path}"
+        try:
+            response = await self._client.post(url, json=json_data, headers=headers)
+        except httpx.TimeoutException as exc:
+            logger.warning("Backend request timed out: %s", path)
+            raise BackendUnavailableError(f"Request to {path} timed out") from exc
+        except httpx.HTTPError as exc:
+            logger.warning("Backend request failed: %s (%s)", path, type(exc).__name__)
+            raise BackendUnavailableError(f"Could not reach backend at {path}") from exc
+
+        if response.status_code == 401:
+            raise AuthenticationError("The request was rejected with 401 Unauthorized.")
+        if response.status_code == 403:
+            raise AuthorizationError("The request was rejected with 403 Forbidden.")
+        if response.status_code >= 400:
+            detail = ""
+            try:
+                detail = response.json().get("detail", "")
+            except Exception:
+                pass
+            raise BackendHttpError(response.status_code, detail=detail)
 
         try:
             return response.json()
@@ -221,6 +267,34 @@ class TelemetryApiClient:
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
+
+    async def init_oauth_session(self, sender_address: str, redirect_uri: Optional[str] = None) -> Dict[str, Any]:
+        """Initiates an OAuth PKCE session with the backend, returning the authorization URL."""
+        return await self._post("/api/auth/oauth/agent-init", {"sender_address": sender_address, "redirect_uri": redirect_uri})
+
+    async def exchange_oauth_session(
+        self,
+        sender_address: str,
+        session_id: Optional[str] = None,
+        handoff_code: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Exchanges an authorized session_id or single-use handoff code for access & refresh tokens."""
+        return await self._post(
+            "/api/auth/oauth/agent-exchange",
+            {
+                "sender_address": sender_address,
+                "session_id": session_id,
+                "handoff_code": handoff_code,
+            },
+        )
+
+    async def refresh_application_token(self, refresh_token: str) -> Dict[str, Any]:
+        """Refreshes the 15-minute access token using the rotating refresh token."""
+        return await self._post("/api/auth/refresh", {"refresh_token": refresh_token})
+
+    async def logout_session(self, refresh_token: Optional[str] = None) -> Dict[str, Any]:
+        """Revokes the refresh token session on the backend."""
+        return await self._post("/api/auth/logout", {"refresh_token": refresh_token})
 
     async def get_health(self) -> HealthStatus:
         payload = await self._get("/api/health", api_key=None)
@@ -268,3 +342,4 @@ class TelemetryApiClient:
             params["agent_name"] = agent_name
         payload = await self._get("/api/dashboard", api_key=api_key, params=params)
         return self._validate(payload, DashboardResponse)
+
