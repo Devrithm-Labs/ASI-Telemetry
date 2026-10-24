@@ -132,7 +132,24 @@ class ASI_Telemetry:
 ASITelemetry = ASI_Telemetry
 
 
+def init(
+    api_key: str = "",
+    agent_name: str = "assistant",
+    agent_address: str = "",
+    backend_url: Optional[str] = None,
+) -> ASI_Telemetry:
+    """Initialize the ASI Telemetry SDK with global client settings."""
+    return ASI_Telemetry(
+        api_key=api_key,
+        agent_name=agent_name,
+        agent_address=agent_address,
+        backend_url=backend_url,
+    )
+
+
+
 __all__ = [
+    "__version__",
     # Primary Client
     "ASI_Telemetry",
     "ASITelemetry",

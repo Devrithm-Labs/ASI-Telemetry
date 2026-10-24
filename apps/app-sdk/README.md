@@ -5,13 +5,11 @@ The official lightweight observability, runtime metrics, and distributed tracing
 ## Installation
 
 ```bash
-pip install -e .
+pip install asi-telemetry
 ```
 
-Or install core dependencies directly:
-```bash
-pip install httpx
-```
+Zero external dependencies required (built using standard Python libraries).
+
 
 ## Architecture & Features
 

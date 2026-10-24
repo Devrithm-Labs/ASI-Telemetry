@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,5 +7,40 @@ name = "asi-telemetry"
 version = "0.2.0"
 description = "Observability and Distributed Tracing SDK for AI Agents and LLMs"
 readme = "README.md"
+license = "MIT"
 requires-python = ">=3.9"
+authors = [
+    { name = "Devrithm Labs" }
+]
+keywords = [
+    "telemetry",
+    "tracing",
+    "observability",
+    "ai-agents",
+    "llm",
+    "metrics",
+    "gemini",
+    "openai",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Monitoring",
+]
 dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/Devrithm-Labs/ASI-Telemetry"
+Repository = "https://github.com/Devrithm-Labs/ASI-Telemetry"
+"Bug Tracker" = "https://github.com/Devrithm-Labs/ASI-Telemetry/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
