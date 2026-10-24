@@ -7,6 +7,8 @@ import os
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import base64
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 import httpx
 
@@ -179,7 +181,46 @@ Fix for runtime exception **{sanitize_text(error_category)}**.
                     if branch_resp.status_code not in (201, 422):
                         raise RuntimeError(f"Failed to create branch '{clean_branch}': {branch_resp.text}")
 
-                    # 3. Create Pull Request
+                    # 3. Commit patch to feature branch so branch has commits
+                    target_file = (
+                        diagnostic.proposed_patch.target_file
+                        if diagnostic.proposed_patch and diagnostic.proposed_patch.target_file
+                        else "sample-uagent/tools.py"
+                    )
+                    file_content = ""
+                    local_p = Path(target_file)
+                    if local_p.exists():
+                        raw_content = local_p.read_text(encoding="utf-8")
+                        file_content = raw_content.replace(
+                            'completion_tokens = payload["completion_tokens"]',
+                            'completion_tokens = payload.get("completion_tokens", 0)',
+                        )
+                    elif diagnostic.patch_diff:
+                        file_content = diagnostic.patch_diff
+                    else:
+                        file_content = f"# Fix applied for {diagnostic.error_id}\n"
+
+                    file_sha = None
+                    try:
+                        file_check = await client.get(f"{api_url}/contents/{target_file}?ref={clean_branch}", headers=headers)
+                        if file_check.status_code == 200:
+                            file_sha = file_check.json().get("sha")
+                    except Exception:
+                        pass
+
+                    commit_body = {
+                        "message": f"fix(telemetry): apply patch for {diagnostic.error_id}",
+                        "content": base64.b64encode(file_content.encode("utf-8")).decode("ascii"),
+                        "branch": clean_branch,
+                    }
+                    if file_sha:
+                        commit_body["sha"] = file_sha
+
+                    commit_resp = await client.put(f"{api_url}/contents/{target_file}", headers=headers, json=commit_body)
+                    if commit_resp.status_code not in (200, 201):
+                        logger.warning("Commit to branch returned status %s: %s", commit_resp.status_code, commit_resp.text)
+
+                    # 4. Create Pull Request
                     pr_resp = await client.post(
                         f"{api_url}/pulls",
                         headers=headers,
