@@ -56,15 +56,17 @@ def create_agent_oauth_session(
     Generates a secure state, PKCE code challenge, and authorization link.
     """
     clean_sender = (sender_address or "").strip()
-    target_redirect = redirect_uri or settings.GOOGLE_REDIRECT_URI
+    target_redirect = (redirect_uri or settings.GOOGLE_REDIRECT_URI).strip().rstrip("/")
+    normalized_allowed = [u.strip().rstrip("/") for u in settings.ALLOWED_REDIRECT_URIS]
 
     # Validate redirect URI against configured allowed list
-    if target_redirect not in settings.ALLOWED_REDIRECT_URIS:
-        logger.warning("Rejected redirect URI: %s", target_redirect)
+    if target_redirect not in normalized_allowed:
+        logger.warning("Rejected redirect URI: %s (Allowed: %s)", target_redirect, normalized_allowed)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Redirect URI '{target_redirect}' is not allowed.",
         )
+
 
     session_id = secrets.token_urlsafe(32)
     # PKCE: high-entropy code verifier (43-128 chars) and S256 challenge

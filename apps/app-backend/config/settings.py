@@ -36,17 +36,29 @@ class Settings:
     GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "")
     GOOGLE_CLIENT_SECRET: str = os.getenv("GOOGLE_CLIENT_SECRET", "")
     GOOGLE_REDIRECT_URI: str = os.getenv(
-        "GOOGLE_REDIRECT_URI", "http://localhost:8080/api/auth/oauth/callback"
+        "GOOGLE_REDIRECT_URI",
+        "https://asi-telemetry-backend.vercel.app/api/auth/oauth/callback",
     )
-    ALLOWED_REDIRECT_URIS: list[str] = [
-        uri.strip()
-        for uri in os.getenv(
-            "ALLOWED_REDIRECT_URIS",
-            "http://localhost:8080/api/auth/oauth/callback,http://127.0.0.1:8080/api/auth/oauth/callback",
-        ).split(",")
-        if uri.strip()
-    ]
-    FRONTEND_BASE_URL: str = os.getenv("FRONTEND_BASE_URL", "http://localhost:3000")
+    ALLOWED_REDIRECT_URIS: list[str] = list(
+        set(
+            [
+                uri.strip().rstrip("/")
+                for uri in os.getenv(
+                    "ALLOWED_REDIRECT_URIS",
+                    "https://asi-telemetry-backend.vercel.app/api/auth/oauth/callback,http://localhost:8080/api/auth/oauth/callback,http://127.0.0.1:8080/api/auth/oauth/callback",
+                ).split(",")
+                if uri.strip()
+            ]
+            + [
+                os.getenv(
+                    "GOOGLE_REDIRECT_URI",
+                    "https://asi-telemetry-backend.vercel.app/api/auth/oauth/callback",
+                ).strip().rstrip("/")
+            ]
+        )
+    )
+    FRONTEND_BASE_URL: str = os.getenv("FRONTEND_BASE_URL", "https://asi-telemetry.vercel.app")
+
 
 
 settings = Settings()
