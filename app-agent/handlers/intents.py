@@ -32,6 +32,7 @@ class IntentName(str, Enum):
     SELECT_REPO = "select_repo"
     LINK_GITHUB = "link_github"
     REPO_STATUS = "repo_status"
+    SIMULATE_ERROR = "simulate_error"
     UNSUPPORTED = "unsupported"
 
 
@@ -214,6 +215,10 @@ def parse_intent(text: str) -> Intent:
     repo_sel_match = _REPO_SELECT_RE.search(raw) or _BARE_REPO_RE.match(raw.strip())
     if repo_sel_match:
         return Intent(IntentName.SELECT_REPO, repo=repo_sel_match.group(1))
+
+    # Error simulation for testing: "simulate error", "trigger error", "test error"
+    if any(phrase in lowered for phrase in ("simulate error", "trigger error", "test error", "inject error")):
+        return Intent(IntentName.SIMULATE_ERROR)
 
     # Runtime error diagnosis: "diagnose error", "why did it fail"
     if _contains_any(lowered, _DIAGNOSE_WORDS):

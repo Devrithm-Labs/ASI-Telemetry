@@ -150,6 +150,8 @@ class ChatProcessor:
             return await self._link_github(intent, sender)
         if intent.name == IntentName.REPO_STATUS:
             return await self._repo_status(sender)
+        if intent.name == IntentName.SIMULATE_ERROR:
+            return await self._simulate_error(sender)
 
         # Every remaining intent exposes private account data and therefore
         # requires a validated, linked account credential with auto-refresh support.
@@ -327,11 +329,42 @@ class ChatProcessor:
         token, repo = self._links.get_github(sender)
         return responses.format_repo_status(repo=repo, has_token=bool(token))
 
+    async def _simulate_error(self, sender: str) -> str:
+        """Simulates an intentional runtime defect for debugging verification in ASI:One."""
+        exc = KeyError("completion_tokens")
+        diag = self._diagnostics.capture_exception(
+            exc,
+            sender=sender,
+            category="agent_defect",
+            status_code=500,
+            endpoint="tools.compute_analytics",
+            operation="compute_analytics",
+        )
+        diag.suggested_fix = "Direct dictionary indexing on 'completion_tokens' raised KeyError. Use dict.get() fallback."
+        patch = self._diagnostics.generate_patch(
+            diag,
+            target_file="sample-uagent/tools.py",
+            diff="""--- a/sample-uagent/tools.py\n+++ b/sample-uagent/tools.py\n@@ -32,2 +32,2 @@\n-    completion_tokens = payload["completion_tokens"]\n+    completion_tokens = payload.get("completion_tokens", 0)\n""",
+            explanation="Safe guard added against missing 'completion_tokens' in analytics payload.",
+            tests_to_run=["python sample-uagent/run_local_test.py"],
+            risks=["Minimal; backward compatible fallback default to 0."],
+        )
+        diag.proposed_patch = patch
+        return (
+            f"🚨 **Simulated Defect Injected!**\n\n"
+            f"• **Error**: `KeyError: 'completion_tokens'` in `sample-uagent/tools.py`\n"
+            f"• **Diagnostic ID**: `{diag.id}`\n\n"
+            "Now type **'diagnose'** to view the root cause and proposed fix!"
+        )
+
     async def _diagnose(self, sender: str) -> str:
         """Inspect latest runtime error and propose a patch if code defect."""
         diag = self._diagnostics.get_last_diagnostic(sender)
         if not diag:
-            return "No runtime errors or failures have been captured for your session yet."
+            return (
+                "No runtime errors or failures have been captured for your session yet.\n"
+                "Tip: To simulate a sample defect for testing, reply: 'simulate error'."
+            )
 
         if not diag.proposed_patch and diag.category in ("agent_defect", "backend_defect"):
             # Generate a concrete patch proposal

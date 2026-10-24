@@ -1,9 +1,12 @@
 {
-  "python.defaultInterpreterPath": "${workspaceFolder}/apps/testing/.venv/Scripts/python.exe",
+  "python.defaultInterpreterPath": "${workspaceFolder}/app-agent/.venv/Scripts/python.exe",
   "python.analysis.extraPaths": [
+    "${workspaceFolder}/app-agent",
+    "${workspaceFolder}/app-agent/.venv/Lib/site-packages",
     "${workspaceFolder}/apps/testing",
-    "${workspaceFolder}/apps/testing/src",
+    "${workspaceFolder}/apps/testing/.venv/Lib/site-packages",
     "${workspaceFolder}/apps/app-sdk",
-    "${workspaceFolder}/apps/app-sdk/src"
+    "${workspaceFolder}/apps/app-sdk/src",
+    "${workspaceFolder}/sample-uagent"
   ]
 }

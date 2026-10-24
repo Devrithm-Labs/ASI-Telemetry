@@ -25,8 +25,20 @@ def get_llm_traces(
     status: Optional[str] = None,
     model: Optional[str] = None,
 ):
-    """Retrieves LLM traces from ClickHouse with user scoping and LangSmith-like filtering."""
+    """Retrieves LLM traces from ClickHouse strictly scoped to the requesting user."""
     user_id = resolve_request_user_id(request)
+    if not user_id:
+        return {
+            "traces": [],
+            "total": 0,
+            "stats": {
+                "total_traces": 0,
+                "total_tokens": 0,
+                "total_cost_usd": 0.0,
+                "avg_latency_ms": 0.0,
+            },
+        }
+
     return LLMController.get_llm_traces(
         limit=limit,
         search=search,
@@ -46,6 +58,36 @@ def get_llm_monitoring(
 ):
     """Calculates and aggregates all user-scoped LLM metrics, KPIs, and chart series."""
     user_id = resolve_request_user_id(request)
+    if not user_id:
+        return {
+            "summary": {
+                "totalCount": 0,
+                "errorCount": 0,
+                "successCount": 0,
+                "successRate": 100.0,
+                "totalTokens": 0,
+                "promptTokens": 0,
+                "completionTokens": 0,
+                "totalCost": 0.0,
+                "avgLatencyMs": 0.0,
+                "p99LatencyMs": 0.0,
+            },
+            "models": ["All Models"],
+            "toolNames": [],
+            "traceCountData": [],
+            "traceLatencyData": [],
+            "traceErrorRateData": [],
+            "llmCountData": [],
+            "llmLatencyData": [],
+            "totalCostData": [],
+            "costPerTraceData": [],
+            "tokensData": [],
+            "outputTokensPerTraceData": [],
+            "inputTokensPerTraceData": [],
+            "toolsCountData": [],
+            "toolsLatencyData": [],
+        }
+
     return LLMController.get_llm_monitoring_data(
         time_range=time_range,
         model=model,

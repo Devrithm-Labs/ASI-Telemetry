@@ -20,7 +20,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getAuthHeaders } from "@/lib/auth";
+import { getAuthHeaders, getStoredUser } from "@/lib/auth";
 import { getBackendUrl } from "@/lib/api-config";
 
 export interface LLMTraceItem {
@@ -50,6 +50,7 @@ export interface LLMTraceItem {
 }
 
 export default function LLMTracingPage() {
+  const [currentUser, setCurrentUser] = React.useState<ReturnType<typeof getStoredUser>>(null);
   const [traces, setTraces] = React.useState<LLMTraceItem[]>([]);
   // Closed by default!
   const [selectedTrace, setSelectedTrace] = React.useState<LLMTraceItem | null>(null);
@@ -61,6 +62,10 @@ export default function LLMTracingPage() {
   const [hoveredTraceId, setHoveredTraceId] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
   const [copiedId, setCopiedId] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    setCurrentUser(getStoredUser());
+  }, []);
 
   const fetchTraces = React.useCallback(async () => {
     setIsLoading(true);
@@ -273,7 +278,9 @@ export default function LLMTracingPage() {
           <div className="flex h-5 w-5 items-center justify-center rounded bg-primary text-[10px] font-bold text-primary-foreground shadow-xs">
             <Sparkles className="h-3 w-3" />
           </div>
-          <span className="font-semibold text-sm tracking-tight text-foreground">devrithm</span>
+          <span className="font-semibold text-sm tracking-tight text-foreground">
+            {currentUser?.name || currentUser?.email?.split("@")[0] || "devrithm"}
+          </span>
           <span className="rounded bg-muted border border-border px-1.5 py-0.5 font-mono text-[10px] font-medium text-foreground">
             ASI:LLM
           </span>

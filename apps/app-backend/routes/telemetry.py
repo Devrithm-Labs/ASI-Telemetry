@@ -28,6 +28,22 @@ def get_dashboard_data(
 ):
     """Unified endpoint returning pre-calculated summary KPIs, time-series, traces, and application metadata for user."""
     user_id = resolve_request_user_id(request)
+    if not user_id:
+        return {
+            "summary": {
+                "totalRequests": 0,
+                "errorCount": 0,
+                "successCount": 0,
+                "avgResponseTimeMs": 0.0,
+                "p95ResponseTimeMs": 0.0,
+                "totalCostUsd": 0.0,
+                "successRate": 100.0,
+            },
+            "recentTraces": [],
+            "applications": [],
+            "timeSeries": [],
+        }
+
     return TelemetryController.get_dashboard_payload(
         time_range=time_range,
         limit=limit,
