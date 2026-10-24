@@ -102,6 +102,20 @@ async def test_handoff_code_completes_linking(processor, service):
 
 
 @pytest.mark.asyncio
+async def test_handoff_code_invalid_shows_friendly_error(processor, service):
+    from api_client import BackendHttpError
+    processor._links.set_pending_session(SENDER, "sess_abc123")
+    service.exchange_oauth = AsyncMock(
+        side_effect=BackendHttpError(400, "Invalid authorization handoff code.")
+    )
+
+    reply = await processor.process("AUTH-9EC1516Y", SENDER)
+
+    assert "Invalid Authorization Code" in reply
+    assert "AUTH-9EC1516Y" in reply
+
+
+@pytest.mark.asyncio
 async def test_automatic_token_renewal_on_401(processor, service):
     old_access = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJvbGQifQ.signature12345678901234567890"
     new_access = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJuZXcifQ.signature09876543210987654321"

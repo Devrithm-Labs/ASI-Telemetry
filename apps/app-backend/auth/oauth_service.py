@@ -16,7 +16,7 @@ import httpx
 
 from config import settings
 from auth.database import (
-    get_oauth_session,
+    get_oauth_session as db_get_oauth_session,
     get_or_create_google_user,
     get_refresh_token_record,
     get_user_by_id,
@@ -151,14 +151,41 @@ def create_agent_oauth_session(
     }
 
 
-def get_oauth_session(session_id: str) -> Optional[Dict[str, Any]]:
-    """Retrieves an active OAuth session by ID, pruning expired sessions first."""
+def get_oauth_session(
+    session_id: Optional[str] = None,
+    state_hash: Optional[str] = None,
+    handoff_code_hash: Optional[str] = None,
+) -> Optional[Dict[str, Any]]:
+    """
+    Retrieves an active OAuth session by session_id, state_hash, or handoff_code_hash.
+    Checks in-memory session store first, falling back to database/ClickHouse.
+    """
     with _sessions_lock:
         _prune_expired_sessions()
-        session = _oauth_sessions.get(session_id)
-        if session:
-            return dict(session)
-        return None
+        if session_id and session_id in _oauth_sessions:
+            return dict(_oauth_sessions[session_id])
+        if handoff_code_hash:
+            for s in _oauth_sessions.values():
+                if secrets.compare_digest(s.get("handoff_code_hash") or "", handoff_code_hash):
+                    return dict(s)
+        if state_hash:
+            for s in _oauth_sessions.values():
+                expected = s.get("state_hash") or hash_token(s.get("state", ""))
+                if secrets.compare_digest(expected, state_hash):
+                    return dict(s)
+
+    # Fallback to persistent storage (database / ClickHouse)
+    session = db_get_oauth_session(
+        session_id=session_id,
+        state_hash=state_hash,
+        handoff_code_hash=handoff_code_hash,
+    )
+    if session:
+        with _sessions_lock:
+            _oauth_sessions[session["session_id"]] = session
+        return dict(session)
+
+    return None
 
 
 async def handle_google_oauth_callback(
@@ -407,6 +434,26 @@ def exchange_agent_oauth_session(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="This authorization session is bound to a different agent conversation.",
             )
+
+    # Strictly validate the handoff code
+    if not handoff_code:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Single-use handoff code is required to complete authorization.",
+        )
+
+    provided_code_hash = hash_token(handoff_code.strip().upper())
+    session_code_hash = target_session.get("handoff_code_hash")
+    if not session_code_hash or not secrets.compare_digest(session_code_hash, provided_code_hash):
+        logger.warning(
+            "Invalid handoff code presented for session %s by sender %s",
+            target_session.get("session_id"),
+            clean_sender,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid authorization handoff code. Please check the code displayed in your browser.",
+        )
 
     if target_session.get("status") == "pending":
         raise HTTPException(

@@ -241,11 +241,26 @@ class ChatProcessor:
                 sender,
                 pending_session,
             )
-            token_resp = await self._service.exchange_oauth(
-                sender_address=sender,
-                session_id=pending_session,
-                handoff_code=intent.handoff_code,
-            )
+            try:
+                token_resp = await self._service.exchange_oauth(
+                    sender_address=sender,
+                    session_id=pending_session,
+                    handoff_code=intent.handoff_code,
+                )
+            except BackendHttpError as exc:
+                if exc.status_code == 400:
+                    return (
+                        "❌ **Invalid Authorization Code**\n\n"
+                        f"The code `{intent.handoff_code}` does not match your active authorization session.\n"
+                        "Please verify the code displayed on your browser screen and try again."
+                    )
+                if exc.status_code == 404:
+                    return (
+                        "❌ **Session Expired or Not Found**\n\n"
+                        "No active authorization session was found. "
+                        "Please type `connect my account` to generate a fresh connection link."
+                    )
+                raise
             access_token = token_resp.get("access_token") if isinstance(token_resp, dict) else token_resp.access_token
             refresh_token = token_resp.get("refresh_token") if isinstance(token_resp, dict) else token_resp.refresh_token
             user_info = token_resp.get("user", {}) if isinstance(token_resp, dict) else getattr(token_resp, "user", {})

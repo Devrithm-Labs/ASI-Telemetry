@@ -137,6 +137,28 @@ async def test_handoff_exchange_success():
 
 
 @pytest.mark.asyncio
+async def test_handoff_exchange_from_database_fallback():
+    """Verify exchange succeeds even when in-memory cache is empty (database fallback)."""
+    sender = "agent1qdbfallback111111111111111111111111111111111111111111111"
+    init_res = create_agent_oauth_session(sender_address=sender)
+    session_id = init_res["session_id"]
+    state = init_res["state"]
+    cb_res = await handle_google_oauth_callback(code="mock_code", state=state)
+    handoff_code = cb_res["handoff_code"]
+
+    # Clear in-memory cache to force fallback to database lookup
+    _oauth_sessions.clear()
+
+    tokens = exchange_agent_oauth_session(
+        sender_address=sender,
+        handoff_code=handoff_code,
+    )
+
+    assert tokens["status"] == "success"
+    assert tokens["access_token"] is not None
+
+
+@pytest.mark.asyncio
 async def test_handoff_exchange_rejects_wrong_sender():
     sender = "agent1qlegitsender55555555555555555555555555555555555555555555555"
     attacker = "agent1qattackersender666666666666666666666666666666666666666666"
@@ -155,6 +177,26 @@ async def test_handoff_exchange_rejects_wrong_sender():
             handoff_code=handoff_code,
         )
     assert exc_info.value.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_handoff_exchange_rejects_invalid_code():
+    sender = "agent1qtestsenderwrongcode11111111111111111111111111111111111111"
+    init_res = create_agent_oauth_session(sender_address=sender)
+    session_id = init_res["session_id"]
+    state = init_res["state"]
+    cb_res = await handle_google_oauth_callback(code="mock_code", state=state)
+    real_code = cb_res["handoff_code"]
+
+    # Attempt exchange with wrong code (even if session_id matches)
+    with pytest.raises(HTTPException) as exc_info:
+        exchange_agent_oauth_session(
+            sender_address=sender,
+            session_id=session_id,
+            handoff_code="AUTH-9EC1516Y",
+        )
+    assert exc_info.value.status_code == 400
+    assert "Invalid authorization handoff code" in exc_info.value.detail
 
 
 @pytest.mark.asyncio
