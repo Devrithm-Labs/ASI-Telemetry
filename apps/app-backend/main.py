@@ -2,31 +2,22 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from config.database import db_connection
-from database.schema import initialize_schema
-from routes import (
-    telemetry_router,
-    llm_router,
-    health_router,
-    auth_router,
-    api_keys_router,
-    integrations_router,
-)
-from auth.database import initialize_auth_database
+from core.database import db_connection
+from models import initialize_schema
+from api import api_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Connect to ClickHouse on server startup and initialize schemas
+    # Connect to PostgreSQL on server startup and initialize schemas
     db_connection.connect()
     initialize_schema(db_connection)
-    initialize_auth_database()
     yield
 
 
 app = FastAPI(
     title="ASI-Telemetry Backend",
-    description="Simple ClickHouse Telemetry Ingestion for AI Agents",
+    description="PostgreSQL Telemetry and Observability Backend for AI Agents with SQLAlchemy ORM",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -40,13 +31,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Register API routes
-app.include_router(telemetry_router)
-app.include_router(llm_router)
-app.include_router(health_router)
-app.include_router(auth_router)
-app.include_router(api_keys_router)
-app.include_router(integrations_router)
+# Register modular API routes
+app.include_router(api_router)
 
 
 @app.get("/")

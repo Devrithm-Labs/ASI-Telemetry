@@ -6,10 +6,12 @@ class HealthController:
 
     @staticmethod
     def get_health():
-        """Returns backend and ClickHouse connection status."""
+        """Returns backend and PostgreSQL connection status."""
         return {
             "status": "healthy",
-            "clickhouse_connected": db_connection.is_connected,
+            "database_connected": db_connection.is_connected,
+            "database_type": "postgresql",
+            "postgres_connected": db_connection.is_connected,
             "total_records": len(db_connection.memory_records),
             "total_llm_records": len(db_connection.llm_records),
         }

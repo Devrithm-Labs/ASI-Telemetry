@@ -167,7 +167,7 @@ export function TraceTable({ traces, onSelectTrace }: TraceTableProps) {
                 variant="outline"
                 size="sm"
                 onClick={confirmClearAll}
-                title="Clear all tool traces from ClickHouse"
+                title="Clear all tool traces from database"
                 className="h-8 text-xs font-medium text-destructive hover:bg-destructive/10 hover:text-destructive"
               >
                 <Trash2 className="h-3 w-3 mr-1" />
@@ -361,7 +361,7 @@ export function TraceTable({ traces, onSelectTrace }: TraceTableProps) {
                       <span className="font-mono font-semibold text-foreground">
                         {deleteTarget.traceId}
                       </span>{" "}
-                      from ClickHouse? This action cannot be undone.
+                      from the database? This action cannot be undone.
                     </>
                   )}
                   {deleteTarget.type === "selected" && (
@@ -370,7 +370,7 @@ export function TraceTable({ traces, onSelectTrace }: TraceTableProps) {
                       <span className="font-semibold text-foreground">
                         {deleteTarget.count} selected trace records
                       </span>{" "}
-                      from ClickHouse? This action cannot be undone.
+                      from the database? This action cannot be undone.
                     </>
                   )}
                   {deleteTarget.type === "all" && (
@@ -379,7 +379,7 @@ export function TraceTable({ traces, onSelectTrace }: TraceTableProps) {
                       <span className="font-semibold text-destructive">
                         all {deleteTarget.count} traces
                       </span>{" "}
-                      recorded in ClickHouse? This will truncate the telemetry table and reset all metrics.
+                      recorded in the database? This will truncate the telemetry table and reset all metrics.
                     </>
                   )}
                 </p>

@@ -43,7 +43,7 @@ class MetricSummary(BaseModel):
 
 
 class AnalyticsBucket(BaseModel):
-    """Time-bucketed aggregation with native ClickHouse quantiles"""
+    """Time-bucketed aggregation with quantiles"""
     time: str
     total: int
     success: int
@@ -56,9 +56,28 @@ class AnalyticsBucket(BaseModel):
     error_rate: float
 
 
+class TelemetryResponse(BaseModel):
+    """Standard API response schema for telemetry ingest."""
+    status: str = "success"
+    message: str
+    data: Optional[Any] = None
+
+
+class HealthResponse(BaseModel):
+    """Schema for health status response."""
+    status: str = "healthy"
+    database_connected: bool = True
+    database_type: str = "postgresql"
+    postgres_connected: bool = True
+    total_records: int = 0
+    total_llm_records: int = 0
+
+
 __all__ = [
     "MetricPayload",
     "MetricSummary",
     "AnalyticsBucket",
+    "TelemetryResponse",
+    "HealthResponse",
     "LLMTracePayload",
 ]

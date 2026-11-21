@@ -15,7 +15,7 @@ Zero external dependencies required (built using standard Python libraries).
 
 - **Agent & Tool Performance Tracking (`MetricsTracker`)**:
   - Measures execution latency, request counts, and success/error status.
-  - Asynchronously dispatches metrics to the ASI Telemetry backend and ClickHouse.
+  - Asynchronously dispatches metrics to the ASI Telemetry backend and PostgreSQL database.
   - Zero performance overhead; non-blocking background workers.
   - Clean real-time terminal telemetry reporting.
 

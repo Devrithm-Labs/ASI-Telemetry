@@ -1,55 +1,75 @@
-# ASI-Telemetry Backend (FastAPI + ClickHouse)
+# ASI-Telemetry Backend (FastAPI + PostgreSQL + SQLAlchemy ORM)
 
-A simple, easy-to-understand backend for ingesting AI Agent SDK telemetry metrics and storing them in **ClickHouse** with timestamps.
+A scalable, reliable backend for ingesting AI Agent SDK telemetry metrics and LLM traces, storing them in **PostgreSQL** using **SQLAlchemy ORM**.
 
 ---
 
-## 📂 Simplified Folder Structure
+## 📂 Simplified & Reliable Folder Structure
 
-The project follows a standard MVC / Controller-Route architecture:
+The backend has been restructured into an industry-standard, clean, and reliable FastAPI architecture with self-explanatory directory names:
 
 ```text
 apps/app-backend/
-├── config/
-│   └── settings.py       # Reads server and ClickHouse settings from .env
-├── database/
-│   └── clickhouse.py     # ClickHouse client & table operations (stores data with timestamps)
-├── schemas/
-│   └── telemetry.py      # Pydantic schemas for SDK input data & responses
-├── controllers/
-│   └── telemetry.py      # Business logic: saves metrics & queries data
-├── routes/
-│   └── telemetry.py      # FastAPI endpoints (/api/metrics, /api/health, /api/metrics/summary)
-├── main.py               # Minimal FastAPI app (CORS + mounts routes) (~35 lines)
-├── run.py                # Runner script to start the server
-├── requirements.txt      # Minimal Python packages
-├── .env                  # Active ClickHouse and server credentials
-├── .env.example          # Sample environment file
-└── README.md             # This guide
+├── core/                         # Core infrastructure & singleton services
+│   ├── config.py                 # Central settings & .env configuration
+│   ├── database.py               # PostgreSQL engine, sessionmaker, & DatabaseManager
+│   └── security.py               # Argon2 password hashing & JWT token encoding/decoding
+├── models/                       # SQLAlchemy ORM declarative models
+│   ├── base.py                   # Declarative Base metadata
+│   ├── telemetry.py              # TelemetryMetricModel (time-series metrics)
+│   ├── llm.py                    # LLMTraceModel (prompts, tokens, latency, cost)
+│   ├── user.py                   # UserModel, RefreshTokenModel, OAuthSessionModel
+│   ├── api_key.py                # ApiKeyModel (scoped API keys)
+│   └── __init__.py               # Exports & initialize_schema() helper
+├── schemas/                      # Pydantic validation & response schemas
+│   ├── telemetry.py              # Telemetry input & summary schemas
+│   ├── llm.py                    # LLM trace & span schemas
+│   ├── auth.py                   # Signup, login, profile, & token schemas
+│   ├── api_key.py                # API key creation & response schemas
+│   └── __init__.py               # Aggregated schema exports
+├── services/                     # Business logic, repositories, & third-party integrations
+│   ├── telemetry_service.py      # TelemetryRepository & dashboard timeline analytics
+│   ├── llm_service.py            # LLMRepository & monitoring aggregations
+│   ├── auth_service.py           # User authentication & token management
+│   ├── api_key_service.py        # API key generation, masking, & verification
+│   ├── oauth_service.py          # Google OAuth, PKCE, & agent handoff flow
+│   └── __init__.py               # Aggregated services export
+├── api/                          # FastAPI REST endpoints & HTTP dependencies
+│   ├── dependencies.py           # Auth dependencies (get_current_user, API key resolution)
+│   ├── telemetry.py              # /api/metrics, /api/dashboard, /api/traces
+│   ├── llm.py                    # /api/llm/traces, /api/llm/monitoring
+│   ├── auth.py                   # /api/auth/signup, /login, /me, /profile, /oauth/*
+│   ├── api_keys.py               # /api/api-keys
+│   ├── health.py                 # /api/health
+│   └── __init__.py               # Aggregated api_router mounting all sub-routers
+├── tests/                        # Automated unit & integration test suites
+│   ├── test_database_sqlalchemy.py
+│   ├── test_oauth_and_tokens.py
+│   └── test_profile_update.py
+├── main.py                       # FastAPI application setup & lifespan
+├── run.py                        # Server runner script
+├── requirements.txt              # Python package dependencies
+├── pyproject.toml                # Project metadata & test configuration
+├── pyrightconfig.json            # Strict type checking configuration for Pyright
+└── README.md                     # Documentation
 ```
+
+> **Backwards Compatibility**: Legacy import paths (`config/`, `database/`, `controllers/`, `routes/`, `auth/`) are preserved as lightweight re-export shims so existing tests, scripts, or external clients continue working with 100% backwards compatibility.
 
 ---
 
-## 🗄️ ClickHouse Table & Timestamps
+## 🗄️ PostgreSQL Database & SQLAlchemy ORM Models
 
-ClickHouse stores time-series data in the `telemetry_metrics` table with millisecond UTC precision:
+All tables are defined as declarative models in `models/` and automatically managed via SQLAlchemy ORM:
 
-```sql
-CREATE TABLE IF NOT EXISTS telemetry_metrics (
-    id String,
-    timestamp DateTime64(3, 'UTC'),
-    agent_name LowCardinality(String),
-    func_name LowCardinality(String),
-    status LowCardinality(String),
-    response_time_ms Float64,
-    memory_before Float64,
-    memory_after Float64,
-    metadata String
-) ENGINE = MergeTree()
-ORDER BY (timestamp, agent_name);
-```
+- `telemetry_metrics`: Stores time-series metrics from AI agents (`id`, `timestamp`, `agent_name`, `func_name`, `status`, `response_time_ms`, `metadata`, `user_id`).
+- `llm_traces`: Stores LLM prompt, completion, span, latency, token, and cost data (`id`, `trace_id`, `span_id`, `name`, `model`, `prompt_tokens`, `completion_tokens`, `cost_usd`, etc.).
+- `users`: User accounts with Argon2 password hashing and Google OAuth linkage.
+- `refresh_tokens`: Rotated refresh tokens with family tracking and reuse detection.
+- `oauth_sessions`: Agent handoff sessions with PKCE verification and token exchange.
+- `api_keys`: Scoped API keys with permissions and rate limit tracking.
 
-> **Fallback Mode**: If ClickHouse is not currently running on your machine, the backend will log a friendly warning and store records in-memory so your server never crashes during local testing.
+> **Fallback Mode**: If PostgreSQL is temporarily offline during local development or unit testing, the backend logs a friendly warning and stores records in-memory so your server never crashes.
 
 ---
 
@@ -62,24 +82,27 @@ In `apps/app-backend/.env`:
 HOST=0.0.0.0
 PORT=8080
 
-# ClickHouse Database
-CLICKHOUSE_HOST=localhost
-CLICKHOUSE_PORT=8123
-CLICKHOUSE_USER=default
-CLICKHOUSE_PASSWORD=
-CLICKHOUSE_DATABASE=default
-CLICKHOUSE_SECURE=False
+# PostgreSQL Database Configuration (SQLAlchemy ORM)
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/asi_telemetry
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=asi_telemetry
+POSTGRES_SSL=False
+
+# Authentication
+AUTH_SECRET_KEY=your-secret-key-here
 ```
 
 ---
 
 ## 🚀 How to Run the Backend
 
-### Step 1: (Optional) Run ClickHouse via Docker
+### Step 1: (Optional) Run PostgreSQL via Docker
 ```powershell
-docker run -d --name clickhouse-server -p 8123:8123 -p 9000:9000 clickhouse/clickhouse-server:latest
+docker run -d --name asi-postgres -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=asi_telemetry -p 5432:5432 postgres:16-alpine
 ```
-*(Or use a free instance at clickhouse.com and put credentials into `.env`)*.
 
 ### Step 2: Install Python Dependencies
 ```powershell
@@ -91,35 +114,12 @@ pip install -r requirements.txt
 ```powershell
 python run.py
 ```
-Or directly with uvicorn:
+
+### Step 4: Run Tests & Type Checks
 ```powershell
-uvicorn main:app --host 0.0.0.0 --port 8080 --reload
+# Run all tests
+pytest tests -v
+
+# Run type checker
+pyright
 ```
-
----
-
-## 🧪 Available API Endpoints
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/api/metrics` | Ingests telemetry metrics from SDK and inserts into ClickHouse |
-| `GET` | `/api/dashboard` | Unified endpoint returning summary KPIs, time-series, traces, & apps |
-| `GET` | `/api/health` | Health check & ClickHouse connection status |
-| `GET` | `/docs` | Interactive Swagger API documentation |
-
----
-
-## 🔐 Authentication (new)
-
-The backend now includes signup, login, signed JWT access tokens, password hashing with Argon2, and a protected `GET /api/auth/me` endpoint.
-
-Start with **[AUTHENTICATION.md](./AUTHENTICATION.md)** for the complete architecture, request/response examples, setup, code walkthrough, error cases, frontend integration notes, and production checklist.
-
-New endpoints:
-- `POST /api/auth/signup`
-- `POST /api/auth/login`
-- `GET /api/auth/me` (requires `Authorization: Bearer <access_token>`)
-
-Accounts are stored in a local SQLite database at `./data/auth.db`, separate from ClickHouse telemetry. Set a strong `AUTH_SECRET_KEY` in `.env` before deployment.
-
-**Scope note:** this adds the authentication API but does not yet wire the Next.js UI to it or require authentication on `/api/dashboard`. See the production checklist in `AUTHENTICATION.md` before exposing the app publicly.

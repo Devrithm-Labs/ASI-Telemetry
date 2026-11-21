@@ -160,7 +160,7 @@ observe = ASI_Telemetry(
 client = genai.Client()
 observe.instrument_gemini(client)
 
-# 3. Track tool execution latency & ClickHouse metrics
+# 3. Track tool execution latency & database metrics
 @observe.track("knowledge_search")
 @observe.traceable(name="search_vector_db", run_type="tool")
 def search_vector_db(query: str):
@@ -185,7 +185,7 @@ if __name__ == "__main__":
       badge: "LLM Observability",
       fileName: "gemini_tracing.py",
       description:
-        "Native auto-instrumentation for the official Google GenAI SDK. Automatically records model names, input/output tokens, execution latency, and cost estimation to ClickHouse.",
+        "Native auto-instrumentation for the official Google GenAI SDK. Automatically records model names, input/output tokens, execution latency, and cost estimation to PostgreSQL.",
       code: `import os
 from google import genai
 from asi_telemetry import traceable, instrument_gemini
@@ -227,7 +227,7 @@ instrument_openai(client)
 
 @traceable(name="openai_agent_reasoning", run_type="llm")
 def reason_with_openai(user_message: str):
-    """Execution telemetry streamed immediately to backend ClickHouse."""
+    """Execution telemetry streamed immediately to backend PostgreSQL."""
     response = client.chat.completions.create(
         model="gpt-4o",
         messages=[{"role": "user", "content": user_message}]
@@ -289,7 +289,7 @@ tracker = MetricsTracker(
 
 @tracker.track(tool_name="sync_database_records")
 def sync_records(batch_size: int = 500):
-    """Measures latency, request count, and error rates in ClickHouse."""
+    """Measures latency, request count, and error rates in PostgreSQL."""
     time.sleep(0.02)
     return {"status": "synced", "records": batch_size}
 
@@ -297,7 +297,7 @@ if __name__ == "__main__":
     print("Executing tracked tool batches...")
     for _ in range(5):
         sync_records(1000)
-    print("Telemetry metrics dispatched asynchronously to ClickHouse.")`,
+    print("Telemetry metrics dispatched asynchronously to PostgreSQL.")`,
     },
   };
 
@@ -503,7 +503,7 @@ if __name__ == "__main__":
                   Configure telemetry environment
                 </h2>
                 <p className="text-xs text-muted-foreground">
-                  Set endpoint and telemetry credentials for ClickHouse ingestion
+                  Set endpoint and telemetry credentials for PostgreSQL ingestion
                 </p>
               </div>
 
@@ -767,7 +767,7 @@ if __name__ == "__main__":
                 Verify live telemetry stream
               </h2>
               <p className="text-xs text-muted-foreground">
-                As soon as your script executes, spans, tool calls, and tokens stream directly to ClickHouse
+                As soon as your script executes, spans, tool calls, and tokens stream directly to PostgreSQL
               </p>
             </div>
 

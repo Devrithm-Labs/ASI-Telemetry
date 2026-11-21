@@ -8,11 +8,11 @@ class LLMController:
 
     @staticmethod
     def ingest_llm_trace(payload_data: dict):
-        """Stores LLM tracing record into ClickHouse or memory fallback."""
+        """Stores LLM tracing record into PostgreSQL or memory fallback."""
         record = llm_repo.insert_llm_trace(payload_data)
         return {
             "status": "success",
-            "message": "LLM trace stored in ClickHouse",
+            "message": "LLM trace stored in PostgreSQL",
             "data": record,
         }
 
@@ -24,7 +24,7 @@ class LLMController:
         model: Optional[str] = None,
         user_id: Optional[str] = None,
     ):
-        """Queries LLM traces from ClickHouse with summary aggregates."""
+        """Queries LLM traces from PostgreSQL with summary aggregates."""
         return llm_repo.get_llm_traces(
             limit=limit,
             search=search,
@@ -50,5 +50,5 @@ class LLMController:
 
     @staticmethod
     def clear_llm_traces(user_id: Optional[str] = None):
-        """Clears LLM traces from ClickHouse and memory for a user or globally."""
+        """Clears LLM traces from PostgreSQL and memory for a user or globally."""
         return llm_repo.clear_llm_traces(user_id=user_id)

@@ -1,4 +1,12 @@
-from database.schema import initialize_schema
+from database.schema import (
+    initialize_schema,
+    TelemetryMetricModel,
+    LLMTraceModel,
+    ApiKeyModel,
+    UserModel,
+    RefreshTokenModel,
+    OAuthSessionModel,
+)
 from database.telemetry import telemetry_repo, TelemetryRepository
 from database.llm import llm_repo, LLMRepository
 
@@ -8,4 +16,10 @@ __all__ = [
     "TelemetryRepository",
     "llm_repo",
     "LLMRepository",
+    "TelemetryMetricModel",
+    "LLMTraceModel",
+    "ApiKeyModel",
+    "UserModel",
+    "RefreshTokenModel",
+    "OAuthSessionModel",
 ]

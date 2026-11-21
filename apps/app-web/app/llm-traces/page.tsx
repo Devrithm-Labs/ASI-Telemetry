@@ -106,7 +106,7 @@ export default function LLMTracingPage() {
   }, [fetchTraces]);
 
   const handleClearTraces = async () => {
-    if (!confirm("Are you sure you want to clear all LLM traces from ClickHouse?")) return;
+    if (!confirm("Are you sure you want to clear all LLM traces from the database?")) return;
     try {
       const res = await fetch(`${getBackendUrl()}/api/llm/traces`, {
         method: "DELETE",
@@ -297,7 +297,7 @@ export default function LLMTracingPage() {
           {traces.length > 0 && (
             <button
               onClick={handleClearTraces}
-              title="Clear all ClickHouse LLM traces"
+              title="Clear all LLM traces"
               className="flex items-center gap-1 rounded-md border border-destructive/30 bg-destructive/10 px-2.5 py-1 text-xs text-destructive hover:bg-destructive/20 transition-colors"
             >
               <Trash2 className="h-3.5 w-3.5" />
@@ -628,7 +628,7 @@ export default function LLMTracingPage() {
                 <tr>
                   <td colSpan={10} className="py-16 text-center text-slate-500">
                     <Bot className="h-10 w-10 mx-auto mb-3 text-slate-600 opacity-60" />
-                    <p className="font-medium text-slate-300 text-sm">No ClickHouse LLM Traces Found</p>
+                    <p className="font-medium text-slate-300 text-sm">No LLM Traces Found</p>
                     <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
                       Send a message to your agent or run <code className="text-foreground bg-muted px-1.5 py-0.5 rounded font-mono border border-border">python apps/testing/src/agent_swarm.py</code> to see incoming collective traces.
                     </p>

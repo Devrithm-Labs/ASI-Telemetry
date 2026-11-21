@@ -52,7 +52,7 @@ export default function AllApplicationsPage() {
               </span>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              Fleet overview of all telemetry services reporting to ClickHouse database.
+              Fleet overview of all telemetry services reporting to database.
             </p>
           </div>
 
@@ -88,7 +88,7 @@ export default function AllApplicationsPage() {
                         </h3>
                         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mt-0.5">
                           <CheckCircle2 className="h-3 w-3" />
-                          <span>Connected in ClickHouse</span>
+                          <span>Connected in PostgreSQL</span>
                         </div>
                       </div>
                     </div>

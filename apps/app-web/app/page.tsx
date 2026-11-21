@@ -154,7 +154,7 @@ export ASI_PROJECT="production-fleet"`;
         {/* Subhead */}
         <p className="mt-5 max-w-2xl mx-auto text-base sm:text-lg text-muted-foreground leading-relaxed">
           Understand what your agents are doing in production. Trace step-by-step reasoning,
-          monitor latency percentiles, and track token spend—backed by ClickHouse for real-time scale.
+          monitor latency percentiles, and track token spend—backed by PostgreSQL for real-time scale.
         </p>
 
         {/* CTA Actions */}
@@ -260,7 +260,7 @@ export ASI_PROJECT="production-fleet"`;
             <div className="p-4 space-y-1">
               <div className="text-xs text-muted-foreground font-medium">Traces & Runs Tracked</div>
               <div className="text-xl font-bold font-mono text-foreground">157</div>
-              <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">ClickHouse Synced</div>
+              <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">PostgreSQL Synced</div>
             </div>
             <div className="p-4 space-y-1">
               <div className="text-xs text-muted-foreground font-medium">Total Tokens</div>
@@ -294,7 +294,7 @@ export ASI_PROJECT="production-fleet"`;
             <div className="text-2xl sm:text-3xl font-bold font-mono tracking-tight text-foreground">
               100%
             </div>
-            <div className="text-xs text-muted-foreground mt-1">ClickHouse columnar analytics</div>
+            <div className="text-xs text-muted-foreground mt-1">PostgreSQL relational & time-series analytics</div>
           </div>
           <div>
             <div className="text-2xl sm:text-3xl font-bold font-mono tracking-tight text-foreground">
@@ -466,7 +466,7 @@ export ASI_PROJECT="production-fleet"`;
                 <Database className="h-4 w-4" />
               </div>
               <h3 className="text-base font-semibold text-foreground">
-                ClickHouse Columnar Storage
+                PostgreSQL & SQLAlchemy ORM
               </h3>
               <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                 Fast queries over tens of millions of records. Partitioned by account and project
@@ -510,7 +510,7 @@ export ASI_PROJECT="production-fleet"`;
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <span className="flex h-2 w-2 rounded-full bg-emerald-500" />
-            <span>ClickHouse Telemetry: Operational</span>
+            <span>PostgreSQL Telemetry: Operational</span>
           </div>
 
           <div className="flex items-center gap-5">

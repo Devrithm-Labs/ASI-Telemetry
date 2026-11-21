@@ -82,7 +82,7 @@ flowchart TD
     B --> C[Telemetry API]
     C --> D[Payload Validation]
     D --> E[Telemetry Controller]
-    E --> F[(ClickHouse)]
+    E --> F[(PostgreSQL)]
     F --> G[Query and Analysis Layer]
     G --> H[Observability Interface]
 ```
@@ -93,7 +93,7 @@ flowchart TD
 - **Ingestion:** The telemetry is submitted to the backend through an HTTP endpoint.
 - **Validation:** Incoming payloads are validated before processing.
 - **Processing:** The controller handles accepted telemetry.
-- **Storage:** Telemetry records are persisted in ClickHouse.
+- **Storage:** Telemetry records are persisted in PostgreSQL using SQLAlchemy ORM.
 - **Analysis:** Stored data can be queried by downstream observability components.
 
 The diagram describes the telemetry pipeline at a conceptual level. The exact integrations and execution paths depend on the implemented components.
@@ -107,7 +107,7 @@ The diagram describes the telemetry pipeline at a conceptual level. The exact in
 | npm workspaces | Dependency and workspace management |
 | Turborepo | Monorepo task orchestration |
 | FastAPI | HTTP telemetry ingestion |
-| ClickHouse | Telemetry storage and analytical queries |
+| PostgreSQL | Telemetry and relational storage with SQLAlchemy ORM |
 
 ## Getting Started
 
@@ -117,7 +117,7 @@ The diagram describes the telemetry pipeline at a conceptual level. The exact in
 - npm 11.19.0 or a compatible npm version
 - Git
 - Python and the configured Python dependencies if running the FastAPI backend
-- A running ClickHouse instance if exercising persistent telemetry ingestion
+- A running PostgreSQL instance if exercising persistent telemetry ingestion
 
 ### Installation
 

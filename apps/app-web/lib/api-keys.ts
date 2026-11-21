@@ -48,7 +48,7 @@ function mapBackendKeyToFrontend(raw: any): ApiKeyItem {
 }
 
 /**
- * Fetches all API keys associated with the current user's session from backend ClickHouse.
+ * Fetches all API keys associated with the current user's session from the backend database.
  */
 export async function fetchBackendApiKeys(): Promise<ApiKeyItem[]> {
   try {
@@ -71,7 +71,7 @@ export async function fetchBackendApiKeys(): Promise<ApiKeyItem[]> {
 }
 
 /**
- * Creates a new API key in backend ClickHouse database for the user.
+ * Creates a new API key in backend database for the user.
  */
 export async function createBackendApiKey(
   name: string,
@@ -106,7 +106,7 @@ export async function createBackendApiKey(
 }
 
 /**
- * Revokes / Deletes an API key in ClickHouse database.
+ * Revokes / Deletes an API key in backend database.
  */
 export async function deleteBackendApiKey(keyId: string): Promise<boolean> {
   try {

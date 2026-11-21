@@ -5,7 +5,7 @@ It is designed to be read alongside the source code.
 
 ## 1. What this project does
 
-ASI-Telemetry is an observability dashboard for AI-agent execution. The existing backend receives telemetry events from the Python SDK, stores them in ClickHouse when available, and serves dashboard analytics.
+ASI-Telemetry is an observability dashboard for AI-agent execution. The backend receives telemetry events from the Python SDK, stores them in PostgreSQL with SQLAlchemy ORM, and serves dashboard analytics.
 
 This authentication layer adds user accounts for the dashboard/API:
 
@@ -13,7 +13,7 @@ This authentication layer adds user accounts for the dashboard/API:
 - Log in with email and password.
 - Receive a signed JSON Web Token (JWT) access token.
 - Send that token as a Bearer token to identify the current user.
-- Store account data in a local SQLite database, separately from ClickHouse telemetry.
+- Store account data securely in PostgreSQL using SQLAlchemy ORM.
 
 **Important boundary:** telemetry ingestion (`POST /api/metrics` and `POST /api/telemetry`) remains open so an SDK can send metrics without a human dashboard login. The existing dashboard endpoint has not been wired to require a token yet, so adding the API is not the same as securing every existing route. Before production, connect the frontend login flow and protect dashboard/user-specific endpoints as described in section 10.
 
@@ -70,9 +70,9 @@ apps/app-backend/
 
 Passwords must not be stored as plain text. `hash_password()` uses `pwdlib`'s recommended password-hashing configuration (Argon2). During login, `verify_password()` compares the supplied password with the saved hash. Hashing is intentionally one-way: the server never decrypts a password.
 
-### SQLite user database
+### PostgreSQL user database
 
-The account database defaults to `apps/app-backend/data/auth.db`. It is independent of ClickHouse because ClickHouse is optimized for telemetry/time-series analytics, not account transactions. SQLite is convenient for local development and a hackathon demo. For a multi-instance production deployment, use a managed transactional database such as PostgreSQL and persistent storage.
+Account and token data are persisted in PostgreSQL using SQLAlchemy ORM (`users`, `refresh_tokens`, `oauth_sessions`, and `api_keys`). For local testing without a database container, an in-memory fallback is automatically engaged.
 
 The SQL uses parameterized queries (`?`) rather than concatenating user input into SQL. Email has a unique, case-insensitive constraint.
 
@@ -274,7 +274,7 @@ To prevent pasting long-lived API keys or credentials directly into ASI:ONE chat
 - **Refresh Token & Rotation**:
   - High-entropy opaque string (`asi_rf_...`, 48 bytes URL-safe).
   - 30-day expiry (`REFRESH_TOKEN_EXPIRE_DAYS = 30`).
-  - Only SHA-256 hash stored in ClickHouse / in-memory cache (`refresh_tokens` table).
+  - Only SHA-256 hash stored in PostgreSQL / in-memory cache (`refresh_tokens` table).
   - **Rotation**: Every successful refresh invalidates the old refresh token and issues a new one.
   - **Reuse Detection**: If an already replaced or revoked refresh token is presented, the backend identifies token reuse and immediately revokes the entire `family_id`, neutralizing compromised sessions.
   - **Logout**: Explicit revocation invalidates the token family and terminates active sessions.

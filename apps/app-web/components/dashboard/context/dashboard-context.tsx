@@ -144,7 +144,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     }
   }, [selectedProject, selectedFunction, timeRange]);
 
-  // Sync with ClickHouse on mount and when filter changes (Static - manual refresh only)
+  // Sync with backend telemetry database on mount and when filter changes (Static - manual refresh only)
   React.useEffect(() => {
     fetchDatabaseTelemetry();
   }, [fetchDatabaseTelemetry]);

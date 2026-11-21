@@ -25,7 +25,7 @@ export function KPISummaryStrip({ summary }: { summary: LLMMetricsSummary }) {
           {summary.totalCount.toLocaleString()} {summary.totalCount === 1 ? "trace" : "traces"}
         </div>
         <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-          <span>ClickHouse Synced</span>
+          <span>PostgreSQL Synced</span>
           <span className="text-foreground font-medium">All Spans</span>
         </div>
       </Card>
