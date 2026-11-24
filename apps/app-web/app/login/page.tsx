@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Activity, AlertCircle, Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { Activity, AlertCircle, Eye, EyeOff, KeyRound, Lock, Mail, Sparkles } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { loginUser } from "@/lib/auth";
 
@@ -15,17 +15,11 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const cleanEmail = email.trim();
-    if (!cleanEmail || !password) {
-      setErrorMsg("Please enter both email and password.");
-      return;
-    }
+  const performLogin = async (loginEmail: string, loginPass: string) => {
     setErrorMsg(null);
     setIsLoading(true);
 
-    const result = await loginUser(cleanEmail, password);
+    const result = await loginUser(loginEmail, loginPass);
     setIsLoading(false);
     if (!result.success) {
       setErrorMsg(result.error || "Login failed. Please check your credentials.");
@@ -37,6 +31,28 @@ export default function LoginPage() {
         ? new URLSearchParams(window.location.search).get("from") || "/dashboard"
         : "/dashboard";
     router.push(target);
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanEmail = email.trim();
+    if (!cleanEmail || !password) {
+      setErrorMsg("Please enter both email and password.");
+      return;
+    }
+    await performLogin(cleanEmail, password);
+  };
+
+  const handleAutofillDemo = () => {
+    setEmail("demo@asi-telemetry.io");
+    setPassword("DemoUser123!");
+    setErrorMsg(null);
+  };
+
+  const handleOneClickDemo = async () => {
+    setEmail("demo@asi-telemetry.io");
+    setPassword("DemoUser123!");
+    await performLogin("demo@asi-telemetry.io", "DemoUser123!");
   };
 
   return (
@@ -64,6 +80,39 @@ export default function LoginPage() {
             <p className="text-xs text-muted-foreground">
               Enter your credentials to access your telemetry workspace
             </p>
+          </div>
+
+          {/* Quick Demo Access Box */}
+          <div className="rounded-lg border border-primary/25 bg-primary/5 p-3.5 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                <span className="text-xs font-semibold text-foreground">Live Showcase Account</span>
+              </div>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/15 text-primary font-medium">Ready</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-snug">
+              Explore with pre-seeded agent telemetry, traces, and metrics.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleAutofillDemo}
+                className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-md border border-border bg-background hover:bg-muted text-foreground font-medium text-xs transition-colors cursor-pointer"
+              >
+                <KeyRound className="h-3.5 w-3.5 text-muted-foreground" />
+                <span>Autofill</span>
+              </button>
+              <button
+                type="button"
+                disabled={isLoading}
+                onClick={handleOneClickDemo}
+                className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-md bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-xs transition-colors cursor-pointer disabled:opacity-50"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                <span>1-Click Login</span>
+              </button>
+            </div>
           </div>
 
           {errorMsg && (
@@ -149,9 +198,9 @@ export default function LoginPage() {
         </div>
       </main>
 
-      {/* Simple Footer */}
-      <footer className="w-full border-t border-border px-6 py-4 text-center text-[11px] text-muted-foreground">
-        &copy; {new Date().getFullYear()} ASI:Telemetry. All rights reserved.
+      {/* Footer */}
+      <footer className="w-full border-t border-border/80 px-6 py-4 text-center text-xs text-muted-foreground">
+        © {new Date().getFullYear()} ASI:Telemetry. Observability for Autonomous AI Agent Swarms.
       </footer>
     </div>
   );
