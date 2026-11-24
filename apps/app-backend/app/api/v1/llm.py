@@ -1,10 +1,13 @@
 from typing import Optional
-from fastapi import APIRouter, Request
+import logging
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
-from app.api.deps import resolve_request_user_id
+from app.api.deps import get_current_user, resolve_request_user_id
 from app.schemas.llm import LLMTracePayload
+from app.schemas.user import UserResponse
 from app.services.llm import llm_service
 
+logger = logging.getLogger("asi_telemetry.api.llm")
 router = APIRouter(prefix="/llm", tags=["LLM Traces & Monitoring"])
 
 
@@ -13,83 +16,87 @@ def ingest_llm_trace(payload: LLMTracePayload, request: Request):
     """Ingests single or root LLM execution trace into PostgreSQL linked to user account."""
     payload_dict = payload.model_dump()
     user_id = resolve_request_user_id(request, payload_dict)
-    if user_id:
-        payload_dict["user_id"] = user_id
-    record = llm_service.ingest_trace(payload_dict)
-    return {
-        "status": "success",
-        "message": "LLM trace stored in PostgreSQL",
-        "data": record,
-    }
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required. Please provide a valid API Key (X-API-Key header) or Bearer token.",
+        )
+    payload_dict["user_id"] = user_id
+    try:
+        record = llm_service.ingest_trace(payload_dict)
+        return {
+            "status": "success",
+            "message": "LLM trace stored in PostgreSQL",
+            "data": record,
+        }
+    except RuntimeError as e:
+        logger.error(f"Database error in ingest_llm_trace: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database service is unavailable. Please check your PostgreSQL connection.",
+        )
 
 
 @router.get("/traces")
 def get_llm_traces(
-    request: Request,
     page: int = 1,
     limit: int = 100,
     search: Optional[str] = None,
-    status: Optional[str] = None,
+    status_filter: Optional[str] = None,
     model: Optional[str] = None,
     trace_id: Optional[str] = None,
+    current_user: UserResponse = Depends(get_current_user),
 ):
-    """Retrieves LLM traces from PostgreSQL scoped to the requesting user."""
-    user_id = resolve_request_user_id(request)
-    if not user_id:
-        return {
-            "traces": [],
-            "total": 0,
-            "stats": {
-                "total_traces": 0,
-                "total_tokens": 0,
-                "total_cost_usd": 0.0,
-                "avg_latency_ms": 0.0,
-            },
-        }
-
-    return llm_service.get_traces(
-        page=page,
-        limit=limit,
-        search=search,
-        status=status,
-        model=model,
-        trace_id=trace_id,
-        user_id=user_id,
-    )
+    """Retrieves LLM traces from PostgreSQL scoped to the authenticated user."""
+    try:
+        return llm_service.get_traces(
+            page=page,
+            limit=limit,
+            search=search,
+            status=status_filter,
+            model=model,
+            trace_id=trace_id,
+            user_id=current_user.id,
+        )
+    except RuntimeError as e:
+        logger.error(f"Database error in get_llm_traces: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database service is unavailable. Please check your PostgreSQL connection.",
+        )
 
 
 @router.get("/monitoring")
 def get_llm_monitoring(
-    request: Request,
     time_range: str = "7d",
     model: Optional[str] = None,
+    current_user: UserResponse = Depends(get_current_user),
 ):
-    """Retrieves aggregated LLM monitoring data and KPIs scoped to the requesting user."""
-    user_id = resolve_request_user_id(request)
-    if not user_id:
-        return {
-            "summary": {
-                "totalCount": 0,
-                "totalTokens": 0,
-                "promptTokens": 0,
-                "completionTokens": 0,
-                "totalCost": 0.0,
-                "avgLatency": 0.0,
-                "errorRate": 0.0,
-            },
-            "models": {},
-            "traces": [],
-        }
-
-    return llm_service.get_monitoring_data(
-        time_range=time_range,
-        model=model,
-        user_id=user_id,
-    )
+    """Retrieves aggregated LLM monitoring data and KPIs scoped to the authenticated user."""
+    try:
+        return llm_service.get_monitoring_data(
+            time_range=time_range,
+            model=model,
+            user_id=current_user.id,
+        )
+    except RuntimeError as e:
+        logger.error(f"Database error in get_llm_monitoring: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database service is unavailable. Please check your PostgreSQL connection.",
+        )
 
 
 @router.delete("/traces")
-def clear_llm_traces(request: Request):
-    """Clears all LLM traces scoped to the requesting user."""
-    user_id = resolve_request_user_id(request)
-    return llm_service.clear_traces(user_id=user_id)
+def clear_llm_traces(
+    current_user: UserResponse = Depends(get_current_user),
+):
+    """Clears all LLM traces scoped to the authenticated user."""
+    try:
+        return llm_service.clear_traces(user_id=current_user.id)
+    except RuntimeError as e:
+        logger.error(f"Database error in clear_llm_traces: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database service is unavailable. Please check your PostgreSQL connection.",
+        )

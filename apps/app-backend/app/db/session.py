@@ -1,7 +1,7 @@
 import logging
 import threading
 from contextlib import contextmanager
-from typing import Any, Dict, Generator, List, Optional
+from typing import Any, Generator, Optional
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session
@@ -13,15 +13,13 @@ logger = logging.getLogger("asi_telemetry.db")
 
 
 class DatabaseManager:
-    """Manages PostgreSQL engine, SQLAlchemy sessions, and fallback state."""
+    """Manages PostgreSQL engine, SQLAlchemy sessions, and lifecycle."""
 
     def __init__(self):
         self.engine = None
         self.SessionFactory = None
         self.is_connected = False
         self._lock = threading.Lock()
-        self.memory_records: List[Dict[str, Any]] = []
-        self.llm_records: List[Dict[str, Any]] = []
 
     @property
     def client(self):
@@ -78,7 +76,7 @@ class DatabaseManager:
                 self.is_connected = False
                 self.engine = None
                 self.SessionFactory = None
-                logger.warning(f"Could not connect to PostgreSQL ({e}). Using in-memory fallback.")
+                logger.error(f"Failed to connect to PostgreSQL ({e}). Database is unavailable.")
 
     def disconnect(self):
         """Closes connection pool and disposes engine."""
@@ -99,12 +97,13 @@ class DatabaseManager:
         return None
 
     @contextmanager
-    def session_scope(self) -> Generator[Optional[Session], None, None]:
+    def session_scope(self) -> Generator[Session, None, None]:
         """Provide a transactional scope around a series of operations."""
+        if not self.is_connected or not self.SessionFactory:
+            raise RuntimeError("Database connection is not available. Please verify PostgreSQL configuration.")
         session = self.get_session()
         if session is None:
-            yield None
-            return
+            raise RuntimeError("Failed to allocate a database session from the connection pool.")
         try:
             yield session
             session.commit()
@@ -138,7 +137,7 @@ db_manager = DatabaseManager()
 db_connection = db_manager
 
 
-def get_db() -> Generator[Optional[Session], None, None]:
+def get_db() -> Generator[Session, None, None]:
     """FastAPI dependency yielding an active SQLAlchemy session."""
     with db_manager.session_scope() as session:
         yield session

@@ -172,10 +172,7 @@ export default function SettingsPage() {
                 </p>
               </div>
             </div>
-            <Badge variant="outline" className="border-border text-xs gap-1.5">
-              <ShieldCheck className="h-3 w-3 text-emerald-500" />
-              Active Account
-            </Badge>
+            
           </div>
 
           {/* Feedback alerts */}
@@ -221,9 +218,6 @@ export default function SettingsPage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-foreground flex items-center justify-between">
                   <span>Email Address</span>
-                  <span className="text-[10px] text-emerald-400 flex items-center gap-1">
-                    <Check className="h-2.5 w-2.5" /> Verified
-                  </span>
                 </label>
                 <Input
                   type="email"
@@ -312,9 +306,6 @@ export default function SettingsPage() {
                 </p>
               </div>
             </div>
-            <Badge variant="outline" className="border-border text-xs gap-1.5 font-mono">
-              Argon2id Encrypted
-            </Badge>
           </div>
 
           {/* Feedback alerts */}

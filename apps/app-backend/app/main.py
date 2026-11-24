@@ -29,12 +29,22 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # Enable CORS
+    # Allowed CORS Origins - restricted for production security
+    allowed_origins = [
+        "http://localhost:3000",
+        "http://localhost:8080",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:8080",
+    ]
+    if settings.FRONTEND_BASE_URL:
+        allowed_origins.append(settings.FRONTEND_BASE_URL.rstrip("/"))
+
     application.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=list(set(allowed_origins)),
+        allow_origin_regex=r"^https://.*\.vercel\.app$",
         allow_credentials=True,
-        allow_methods=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
         allow_headers=["*"],
     )
 
@@ -48,6 +58,7 @@ def create_app() -> FastAPI:
             "status": "online",
             "message": "ASI-Telemetry Backend is running. Open /docs for Swagger UI.",
             "version": "1.0.0",
+            "database_connected": db_manager.is_connected,
         }
 
     return application

@@ -1,7 +1,6 @@
-from typing import Any, Dict, Generator, Optional
+from typing import Any, Dict, Optional
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer, OAuth2PasswordBearer, APIKeyHeader
-from sqlalchemy.orm import Session
 
 from app.core.security import decode_access_token
 from app.db.session import get_db
@@ -71,11 +70,14 @@ def resolve_request_user_id(
     request: Request, body_dict: Optional[Dict[str, Any]] = None
 ) -> Optional[str]:
     """
-    Extracts the user_id associated with a request by inspecting:
-    1. 'x-api-key' or 'asi-api-key' headers
-    2. 'Authorization: Bearer <jwt_or_api_key>'
-    3. Query parameter ?api_key=... or ?user_id=...
-    4. Payload body fields 'api_key' or 'user_id'
+    Extracts and cryptographically validates the user_id associated with a request:
+    1. 'x-api-key' or 'asi-api-key' headers (hashed lookup against database)
+    2. 'Authorization: Bearer <jwt_or_api_key>' (cryptographic signature or hashed lookup)
+    3. Query parameter ?api_key=... (hashed lookup against database)
+    4. Payload body field 'api_key' (hashed lookup against database)
+
+    SECURITY NOTICE: Raw 'user_id' fields in query parameters or payload bodies are
+    strictly ignored to prevent Insecure Direct Object Reference (IDOR) / authentication bypass.
     """
     # 1. Check API Key Headers
     api_key = request.headers.get("x-api-key") or request.headers.get("asi-api-key")
@@ -97,27 +99,19 @@ def resolve_request_user_id(
             if payload and payload.get("sub"):
                 return str(payload["sub"])
 
-    # 3. Check Query Parameters
+    # 3. Check Query Parameter api_key (validated against hashed DB keys)
     qp_key = request.query_params.get("api_key")
     if qp_key and qp_key.strip():
         uid = resolve_api_key(qp_key.strip())
         if uid:
             return uid
 
-    qp_uid = request.query_params.get("user_id")
-    if qp_uid and qp_uid.strip():
-        return qp_uid.strip()
-
-    # 4. Check Payload Body
+    # 4. Check Payload Body api_key (validated against hashed DB keys)
     if body_dict and isinstance(body_dict, dict):
         body_key = body_dict.get("api_key")
         if body_key and str(body_key).strip():
             uid = resolve_api_key(str(body_key).strip())
             if uid:
                 return uid
-
-        body_uid = body_dict.get("user_id")
-        if body_uid and str(body_uid).strip():
-            return str(body_uid).strip()
 
     return None

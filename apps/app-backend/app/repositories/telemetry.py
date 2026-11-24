@@ -1,47 +1,49 @@
-import json
-import logging
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
+import json
+import logging
 from typing import Any, Dict, List, Optional
+from uuid import uuid4
 
-from sqlalchemy import func
+from sqlalchemy import case, func
 
 from app.db.session import DatabaseManager, db_manager
 from app.models.telemetry import TelemetryMetricModel
 
-logger = logging.getLogger("asi_telemetry.repo.telemetry")
+logger = logging.getLogger("asi_telemetry.telemetry_repo")
 
 
 class TelemetryRepository:
-    """Service handling SDK telemetry metrics, dashboard time-series, and trace operations via SQLAlchemy."""
+    """PostgreSQL repository for inserting and querying telemetry metrics via SQLAlchemy."""
 
-    def __init__(self, db: DatabaseManager = db_manager, conn: Optional[DatabaseManager] = None):
-        self.conn = conn or db
-        self.db = self.conn
+    def __init__(self, conn: DatabaseManager = db_manager):
+        self.conn = conn
 
     def insert_metric(self, payload_dict: Dict[str, Any]) -> Dict[str, Any]:
-        """Inserts an SDK telemetry record into PostgreSQL with UTC timestamp."""
-        dt_utc = datetime.now(timezone.utc)
-        if payload_dict.get("timestamp"):
-            try:
-                dt_utc = datetime.fromisoformat(payload_dict["timestamp"].replace("Z", "+00:00"))
-                if not dt_utc.tzinfo:
-                    dt_utc = dt_utc.replace(tzinfo=timezone.utc)
-            except Exception:
-                pass
+        """Inserts a single telemetry record into PostgreSQL."""
+        if not self.conn.is_connected or not self.conn.SessionFactory:
+            raise RuntimeError("Database connection is not available. Cannot store telemetry metric.")
 
-        record_id = f"metric-{int(datetime.now(timezone.utc).timestamp() * 1000)}"
-        resp_time = payload_dict.get("response_time_ms") or payload_dict.get("latency_ms") or 0.0
-        meta = payload_dict.get("metadata") or {}
-        if isinstance(meta, str):
-            try:
-                meta = json.loads(meta)
-            except Exception:
-                meta = {}
-        if payload_dict.get("agent_address"):
-            meta["agent_address"] = payload_dict["agent_address"]
+        record_id = payload_dict.get("id") or str(uuid4())
         user_id = str(payload_dict.get("user_id") or "")
-        agent_name = payload_dict.get("agent_name", "assistant")
+
+        now_utc = datetime.now(timezone.utc)
+        ts_val = payload_dict.get("timestamp")
+        if isinstance(ts_val, (int, float)):
+            dt_utc = datetime.fromtimestamp(ts_val, tz=timezone.utc)
+        elif isinstance(ts_val, str) and ts_val:
+            try:
+                dt_utc = datetime.fromisoformat(ts_val.replace("Z", "+00:00"))
+            except Exception:
+                dt_utc = now_utc
+        else:
+            dt_utc = now_utc
+
+        agent_name = payload_dict.get("agent_name", "default_agent")
+        meta = payload_dict.get("metadata", {}) or {}
+        resp_time = payload_dict.get("response_time_ms")
+        if resp_time is None:
+            resp_time = payload_dict.get("latency_ms", 0.0)
         func_name = payload_dict.get("func_name", "handle_message")
         status = payload_dict.get("status", "success")
 
@@ -60,29 +62,22 @@ class TelemetryRepository:
             "user_id": user_id,
         }
 
-        self.conn.memory_records.append(record)
-
-        if self.conn.is_connected and self.conn.SessionFactory:
-            try:
-                metric = TelemetryMetricModel(
-                    id=record_id,
-                    timestamp=dt_utc,
-                    agent_name=agent_name,
-                    func_name=func_name,
-                    status=status,
-                    response_time_ms=record["response_time_ms"],
-                    memory_before=record["memory_before"],
-                    memory_after=record["memory_after"],
-                    meta_data=json.dumps(meta),
-                    agent_address=meta.get("agent_address", ""),
-                    agent_handle=meta.get("agent_handle", ""),
-                    user_id=user_id,
-                )
-                with self.conn.session_scope() as session:
-                    if session:
-                        session.add(metric)
-            except Exception as e:
-                logger.error(f"PostgreSQL insert error in insert_metric: {e}")
+        metric = TelemetryMetricModel(
+            id=record_id,
+            timestamp=dt_utc,
+            agent_name=agent_name,
+            func_name=func_name,
+            status=status,
+            response_time_ms=record["response_time_ms"],
+            memory_before=record["memory_before"],
+            memory_after=record["memory_after"],
+            meta_data=json.dumps(meta),
+            agent_address=meta.get("agent_address", ""),
+            agent_handle=meta.get("agent_handle", ""),
+            user_id=user_id,
+        )
+        with self.conn.session_scope() as session:
+            session.add(metric)
 
         return record
 
@@ -106,99 +101,76 @@ class TelemetryRepository:
         hours: Optional[int] = None,
         agent_address: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Retrieves and computes unified dashboard telemetry data via SQLAlchemy ORM."""
+        """Calculates dashboard summary KPIs, applications, and formatted traces directly from PostgreSQL."""
+        if not self.conn.is_connected or not self.conn.SessionFactory:
+            raise RuntimeError("Database connection is not available. Please verify PostgreSQL configuration.")
+
+        safe_limit = max(1, min(limit, 5000))
+        now = datetime.now(timezone.utc)
+        if hours:
+            cutoff = now - timedelta(hours=hours)
+        elif time_range == "24h":
+            cutoff = now - timedelta(hours=24)
+        elif time_range == "30d":
+            cutoff = now - timedelta(days=30)
+        else:
+            cutoff = now - timedelta(days=7)
+
         records: List[Dict[str, Any]] = []
-        safe_limit = max(1, min(int(limit), 2000))
-
-        if hours is not None:
-            time_range = f"{hours}h"
-
-        time_range_norm = (time_range or "7d").lower()
-        now_utc = datetime.now(timezone.utc)
-        cutoff = None
-        if time_range_norm == "1h":
-            cutoff = now_utc - timedelta(hours=1)
-        elif time_range_norm in ("24h", "1d"):
-            cutoff = now_utc - timedelta(hours=24)
-        elif time_range_norm == "7d":
-            cutoff = now_utc - timedelta(days=7)
-        elif time_range_norm == "30d":
-            cutoff = now_utc - timedelta(days=30)
-        elif time_range_norm.endswith("h"):
-            try:
-                h_val = int(time_range_norm[:-1])
-                cutoff = now_utc - timedelta(hours=h_val)
-            except Exception:
-                cutoff = now_utc - timedelta(days=7)
-
-        apps_map: Dict[str, set] = defaultdict(set)
+        apps_map = defaultdict(set)
         uptime_val = 100.0
 
-        if self.conn.is_connected and self.conn.SessionFactory:
-            try:
-                with self.conn.session_scope() as session:
-                    if session:
-                        q = session.query(TelemetryMetricModel)
-                        if user_id:
-                            q = q.filter(TelemetryMetricModel.user_id == str(user_id))
-                        if agent_name and agent_name not in ("all-applications", "All Applications", "all"):
-                            q = q.filter(TelemetryMetricModel.agent_name == agent_name)
-                        if func_name and func_name not in ("all", "All Functions", "All"):
-                            q = q.filter(TelemetryMetricModel.func_name == func_name)
-                        if agent_address:
-                            q = q.filter(TelemetryMetricModel.agent_address == agent_address)
-                        if cutoff is not None:
-                            q = q.filter(TelemetryMetricModel.timestamp >= cutoff)
-
-                        items = q.order_by(TelemetryMetricModel.timestamp.desc()).limit(safe_limit).all()
-                        records = [item.to_dict() for item in items]
-
-                        app_q = session.query(
-                            TelemetryMetricModel.agent_name,
-                            TelemetryMetricModel.func_name,
-                        ).distinct()
-                        if user_id:
-                            app_q = app_q.filter(TelemetryMetricModel.user_id == str(user_id))
-                        for a_name, f_name in app_q.all():
-                            if a_name:
-                                apps_map[a_name].add(f_name or "default")
-
-                        cutoff_30d = now_utc - timedelta(days=30)
-                        up_q = session.query(
-                            func.count(TelemetryMetricModel.id),
-                            func.sum(
-                                func.case(
-                                    (TelemetryMetricModel.status == "success", 1),
-                                    else_=0,
-                                )
-                            ),
-                        ).filter(TelemetryMetricModel.timestamp >= cutoff_30d)
-                        if user_id:
-                            up_q = up_q.filter(TelemetryMetricModel.user_id == str(user_id))
-                        if agent_name and agent_name not in ("All Applications", "all"):
-                            up_q = up_q.filter(TelemetryMetricModel.agent_name == agent_name)
-
-                        up_res = up_q.first()
-                        if up_res and up_res[0]:
-                            t30 = int(up_res[0])
-                            s30 = int(up_res[1] or 0)
-                            uptime_val = round((s30 / t30) * 100, 1) if t30 > 0 else 100.0
-            except Exception as e:
-                logger.error(f"PostgreSQL get_dashboard_data error: {e}")
-                records = []
-
-        if not records:
-            mem_src = [r for r in self.conn.memory_records if (not user_id or r.get("user_id") == user_id)]
+        with self.conn.session_scope() as session:
+            query = session.query(TelemetryMetricModel).filter(
+                TelemetryMetricModel.timestamp >= cutoff
+            )
+            if user_id:
+                query = query.filter(TelemetryMetricModel.user_id == str(user_id))
             if agent_name and agent_name not in ("all-applications", "All Applications", "all"):
-                mem_src = [r for r in mem_src if r.get("agent_name") == agent_name]
+                query = query.filter(TelemetryMetricModel.agent_name == agent_name)
             if func_name and func_name not in ("all", "All Functions", "All"):
-                mem_src = [r for r in mem_src if r.get("func_name") == func_name]
-            records = mem_src[:safe_limit]
+                query = query.filter(TelemetryMetricModel.func_name == func_name)
+            if agent_address:
+                query = query.filter(TelemetryMetricModel.agent_address == agent_address)
 
-            for r in self.conn.memory_records:
-                if not user_id or r.get("user_id") == user_id:
-                    if r.get("agent_name"):
-                        apps_map[r["agent_name"]].add(r.get("func_name", "default"))
+            models = (
+                query.order_by(TelemetryMetricModel.timestamp.desc())
+                .limit(safe_limit)
+                .all()
+            )
+            records = [m.to_dict() for m in models]
+
+            # Collect application mapping
+            app_q = session.query(
+                TelemetryMetricModel.agent_name, TelemetryMetricModel.func_name
+            )
+            if user_id:
+                app_q = app_q.filter(TelemetryMetricModel.user_id == str(user_id))
+            for aname, fname in app_q.distinct().all():
+                if aname:
+                    apps_map[aname].add(fname or "default")
+
+            # 30-day uptime query
+            t30_cutoff = now - timedelta(days=30)
+            up_q = session.query(
+                func.count(TelemetryMetricModel.id),
+                func.sum(
+                    case(
+                        (TelemetryMetricModel.status == "success", 1),
+                        else_=0,
+                    )
+                ),
+            ).filter(TelemetryMetricModel.timestamp >= t30_cutoff)
+            if user_id:
+                up_q = up_q.filter(TelemetryMetricModel.user_id == str(user_id))
+            if agent_address:
+                up_q = up_q.filter(TelemetryMetricModel.agent_address == agent_address)
+
+            up_res = up_q.first()
+            if up_res and up_res[0]:
+                t30 = int(up_res[0])
+                s30 = int(up_res[1] or 0)
+                uptime_val = round((s30 / t30) * 100, 1) if t30 > 0 else 100.0
 
         applications = [
             {"agent_name": k, "functions": sorted(list(v))}
@@ -209,9 +181,6 @@ class TelemetryRepository:
         succ = sum(1 for r in records if r.get("status") == "success")
         err = total - succ
         avg_resp = round(sum(r.get("response_time_ms", 0.0) for r in records) / total, 2) if total else 0.0
-
-        if not self.conn.is_connected:
-            uptime_val = round(succ / total * 100, 1) if total else 100.0
 
         summary = {
             "total_requests": total,
@@ -262,88 +231,50 @@ class TelemetryRepository:
         agent_name: Optional[str] = None,
         user_id: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Fetches paginated traces from database or memory."""
-        if self.conn.is_connected and self.conn.SessionFactory:
-            try:
-                with self.conn.session_scope() as session:
-                    if session:
-                        query = session.query(TelemetryMetricModel)
-                        if user_id:
-                            query = query.filter(TelemetryMetricModel.user_id == str(user_id))
-                        if status:
-                            query = query.filter(TelemetryMetricModel.status == status)
-                        if func_name:
-                            query = query.filter(TelemetryMetricModel.func_name == func_name)
-                        if agent_name:
-                            query = query.filter(TelemetryMetricModel.agent_name == agent_name)
+        """Fetches paginated traces from PostgreSQL."""
+        if not self.conn.is_connected or not self.conn.SessionFactory:
+            raise RuntimeError("Database connection is not available. Please verify PostgreSQL configuration.")
 
-                        total = query.count()
-                        offset = max(0, (page - 1) * limit)
-                        models = (
-                            query.order_by(TelemetryMetricModel.timestamp.desc())
-                            .offset(offset)
-                            .limit(limit)
-                            .all()
-                        )
-                        return {
-                            "traces": [m.to_dict() for m in models],
-                            "total": total,
-                            "page": page,
-                            "limit": limit,
-                        }
-            except Exception as e:
-                logger.warning(f"Error querying traces: {e}")
+        with self.conn.session_scope() as session:
+            query = session.query(TelemetryMetricModel)
+            if user_id:
+                query = query.filter(TelemetryMetricModel.user_id == str(user_id))
+            if status:
+                query = query.filter(TelemetryMetricModel.status == status)
+            if func_name:
+                query = query.filter(TelemetryMetricModel.func_name == func_name)
+            if agent_name:
+                query = query.filter(TelemetryMetricModel.agent_name == agent_name)
 
-        filtered = list(self.conn.memory_records)
-        if user_id:
-            filtered = [r for r in filtered if r.get("user_id") == str(user_id)]
-        if status:
-            filtered = [r for r in filtered if r.get("status") == status]
-        if func_name:
-            filtered = [r for r in filtered if r.get("func_name") == func_name]
-        if agent_name:
-            filtered = [r for r in filtered if r.get("agent_name") == agent_name]
-
-        total = len(filtered)
-        start = (page - 1) * limit
-        end = start + limit
-        return {
-            "traces": filtered[start:end],
-            "total": total,
-            "page": page,
-            "limit": limit,
-        }
+            total = query.count()
+            offset = max(0, (page - 1) * limit)
+            models = (
+                query.order_by(TelemetryMetricModel.timestamp.desc())
+                .offset(offset)
+                .limit(limit)
+                .all()
+            )
+            return {
+                "traces": [m.to_dict() for m in models],
+                "total": total,
+                "page": page,
+                "limit": limit,
+            }
 
     def delete_traces(
         self, trace_ids: Optional[List[str]] = None, user_id: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Deletes specific traces or clears all tool traces for the user."""
-        if self.conn.is_connected and self.conn.SessionFactory:
-            try:
-                with self.conn.session_scope() as session:
-                    if session:
-                        q = session.query(TelemetryMetricModel)
-                        if user_id:
-                            q = q.filter(TelemetryMetricModel.user_id == str(user_id))
-                        if trace_ids:
-                            q = q.filter(TelemetryMetricModel.id.in_(trace_ids))
-                        q.delete(synchronize_session=False)
-            except Exception as e:
-                logger.error(f"Error deleting telemetry traces: {e}")
+        """Deletes specific traces or clears all tool traces for the user in PostgreSQL."""
+        if not self.conn.is_connected or not self.conn.SessionFactory:
+            raise RuntimeError("Database connection is not available. Cannot delete traces.")
 
-        # In-memory cleanup
-        if trace_ids:
-            self.conn.memory_records = [
-                r for r in self.conn.memory_records
-                if r.get("id") not in trace_ids or (user_id and r.get("user_id") != str(user_id))
-            ]
-        else:
+        with self.conn.session_scope() as session:
+            q = session.query(TelemetryMetricModel)
             if user_id:
-                self.conn.memory_records = [
-                    r for r in self.conn.memory_records if r.get("user_id") != str(user_id)
-                ]
-            else:
-                self.conn.memory_records.clear()
+                q = q.filter(TelemetryMetricModel.user_id == str(user_id))
+            if trace_ids:
+                q = q.filter(TelemetryMetricModel.id.in_(trace_ids))
+            q.delete(synchronize_session=False)
 
         return {"status": "success", "message": "Telemetry traces deleted successfully."}
 
@@ -355,17 +286,13 @@ class TelemetryRepository:
         )
 
     def count_metrics(self, user_id: Optional[str] = None) -> int:
-        if self.conn.is_connected and self.conn.SessionFactory:
-            try:
-                with self.conn.session_scope() as session:
-                    if session:
-                        q = session.query(func.count(TelemetryMetricModel.id))
-                        if user_id:
-                            q = q.filter(TelemetryMetricModel.user_id == str(user_id))
-                        return q.scalar() or 0
-            except Exception:
-                pass
-        return len(self.conn.memory_records)
+        if not self.conn.is_connected or not self.conn.SessionFactory:
+            return 0
+        with self.conn.session_scope() as session:
+            q = session.query(func.count(TelemetryMetricModel.id))
+            if user_id:
+                q = q.filter(TelemetryMetricModel.user_id == str(user_id))
+            return q.scalar() or 0
 
 
 telemetry_repo = TelemetryRepository()

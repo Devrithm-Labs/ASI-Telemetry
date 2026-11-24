@@ -1,12 +1,14 @@
 {
   "name": "app-backend",
   "version": "1.0.0",
-  "description": "A simple, easy-to-understand backend for ingesting AI Agent SDK telemetry metrics and storing them in **PostgreSQL** with timestamps.",
+  "description": "FastAPI backend for ASI-Telemetry metrics and traces with PostgreSQL storage.",
   "license": "MIT",
   "author": "Ujjwal Katiyar",
   "main": "run.py",
   "scripts": {
+    "dev": "node start.js",
+    "start": "node start.js",
     "build": "pip install -r requirements.txt",
-    "dev": "python run.py"
+    "test": "node -e \"const { spawn } = require('child_process'), path = require('path'), fs = require('fs'); const py = fs.existsSync(path.join(__dirname, '.venv/Scripts/python.exe')) ? path.join(__dirname, '.venv/Scripts/python.exe') : 'python'; const child = spawn(py, ['-m', 'pytest', 'tests', '-v'], { stdio: 'inherit', shell: false }); child.on('exit', (c) => process.exit(c ?? 0));\""
   }
 }
