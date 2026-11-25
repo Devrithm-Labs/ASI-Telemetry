@@ -11,7 +11,7 @@ import {
   MetricSummary,
   ApplicationMetadata,
 } from "./dashboard-types";
-import { getAuthHeaders, clearStoredUser } from "@/lib/auth";
+import { getAuthHeaders, getAuthToken, clearStoredUser } from "@/lib/auth";
 import { getBackendUrl } from "@/lib/api-config";
 
 interface DashboardContextType {
@@ -88,6 +88,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
   // Fetch pre-calculated telemetry payload from FastAPI controller
   const fetchDatabaseTelemetry = React.useCallback(async () => {
+    if (!getAuthToken()) {
+      return;
+    }
     setIsRefreshing(true);
     try {
       const params = new URLSearchParams({ limit: "500" });
@@ -107,7 +110,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       if (res.status === 401) {
         clearStoredUser();
         if (typeof window !== "undefined") {
-          window.location.href = `/login?from=${encodeURIComponent(window.location.pathname)}`;
+          const p = window.location.pathname;
+          if (p !== "/login" && p !== "/signup" && p !== "/") {
+            window.location.href = `/login?from=${encodeURIComponent(p)}`;
+          }
         }
         return;
       }

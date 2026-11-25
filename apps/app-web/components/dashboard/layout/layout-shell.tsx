@@ -103,6 +103,13 @@ function DashboardShellInner({ children }: { children: React.ReactNode }) {
 }
 
 export function DashboardLayoutShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const isPublicRoute = pathname === "/" || pathname === "/login" || pathname === "/signup";
+
+  if (isPublicRoute) {
+    return <>{children}</>;
+  }
+
   return (
     <DashboardProvider>
       <DashboardShellInner>{children}</DashboardShellInner>

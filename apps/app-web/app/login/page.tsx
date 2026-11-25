@@ -26,9 +26,13 @@ export default function LoginPage() {
       return;
     }
 
-    const target =
+    const rawFrom =
       typeof window !== "undefined"
-        ? new URLSearchParams(window.location.search).get("from") || "/dashboard"
+        ? new URLSearchParams(window.location.search).get("from")
+        : null;
+    const target =
+      rawFrom && rawFrom !== "/login" && rawFrom !== "/signup"
+        ? rawFrom
         : "/dashboard";
     router.push(target);
   };
